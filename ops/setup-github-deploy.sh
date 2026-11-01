@@ -38,11 +38,13 @@ gcloud artifacts repositories describe "$AR_REPO" --location "$REGION" >/dev/nul
 DEPLOY_SA="kbusan-github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
 gcloud iam service-accounts describe "$DEPLOY_SA" >/dev/null 2>&1 || \
   gcloud iam service-accounts create kbusan-github-deploy --display-name="k-busan GitHub deploy" --quiet
-gcloud run services add-iam-policy-binding "$SERVICE" --region "$REGION" \
+# A new service account takes a short while to become visible to IAM policy updates.
+retry() { for i in 1 2 3 4 5 6; do "$@" && return 0; echo "IAM 반영 대기 중... ($i/6)"; sleep 10; done; return 1; }
+retry gcloud run services add-iam-policy-binding "$SERVICE" --region "$REGION" \
   --member="serviceAccount:$DEPLOY_SA" --role=roles/run.developer --quiet >/dev/null
-gcloud iam service-accounts add-iam-policy-binding "$RUNTIME_SA" \
+retry gcloud iam service-accounts add-iam-policy-binding "$RUNTIME_SA" \
   --member="serviceAccount:$DEPLOY_SA" --role=roles/iam.serviceAccountUser --quiet >/dev/null
-gcloud artifacts repositories add-iam-policy-binding "$AR_REPO" --location "$REGION" \
+retry gcloud artifacts repositories add-iam-policy-binding "$AR_REPO" --location "$REGION" \
   --member="serviceAccount:$DEPLOY_SA" --role=roles/artifactregistry.writer --quiet >/dev/null
 
 # 4) GitHub OIDC trust limited to this repository's main branch.
@@ -54,7 +56,7 @@ gcloud iam workload-identity-pools providers describe "$PROVIDER" --workload-ide
     --issuer-uri="https://token.actions.githubusercontent.com" \
     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" \
     --attribute-condition="assertion.repository=='${REPO}' && assertion.ref=='refs/heads/main'" --quiet
-gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_SA" --role=roles/iam.workloadIdentityUser \
+retry gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_SA" --role=roles/iam.workloadIdentityUser \
   --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL}/attribute.repository/${REPO}" \
   --quiet >/dev/null
 

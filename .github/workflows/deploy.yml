@@ -70,11 +70,43 @@ jobs:
           gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
           docker push "$IMAGE"
       - name: Deploy candidate without traffic
-        # --image only replaces the code; env vars, secrets, service account, scaling and
-        # timeout already configured on the service are kept as they are.
+        # The service was first created from source (AI Studio), which left
+        # "run.googleapis.com/sources" style annotations that block an image-only deploy.
+        # Export the live spec, drop only those source/build annotations, swap the image,
+        # and pin the current revision at 100% while the new one gets the "candidate" tag.
+        # Env vars, secrets, service account, scaling and timeout are carried over as-is.
+        # The exported spec may contain env values, so it is never printed.
         run: |
-          gcloud run deploy "$CLOUD_RUN_SERVICE" --image "$IMAGE" --region "$GCP_REGION" \
-            --project "$GCP_PROJECT_ID" --no-traffic --tag candidate --quiet
+          gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+            --format=export > /tmp/service.yaml
+          CURRENT="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+            --format='value(status.latestReadyRevisionName)')"
+          NEW_REV="${CLOUD_RUN_SERVICE}-${GITHUB_SHA::7}-${GITHUB_RUN_ATTEMPT}"
+          CURRENT="$CURRENT" NEW_REV="$NEW_REV" python3 - <<'PY'
+          import os, yaml
+          path = '/tmp/service.yaml'
+          svc = yaml.safe_load(open(path))
+          def strip(meta):
+              ann = (meta or {}).get('annotations') or {}
+              removed = [k for k in list(ann) if k.startswith('run.googleapis.com/') and ('source' in k or 'build' in k)]
+              for k in removed: ann.pop(k)
+              return removed
+          removed = strip(svc.get('metadata')) + strip(svc['spec']['template'].get('metadata'))
+          print('removed annotations:', removed)
+          tmpl = svc['spec']['template']
+          tmpl.setdefault('metadata', {})['name'] = os.environ['NEW_REV']
+          containers = tmpl['spec']['containers']
+          assert len(containers) == 1, 'expected a single container'
+          containers[0]['image'] = os.environ['IMAGE']
+          svc['spec']['traffic'] = [
+              {'revisionName': os.environ['CURRENT'], 'percent': 100},
+              {'revisionName': os.environ['NEW_REV'], 'tag': 'candidate'},
+          ]
+          yaml.safe_dump(svc, open(path, 'w'), sort_keys=False)
+          PY
+          echo "current revision: $CURRENT -> candidate: $NEW_REV"
+          gcloud run services replace /tmp/service.yaml --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --quiet > /dev/null
+          rm -f /tmp/service.yaml
       - name: Verify candidate (read-only)
         run: |
           URL="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \

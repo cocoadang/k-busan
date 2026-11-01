@@ -1,5 +1,5 @@
 import { GWACHEON_HISTORICAL_EVENTS, mergeGwacheonHistory } from '../data/gwacheonHistoricalEvents.ts';
-import { Firestore } from '@google-cloud/firestore';
+import { Firestore, Timestamp } from '@google-cloud/firestore';
 import { createHash } from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -148,6 +148,16 @@ export function sanitizeForFirestore<T>(data: T, seen = new WeakSet()): T {
  * - Telegram send ordering: Event 저장 -> delivery pending 기록 (atomic) -> API 호출 -> 결과 sent/failed 기록.
  * - Memory fallback allowed strictly for development/dashboard viewing.
  */
+/**
+ * Retention for Firestore TTL policies on the `expiresAt` field (enable once per collection:
+ * see README "데이터 보관 기간"). Events and Telegram delivery records are kept indefinitely
+ * because they are the project history and the duplicate-alert guard.
+ */
+export const RETENTION_DAYS = { collectionCycles: 30, documents: 365, analysisCache: 30 } as const;
+export function ttlTimestamp(days: number): Timestamp {
+  return Timestamp.fromMillis(Date.now() + days * 86_400_000);
+}
+
 /**
  * Caps for the in-process mirror. Live data is in Firestore; the mirror only serves dev views
  * and fallback reads, so unbounded growth on a long-lived Cloud Run instance is a leak.
@@ -588,11 +598,13 @@ export class FirestoreService {
       try {
         const docRef = client.collection(FIRESTORE_COLLECTIONS.DOCUMENTS).doc(docId);
         const existing = await docRef.get();
+        // Refreshed on every sighting, so only articles unseen for a year expire.
+        const withTtl = { ...normalizedDoc, expiresAt: ttlTimestamp(RETENTION_DAYS.documents) };
         if (existing.exists) {
-          await docRef.set(normalizedDoc, { merge: true });
+          await docRef.set(withTtl, { merge: true });
           return { isNew: false };
         } else {
-          await docRef.set(normalizedDoc);
+          await docRef.set(withTtl);
           return { isNew: true };
         }
       } catch (err: any) {
@@ -792,6 +804,34 @@ export class FirestoreService {
     if (this.memoryPollLock && this.memoryPollLock.expiresAt > now && this.memoryPollLock.owner !== owner) return false;
     this.memoryPollLock = { owner, expiresAt: now + ttlMs };
     return true;
+  }
+
+  private memoryOpsState = new Map<string, Record<string, unknown>>();
+
+  /** Small operational state documents (e.g. consecutive poll failures). Memory fallback when Firestore is down. */
+  public async getOpsState<T extends Record<string, unknown>>(key: string): Promise<T | null> {
+    const client = await this.getClient();
+    if (client && this.isConnected) {
+      try {
+        const doc = await client.collection(FIRESTORE_COLLECTIONS.OPS_STATE).doc(key).get();
+        if (doc.exists) return doc.data() as T;
+        return null;
+      } catch (err: any) {
+        console.warn('[FirestoreService] ops state read failed:', err?.code || err?.name || 'unknown');
+      }
+    }
+    return (this.memoryOpsState.get(key) as T) || null;
+  }
+
+  public async setOpsState(key: string, data: Record<string, unknown>): Promise<void> {
+    this.memoryOpsState.set(key, data);
+    const client = await this.getClient();
+    if (!client || !this.isConnected) return;
+    try {
+      await client.collection(FIRESTORE_COLLECTIONS.OPS_STATE).doc(key).set(sanitizeForFirestore(data));
+    } catch (err: any) {
+      console.warn('[FirestoreService] ops state write failed:', err?.code || err?.name || 'unknown');
+    }
   }
 
   public async releasePollLock(owner: string): Promise<void> {
@@ -1241,7 +1281,7 @@ export class FirestoreService {
         await client
           .collection(FIRESTORE_COLLECTIONS.COLLECTION_CYCLES)
           .doc(docId)
-          .set(sanitizedCycle);
+          .set({ ...sanitizedCycle, expiresAt: ttlTimestamp(RETENTION_DAYS.collectionCycles) });
       } catch (err: any) {
         const diagnostic = this.extractFirestoreErrorDetails(err, {
           operation: 'saveCollectionCycle',

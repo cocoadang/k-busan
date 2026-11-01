@@ -41,6 +41,14 @@ Use the official GitHub integration and grant access only to this private reposi
 
 Recommended Firestore TTL policies: `analysisCache.expiresAt`. Collections `documents`, `collectionCycles` and `telegramDeliveries` grow without cleanup.
 
+## 데이터 보관 기간
+
+Stored documents carry an `expiresAt` timestamp: collection cycles 30 days, news documents 365 days after they were last seen, AI analysis cache 30 days. Events and Telegram delivery records are kept (project history and duplicate-alert guard). Firestore deletes expired documents only after TTL policies are enabled; run `ops/setup-retention.sh` once in Cloud Shell. It also keeps only the 10 newest deploy images (images older than 30 days are removed).
+
+## 운영 알림
+
+When the scheduled run (`/api/jobs/poll`) fails twice in a row (Firestore unavailable, missing Gemini key, or a run error), one Telegram operations message is sent, repeated at most every 6 hours while it keeps failing, and a recovery message follows the next successful run. State is kept in `opsState/pollHealth`. A crash before the app answers (container fails to start) cannot be reported by the app itself; Cloud Scheduler then shows the failed attempts.
+
 ## Collector behavior
 
 Access restrictions stop requests; the app must not bypass them. Failed or incomplete collection must not be recorded as proof that no new material exists. A valid attachment URL or HTML detail page does not prove PDF download or text extraction success. The collector does not implement OCR.

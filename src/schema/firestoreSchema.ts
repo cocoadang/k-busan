@@ -60,6 +60,8 @@ export const FIRESTORE_COLLECTIONS = {
   ANALYSIS_CACHE: 'analysisCache',
   /** 13. 수집 주기 실행 잠금 (스케줄러·수동 실행 중복 방지) */
   LOCKS: 'locks',
+  /** 14. 운영 상태 (수집 연속 실패 횟수·운영 알림 발송 시각) */
+  OPS_STATE: 'opsState',
 } as const;
 
 /**

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   Scale,
@@ -43,6 +43,13 @@ export const UnitTypeComparison: React.FC<UnitTypeComparisonProps> = ({
     typeCode: string;
     floor?: string;
   } | null>(null);
+  // Close the enlarged plan with the Escape key while the dialog is open.
+  useEffect(() => {
+    if (!enlargedImage) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setEnlargedImage(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [enlargedImage]);
 
   // Currently compared unit type documents
   const comparedDocs = selectedCompareTypes
@@ -258,6 +265,8 @@ export const UnitTypeComparison: React.FC<UnitTypeComparisonProps> = ({
                         <img
                           id={`compare-plan-img-${unit.typeCode}`}
                           src={floorPlanSrc}
+                          loading="lazy"
+                          decoding="async"
                           alt={`${unit.typeCode} 원본 평면도`}
                           referrerPolicy="no-referrer"
                           className="w-full h-auto max-h-[320px] object-contain block mx-auto select-none pointer-events-none"
@@ -327,6 +336,9 @@ export const UnitTypeComparison: React.FC<UnitTypeComparisonProps> = ({
       {/* Lightbox Modal for Enlarged Floor Plan Image */}
       {enlargedImage && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${enlargedImage.typeCode} 원본 평면도 확대 보기`}
           id="floor-plan-lightbox-modal"
           className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in"
           onClick={() => setEnlargedImage(null)}
@@ -351,10 +363,13 @@ export const UnitTypeComparison: React.FC<UnitTypeComparisonProps> = ({
               </div>
               <button
                 id="close-lightbox-btn"
+                type="button"
+                autoFocus
+                aria-label="확대 보기 닫기"
                 onClick={() => setEnlargedImage(null)}
-                className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 cursor-pointer"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             <div className="p-2 sm:p-4 overflow-auto flex items-center justify-center bg-slate-950/5 min-h-[300px]">

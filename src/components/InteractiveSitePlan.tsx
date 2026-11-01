@@ -15,6 +15,10 @@ import {
 import { FirestoreBuildingDoc, FirestoreUnitTypeDoc } from '../schema/firestoreSchema.ts';
 import { PlanConfirmationStatus, SitePlanCoordinate } from '../types/planConfig.ts';
 
+// Zoom/fit instrumentation for automated UX checks; dev builds only (the history array grows
+// on every zoom, so it must not run for real visitors).
+const SITE_PLAN_DEBUG = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+
 export interface InteractiveSitePlanProps {
   sitePlanAsset?: string | null;
   coordinates?: SitePlanCoordinate[];
@@ -185,7 +189,7 @@ export const InteractiveSitePlan: React.FC<InteractiveSitePlanProps> = ({
 
   // Debug Instrumentation (UX5): Expose update counters on window for automated verification
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (SITE_PLAN_DEBUG && typeof window !== 'undefined') {
       const win = window as unknown as {
         __SITE_PLAN_DEBUG__?: {
           zoomUpdates: number;
@@ -231,7 +235,7 @@ export const InteractiveSitePlan: React.FC<InteractiveSitePlanProps> = ({
   }, [zoomLevel]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (SITE_PLAN_DEBUG && typeof window !== 'undefined') {
       const win = window as unknown as {
         __SITE_PLAN_DEBUG__?: { fitWidthUpdates: number };
       };
@@ -242,7 +246,7 @@ export const InteractiveSitePlan: React.FC<InteractiveSitePlanProps> = ({
   }, [fitWidth]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (SITE_PLAN_DEBUG && typeof window !== 'undefined') {
       const win = window as unknown as {
         __SITE_PLAN_DEBUG__?: { stageWidthUpdates: number };
       };
@@ -357,7 +361,7 @@ export const InteractiveSitePlan: React.FC<InteractiveSitePlanProps> = ({
             id="site-zoom-out-btn"
             onClick={onZoomOut}
             disabled={!onZoomOut || zoomLevel <= 1}
-            className="min-h-[34px] min-w-[34px] p-1.5 rounded hover:bg-white text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-40 transition-colors"
+            className="min-h-[40px] min-w-[40px] p-1.5 rounded hover:bg-white text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-40 transition-colors"
             title="배치도 축소"
           >
             <ZoomOut className="w-3.5 h-3.5" />
@@ -366,7 +370,7 @@ export const InteractiveSitePlan: React.FC<InteractiveSitePlanProps> = ({
             id="site-zoom-reset-btn"
             onClick={handleResetZoomClick}
             disabled={!onResetZoom}
-            className="min-h-[34px] px-2.5 rounded hover:bg-white text-slate-700 flex items-center gap-1 cursor-pointer text-xs font-bold transition-colors disabled:opacity-40"
+            className="min-h-[40px] px-2.5 rounded hover:bg-white text-slate-700 flex items-center gap-1 cursor-pointer text-xs font-bold transition-colors disabled:opacity-40"
             title="배치도 화면맞춤 (1.0x)"
           >
             <RotateCcw className="w-3 h-3 text-slate-400" />
@@ -376,7 +380,7 @@ export const InteractiveSitePlan: React.FC<InteractiveSitePlanProps> = ({
             id="site-zoom-in-btn"
             onClick={onZoomIn}
             disabled={!onZoomIn || zoomLevel >= 2.5}
-            className="min-h-[34px] min-w-[34px] p-1.5 rounded hover:bg-white text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-40 transition-colors"
+            className="min-h-[40px] min-w-[40px] p-1.5 rounded hover:bg-white text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-40 transition-colors"
             title="배치도 확대"
           >
             <ZoomIn className="w-3.5 h-3.5" />

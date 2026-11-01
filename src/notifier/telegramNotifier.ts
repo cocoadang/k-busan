@@ -21,6 +21,8 @@ export interface TelegramSendResult {
 /** Telegram sendMessage hard limit is 4096 chars; keep headroom for the ellipsis. */
 export const TELEGRAM_MAX_MESSAGE_LENGTH = 4000;
 export const TELEGRAM_REQUEST_TIMEOUT_MS = 10_000;
+/** Longest Telegram-advised wait (seconds) we honour before a single retry. */
+export const TELEGRAM_MAX_RETRY_AFTER_S = 30;
 
 export function clampTelegramText(text: string): string {
   return text.length > TELEGRAM_MAX_MESSAGE_LENGTH ? text.slice(0, TELEGRAM_MAX_MESSAGE_LENGTH - 1) + '…' : text;
@@ -207,70 +209,70 @@ ${primaryUrl}`);
       };
     }
 
-    try {
-      const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: this.chatId,
-          text: messageText,
-          disable_web_page_preview: false,
-        }),
-        signal: AbortSignal.timeout(TELEGRAM_REQUEST_TIMEOUT_MS),
-      });
+    const sent = await this.sendText(messageText, false);
+    return { ...sent, sentAt, messageHash, chatId: this.chatId || '', messageText, isTest: false };
+  }
 
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json') && !contentType.includes('+json')) {
-        return {
-          success: false,
-          error: `UPSTREAM_NON_JSON_RESPONSE: Telegram API returned non-JSON response [HTTP ${res.status}, Content-Type: ${contentType || 'unknown'}]`,
-          sentAt,
-          messageHash,
-          chatId: this.chatId || '',
-          messageText,
-          isTest: false,
-        };
-      }
-
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        return {
-          success: false,
-          error: `Telegram API 오류 [HTTP ${res.status}]: ${data.description || 'Unknown error'}`,
-          sentAt,
-          messageHash,
-          chatId: this.chatId || '',
-          messageText,
-          isTest: false,
-        };
-      }
-
-      return {
-        success: true,
-        messageId: data.result?.message_id,
-        sentAt,
-        messageHash,
-        chatId: this.chatId || '',
-        messageText,
-        isTest: false,
-      };
-    } catch (err: any) {
-      const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
-      return {
-        success: false,
-        error: timedOut
-          ? `TELEGRAM_TIMEOUT: ${TELEGRAM_REQUEST_TIMEOUT_MS}ms 내 응답 없음 (발송 여부 불명)`
-          : `Telegram 전송 네트워크 오류: ${err.message || String(err)}`,
-        // A timeout means the request may have been delivered; a connection refusal before
-        // sending would surface as a different error, but we stay conservative for both.
-        outcomeUnknown: true,
-        sentAt,
-        messageHash,
-        chatId: this.chatId || '',
-        messageText,
-        isTest: false,
-      };
+  /**
+   * Operational alert (collection failures / recovery). Not tied to an event, never stored
+   * as a delivery; callers are responsible for de-duplicating how often it is sent.
+   */
+  public async sendOpsAlert(text: string): Promise<{ success: boolean; error?: string }> {
+    const body = clampTelegramText(`[부산 정비사업 모니터 운영 알림]\n\n${text}`);
+    if (this.customSender) {
+      const res = await this.customSender(body, true);
+      return { success: res.success, error: res.error };
     }
+    if (!this.isConfigured()) return { success: false, error: 'TELEGRAM_NOT_CONFIGURED' };
+    const res = await this.sendText(body, true);
+    return { success: res.success, error: res.error };
+  }
+
+  /**
+   * Single sendMessage call with a timeout. HTTP 429 means Telegram did NOT accept the message,
+   * so it is safe to wait the advised retry_after (up to 30 s) and try exactly once more.
+   */
+  private async sendText(
+    text: string,
+    disablePreview: boolean
+  ): Promise<{ success: boolean; messageId?: number | string; error?: string; outcomeUnknown?: boolean }> {
+    const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: this.chatId, text, disable_web_page_preview: disablePreview }),
+          signal: AbortSignal.timeout(TELEGRAM_REQUEST_TIMEOUT_MS),
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json') && !contentType.includes('+json')) {
+          return { success: false, error: `UPSTREAM_NON_JSON_RESPONSE: Telegram API returned non-JSON response [HTTP ${res.status}, Content-Type: ${contentType || 'unknown'}]` };
+        }
+        const data = await res.json();
+        if (res.status === 429 && attempt === 0) {
+          const retryAfter = Number(data?.parameters?.retry_after);
+          if (Number.isFinite(retryAfter) && retryAfter > 0 && retryAfter <= TELEGRAM_MAX_RETRY_AFTER_S) {
+            await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+            continue;
+          }
+        }
+        if (!res.ok || !data.ok) {
+          return { success: false, error: `Telegram API 오류 [HTTP ${res.status}]: ${data.description || 'Unknown error'}` };
+        }
+        return { success: true, messageId: data.result?.message_id };
+      } catch (err: any) {
+        const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+        return {
+          success: false,
+          error: timedOut
+            ? `TELEGRAM_TIMEOUT: ${TELEGRAM_REQUEST_TIMEOUT_MS}ms 내 응답 없음 (발송 여부 불명)`
+            : `Telegram 전송 네트워크 오류: ${err.message || String(err)}`,
+          // The request may have reached Telegram; callers must not resend automatically.
+          outcomeUnknown: true,
+        };
+      }
+    }
+    return { success: false, error: 'Telegram API 오류 [HTTP 429]: 재시도 후에도 발송 제한' };
   }
 }

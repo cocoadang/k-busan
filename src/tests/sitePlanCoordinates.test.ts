@@ -274,3 +274,26 @@ export function runSitePlanGeometryAudit(): {
     results,
   };
 }
+
+// Make failures visible to node --test (previously only reported via return value).
+import nodeTest from 'node:test';
+import nodeAssert from 'node:assert/strict';
+
+nodeTest('촉진3 배치도 좌표 Ground Truth 일치', () => {
+  const report = runSitePlanCoordinateAudit();
+  const failed = report.results.filter((r) => !r.matched);
+  nodeAssert.equal(failed.length, 0, JSON.stringify(failed, null, 2));
+  nodeAssert.ok(report.success, `matched ${report.matchedCount}/${report.totalTested} (coordinates must be 18)`);
+});
+
+nodeTest('촉진3 배치도 인터랙션 시나리오', () => {
+  const report = runSitePlanInteractionScenariosAudit();
+  nodeAssert.ok(report.allPassed, JSON.stringify(report, null, 2));
+});
+
+nodeTest('촉진3 배치도 Geometry/좌표공간', () => {
+  const report = runSitePlanGeometryAudit();
+  const failed = report.results.filter((r) => !(r.dimensionMismatch === 0 && r.allMarkersInImageBounds));
+  nodeAssert.equal(failed.length, 0, JSON.stringify(failed, null, 2));
+  nodeAssert.ok(report.success, `allViewportsPassed=${report.allViewportsPassed}, zoomInvariancePassed=${report.zoomInvariancePassed}`);
+});

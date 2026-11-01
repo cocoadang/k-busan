@@ -5,6 +5,7 @@ import { AssociationNoticeCollector } from './src/collector/associationCollector
 import { ANALYSIS_VERSION, GEMINI_ANALYSIS_SETTINGS, resolveGeminiModel } from './src/analyzer/geminiAnalyzer';
 import { TtlCache, toPublicOverview, publicErrorBody } from './src/utils/publicApi.ts';
 import { capCollectionCycleDoc } from './src/storage/cycleDocLimits.ts';
+import { recordPollOutcome } from './src/notifier/pollHealthMonitor.ts';
 /**
  * Busan Redevelopment News Monitor - Server Entrypoint
  * Express + Vite Full-stack architecture
@@ -25,7 +26,7 @@ import { OfficialNoticeCollector, BusanCityNoticeCollector, getKstDateString } f
 import { CollectionPipeline } from './src/pipeline/collectionPipeline.ts';
 import { REDEVELOPMENT_SEED_PROJECTS, defaultRegistry } from './src/registry/redevelopmentRegistry.ts';
 import { ALL_ANALYSIS_CATEGORIES, TELEGRAM_MIN_IMPORTANCE_DEFAULT } from './src/types/redevelopment.ts';
-import { FirestoreService, FirestoreUnavailableError } from './src/storage/firestoreService.ts';
+import { FirestoreService, FirestoreUnavailableError, RETENTION_DAYS, ttlTimestamp } from './src/storage/firestoreService.ts';
 import { TelegramNotifier } from './src/notifier/telegramNotifier.ts';
 import { FirestoreCollectionCycleDoc } from './src/schema/firestoreSchema.ts';
 import { evaluateProductionReadiness, createPreviewReadOnlyMiddleware, resolvePreviewConfig } from './src/storage/readinessService.ts';
@@ -97,7 +98,10 @@ app.use('/assets/plans', (req, res, next) => {
     res.setHeader('Content-Type', 'image/jpeg');
   }
   next();
-}, express.static(path.join(process.cwd(), 'public/assets/plans')));
+}, express.static(path.join(process.cwd(), 'public/assets/plans'), {
+  // Plan images change rarely; one day of browser/CDN caching, revalidated after that.
+  maxAge: '1d',
+}));
 
 // Startup Diagnostic Logging (Safe: Zero Secret Leakage)
 console.log('====================================================');
@@ -427,7 +431,7 @@ async function runPollingCycleLocked(isProduction: boolean, enableTelegram: bool
         if (!client) throw new Error('AI_CACHE_UNAVAILABLE');
         // JSON serialization drops optional undefined fields; this collection is server-only.
         await client.collection(FIRESTORE_COLLECTIONS.ANALYSIS_CACHE).doc(key).set({result: JSON.parse(JSON.stringify(value)),
-          expiresAt: new Date(Date.now() + 30 * 86400000), updatedAt: new Date()});
+          expiresAt: ttlTimestamp(RETENTION_DAYS.analysisCache), updatedAt: new Date()});
       },
     },
     existingEvents: existingEvents.map((e) => ({
@@ -660,6 +664,17 @@ async function runPollingCycleLocked(isProduction: boolean, enableTelegram: bool
   };
 }
 
+/** Records the scheduled run outcome; never lets alerting failures affect the response. */
+async function trackPollHealth(outcome: { ok: true } | { ok: false; reason: string }) {
+  try {
+    const result = await recordPollOutcome(firestoreService, telegramNotifier, outcome);
+    if (result.alertSent) console.warn('[PollHealth] Failure alert sent:', result.state.consecutiveFailures);
+    if (result.recoverySent) console.log('[PollHealth] Recovery message sent');
+  } catch (err: any) {
+    console.warn('[PollHealth] tracking failed:', err?.name || 'unknown');
+  }
+}
+
 /**
  * Cloud Scheduler Target Endpoint: /api/jobs/poll
  *
@@ -685,6 +700,7 @@ app.all('/api/jobs/poll', async (req, res) => {
     console.error(
       `[Jobs/Poll Preflight Fail-Closed] Firestore unavailable (${fsHealth.error}). Fail-closed triggered: 0 Telegrams, 0 Events persisted.`
     );
+    await trackPollHealth({ ok: false, reason: `Firestore 연결 불가 (${fsHealth.error || 'unknown'})` });
     return res.status(503).json({
       success: false,
       statusCode: 503,
@@ -706,6 +722,7 @@ app.all('/api/jobs/poll', async (req, res) => {
   );
   if (!geminiConfigured) {
     console.error('[Jobs/Poll Preflight] GEMINI_API_KEY is not configured in production environment.');
+    await trackPollHealth({ ok: false, reason: 'GEMINI_API_KEY 미설정' });
     return res.status(503).json({
       success: false,
       statusCode: 503,
@@ -746,6 +763,7 @@ app.all('/api/jobs/poll', async (req, res) => {
       production: true,
     });
 
+    await trackPollHealth({ ok: true });
     return res.status(200).json({
       success: true,
       statusCode: 200,
@@ -780,6 +798,7 @@ app.all('/api/jobs/poll', async (req, res) => {
       safeMessage: err.safeMessage,
     } : undefined;
 
+    await trackPollHealth({ ok: false, reason: `수집 실행 오류: ${err?.message || 'unknown'}` });
     console.error('[Jobs/Poll] Production poll error:', {
       name: err?.name,
       message: err?.message,
@@ -859,8 +878,20 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      // Vite fingerprints everything under /assets (name-hash.js), so those files never change
+      // and can be cached by the browser and the Firebase CDN for a year. index.html must
+      // always be revalidated so a new deploy is picked up immediately.
+      setHeaders: (res, filePath) => {
+        if (filePath.includes(`${path.sep}assets${path.sep}`) && /-[A-Za-z0-9_-]{8,}\.(js|css|woff2?)$/.test(filePath)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      },
+    }));
     app.get('*', (req, res) => {
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

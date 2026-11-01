@@ -8,3 +8,7 @@ General developer instructions and empty environment examples are provided. Buil
 
 Captured HTML fixtures use synthetic CSRF parameter/input values and telephone numbers. Parser output equivalence was checked locally, allowing only the intended phone-number substitution in extracted text; 79 collector regressions passed. These fixtures are test input, not live credentials.
 
+
+## 이미지 재압축 (2026-11-01)
+
+평면도·배치도 이미지 74개를 같은 파일명·같은 형식·같은 픽셀 크기로 재압축했습니다(JPEG 품질 82 progressive, PNG 256색 팔레트). 전체 용량은 39MB에서 21MB로 줄었습니다. 픽셀 크기가 같아서 배치도 좌표와 주동 매핑은 그대로 유효합니다. 원본 바이트 사본은 이 커밋 이전의 Git 이력에 남아 있습니다.

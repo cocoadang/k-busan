@@ -176,3 +176,13 @@ export function runStatutoryStageIntegritySuite(): {
     results,
   };
 }
+
+// Previously executed only through the removed dry-run endpoint; run it under node --test.
+import nodeTest from 'node:test';
+import nodeAssert from 'node:assert/strict';
+
+nodeTest('사업현황 현재단계 ↔ 진행이력 Evidence 정합성', () => {
+  const report = runStatutoryStageIntegritySuite();
+  const failed = report.results.filter((r) => !r.passed);
+  nodeAssert.equal(failed.length, 0, JSON.stringify(failed, null, 2));
+});

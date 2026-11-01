@@ -1,0 +1,102 @@
+name: Validate and deploy K-busan
+# Validation runs on every push to main and every pull request.
+# Production deployment runs ONLY on "Run workflow" (workflow_dispatch) on main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+# Filled in from ops/setup-github-deploy.sh output (one-time GCP setup).
+env:
+  GCP_PROJECT_ID: ''
+  GCP_PROJECT_NUMBER: ''
+  GCP_REGION: ''
+  CLOUD_RUN_SERVICE: ''
+  AR_REPO: kbusan-images
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run lint
+      - run: node --import tsx --test src/tests/*.test.ts
+      - run: npm run build
+
+  deploy:
+    needs: validate
+    if: github.repository == 'cocoadang/k-busan' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    concurrency:
+      group: kbusan-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check deploy configuration
+        run: |
+          for v in GCP_PROJECT_ID GCP_PROJECT_NUMBER GCP_REGION CLOUD_RUN_SERVICE; do
+            [ -n "${!v}" ] || { echo "::error::$v is empty. Run ops/setup-github-deploy.sh and fill the workflow env."; exit 1; }
+          done
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build image (clean Linux build, no local node_modules)
+        run: |
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO}/k-busan:${GITHUB_SHA}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          docker build -t "$IMAGE" .
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: projects/${{ env.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/kbusan-github/providers/github-main
+          service_account: kbusan-github-deploy@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+      - name: Push image
+        run: |
+          gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+          docker push "$IMAGE"
+      - name: Deploy candidate without traffic
+        # --image only replaces the code; env vars, secrets, service account, scaling and
+        # timeout already configured on the service are kept as they are.
+        run: |
+          gcloud run deploy "$CLOUD_RUN_SERVICE" --image "$IMAGE" --region "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" --no-traffic --tag candidate --quiet
+      - name: Verify candidate (read-only)
+        run: |
+          URL="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+            --format=json | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(t['url'] for t in d['status']['traffic'] if t.get('tag')=='candidate'))")"
+          echo "candidate: $URL"
+          for i in 1 2 3 4 5 6; do
+            code="$(curl -s -o /tmp/health.json -w '%{http_code}' "$URL/api/health" || true)"
+            [ "$code" = 200 ] && break; sleep 10
+          done
+          [ "$code" = 200 ] || { echo "::error::health $code"; cat /tmp/health.json; exit 1; }
+          python3 - <<'PY'
+          import json
+          h = json.load(open('/tmp/health.json'))
+          assert h.get('status') == 'ok', h
+          assert h.get('firestoreReady') is True, 'Firestore not ready on candidate'
+          print('firestoreReady', h['firestoreReady'], 'gemini', h['checks']['gemini'])
+          PY
+          curl -sf "$URL/api/registry" > /dev/null
+          curl -sf "$URL/" | grep -q '<div id="root">'
+      - name: Promote candidate to 100% traffic
+        run: |
+          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" --to-tags candidate=100 --quiet
+          gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+            --format='value(status.latestReadyRevisionName,status.url)'

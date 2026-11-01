@@ -110,6 +110,8 @@ export class TelegramNotifier {
         ? '촉진3구역'
         : event.projectId === 'udong-3'
         ? '우동3구역'
+        : event.projectId === 'samik-beach'
+        ? '삼익비치'
         : projectName;
 
     const stars = this.formatImportanceStars(event.importance);
@@ -166,110 +168,6 @@ ${primaryUrl}`);
     alreadyDeliveredEventIds: Set<string> = new Set()
   ): { eligible: boolean; reason?: string } {
     return evaluateDispatch({ ...event, alreadyDispatched: event.alreadyDispatched || alreadyDeliveredEventIds.has(event.id) }, this.minImportance);
-  }
-
-  /**
-   * Send single test message (for /api/test/telegram)
-   * Does NOT write to production events collection.
-   */
-  public async sendTestMessage(): Promise<TelegramSendResult> {
-    const sentAt = new Date().toISOString();
-    const testText = `[테스트 메시지] 부산 정비사업 실시간 알림 봇 연동 점검
-
-현재 시각: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} KST
-대상 채널: 촉진3구역 / 우동3구역 실시간 모니터링 알림
-상태: 봇 토큰 및 Chat ID 정상 연동 확인 완료
-
-※ 본 메시지는 Telegram 연결 테스트 메시지이며, 운영 이벤트로 기록되지 않습니다.`;
-
-    const messageHash = this.calculateMessageHash('test-event', testText);
-
-    if (this.customSender) {
-      const customRes = await this.customSender(testText, true);
-      return {
-        success: customRes.success,
-        messageId: customRes.messageId,
-        error: customRes.error,
-        sentAt,
-        messageHash,
-        chatId: this.chatId || 'test_chat',
-        messageText: testText,
-        isTest: true,
-      };
-    }
-
-    if (!this.isConfigured()) {
-      return {
-        success: false,
-        isTest: true,
-        error:
-          'TELEGRAM_BOT_TOKEN 또는 TELEGRAM_CHAT_ID 환경변수가 설정되지 않았습니다. AI Studio Settings 또는 .env에서 설정해주세요.',
-        sentAt,
-        messageHash,
-        chatId: this.chatId || '',
-        messageText: testText,
-      };
-    }
-
-    try {
-      const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: this.chatId,
-          text: testText,
-          disable_web_page_preview: true,
-        }),
-        signal: AbortSignal.timeout(TELEGRAM_REQUEST_TIMEOUT_MS),
-      });
-
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json') && !contentType.includes('+json')) {
-        return {
-          success: false,
-          isTest: true,
-          error: `UPSTREAM_NON_JSON_RESPONSE: Telegram API returned non-JSON response [HTTP ${res.status}, Content-Type: ${contentType || 'unknown'}]`,
-          sentAt,
-          messageHash,
-          chatId: this.chatId || '',
-          messageText: testText,
-        };
-      }
-
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        return {
-          success: false,
-          isTest: true,
-          error: `Telegram API 오류 [HTTP ${res.status}]: ${data.description || 'Unknown error'}`,
-          sentAt,
-          messageHash,
-          chatId: this.chatId || '',
-          messageText: testText,
-        };
-      }
-
-      return {
-        success: true,
-        isTest: true,
-        messageId: data.result?.message_id,
-        sentAt,
-        messageHash,
-        chatId: this.chatId || '',
-        messageText: testText,
-      };
-    } catch (err: any) {
-      return {
-        success: false,
-        isTest: true,
-        error: `Telegram 전송 네트워크 오류: ${err.message || String(err)}`,
-        sentAt,
-        messageHash,
-        chatId: this.chatId || '',
-        messageText: testText,
-      };
-    }
   }
 
   /**

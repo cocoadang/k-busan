@@ -24,7 +24,12 @@ export interface OpsAlertSender {
   sendOpsAlert(text: string): Promise<{ success: boolean; error?: string }>;
 }
 
-export const POLL_FAILURE_ALERT_THRESHOLD = 2;
+/**
+ * Consecutive failed scheduled runs before alerting. The poll runs once a day (08:00 KST),
+ * so one failure already means a missed day: alert on the first failure by default.
+ * Override with POLL_FAILURE_ALERT_THRESHOLD if the schedule becomes more frequent.
+ */
+export const POLL_FAILURE_ALERT_THRESHOLD = Math.max(1, Number(process.env.POLL_FAILURE_ALERT_THRESHOLD) || 1);
 /** While still failing, repeat the alert at most this often. */
 export const POLL_FAILURE_REALERT_MS = 6 * 60 * 60 * 1000;
 const KEY = 'pollHealth';
@@ -74,7 +79,7 @@ export async function recordPollOutcome(
   let alertSent = false;
   if (shouldAlert && sender.isConfigured()) {
     const res = await sender.sendOpsAlert(
-      `⚠️ 정기 수집이 ${failures}회 연속 실패했습니다.\n` +
+      `⚠️ 정기 수집이 실패했습니다 (연속 ${failures}회).\n` +
       `마지막 실패: ${kst(nowIso)}\n원인: ${reason}\n` +
       (prev.lastSuccessAt ? `마지막 정상 수집: ${kst(prev.lastSuccessAt)}` : '정상 수집 기록 없음'));
     alertSent = res.success;

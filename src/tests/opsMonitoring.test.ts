@@ -18,20 +18,17 @@ function sender() {
   return { sent, isConfigured: () => true, sendOpsAlert: async (t: string) => { sent.push(t); return { success: true }; } };
 }
 
-test('one alert after two consecutive failures, rate-limited, then a recovery message', async () => {
+test('alert after the threshold of consecutive failures, rate-limited, then a recovery message', async () => {
+  // Uses the default threshold (1 for the daily schedule); the second failure must not re-alert.
   const store = memoryStore();
   const s = sender();
   let now = new Date('2026-11-01T13:00:00Z').getTime();
   const clock = () => new Date(now);
 
-  await recordPollOutcome(store, s, { ok: false, reason: 'Firestore 연결 불가' }, clock);
-  assert.equal(s.sent.length, 0, 'single failure does not alert');
-
-  now += 30 * 60_000;
-  const second = await recordPollOutcome(store, s, { ok: false, reason: 'Firestore 연결 불가' }, clock);
-  assert.equal(second.alertSent, true);
+  const first = await recordPollOutcome(store, s, { ok: false, reason: 'Firestore 연결 불가' }, clock);
+  assert.equal(first.alertSent, true, 'daily schedule: first failure alerts');
   assert.equal(s.sent.length, 1);
-  assert.match(s.sent[0], /2회 연속 실패/);
+  assert.match(s.sent[0], /수집이 실패했습니다 \(연속 1회\)/);
 
   now += 30 * 60_000;
   await recordPollOutcome(store, s, { ok: false, reason: 'x' }, clock);

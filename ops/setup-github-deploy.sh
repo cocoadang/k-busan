@@ -60,7 +60,7 @@ gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_SA" --role=roles/iam
 
 # 5) Monitoring on: resume paused poll jobs, report if none exists.
 FOUND=0
-for LOC in "$REGION" asia-northeast3 asia-northeast1 us-central1; do
+for LOC in $(printf '%s\n' "$REGION" asia-northeast3 asia-northeast1 us-central1 | awk '!seen[$0]++'); do
   while read -r JOB STATE URI; do
     [ -n "$JOB" ] || continue
     case "$URI" in *"/api/jobs/poll"*) ;; *) continue ;; esac
@@ -71,7 +71,11 @@ for LOC in "$REGION" asia-northeast3 asia-northeast1 us-central1; do
 done
 [ "$FOUND" = 1 ] || echo "주의: /api/jobs/poll 을 호출하는 Cloud Scheduler 작업을 찾지 못했습니다."
 
-if gcloud run services describe "$SERVICE" --region "$REGION" --format=json | grep -q '"name": "ENABLE_OFFICIAL_API",[[:space:]]*"value": "false"'; then
+OFFICIAL_FLAG="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json | python3 -c '
+import json, sys
+env = json.load(sys.stdin)["spec"]["template"]["spec"]["containers"][0].get("env", [])
+print(next((e.get("value", "") for e in env if e.get("name") == "ENABLE_OFFICIAL_API"), ""))')"
+if [ "$OFFICIAL_FLAG" = "false" ]; then
   gcloud run services update "$SERVICE" --region "$REGION" --remove-env-vars=ENABLE_OFFICIAL_API --quiet && echo "새올 공식 API 수집을 다시 켰습니다."
 fi
 

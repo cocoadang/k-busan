@@ -302,3 +302,14 @@ export function runUdong3InteractiveSitePlanSuite(): {
     results,
   };
 }
+
+// Make failures visible to node --test (previously only reported via return value).
+import nodeTest from 'node:test';
+import nodeAssert from 'node:assert/strict';
+
+nodeTest('우동3 인터랙티브 배치도', () => {
+  const report = runUdong3InteractiveSitePlanSuite();
+  const failed = report.results.filter((r) => !r.passed);
+  nodeAssert.equal(failed.length, 0, JSON.stringify(failed, null, 2));
+  nodeAssert.ok(report.total > 0 && report.passed === report.total, `passed ${report.passed}/${report.total}`);
+});

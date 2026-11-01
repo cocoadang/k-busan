@@ -265,3 +265,12 @@ export function runGenericInteractiveSitePlanAudit(): GenericComponentTestReport
     },
   };
 }
+
+// Make failures visible to node --test (previously only reported via return value).
+import nodeTest from 'node:test';
+import nodeAssert from 'node:assert/strict';
+
+nodeTest('Generic 인터랙티브 배치도 컴포넌트', () => {
+  const report = runGenericInteractiveSitePlanAudit();
+  nodeAssert.ok(report.success, `passed ${report.passedTests}/${report.totalTests}: ${JSON.stringify(report.details, null, 2)}`);
+});

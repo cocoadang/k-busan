@@ -69,7 +69,7 @@ for LOC in $(printf '%s\n' "$REGION" asia-northeast3 asia-northeast1 us-central1
   while read -r JOB STATE URI; do
     [ -n "$JOB" ] || continue
     case "$URI" in *"/api/jobs/poll"*) ;; *) continue ;; esac
-    case "$URI" in "$SERVICE_URL"*|*api.dsoom.com*|*k-busan*) ;; *) continue ;; esac
+    case "$URI" in "$SERVICE_URL"*|*apt.dsoom.com*|*k-busan*) ;; *) continue ;; esac
     FOUND=1
     if [ "$STATE" = "PAUSED" ]; then gcloud scheduler jobs resume "$JOB" --location "$LOC" --quiet && echo "재개함: $JOB"; else echo "스케줄러 정상: $JOB ($STATE)"; fi
   done < <(gcloud scheduler jobs list --location "$LOC" --format='value(name.basename(),state,httpTarget.uri)' 2>/dev/null || true)

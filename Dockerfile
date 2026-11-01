@@ -1,4 +1,4 @@
-# Production image for Cloud Run (api.dsoom.com).
+# Production image for Cloud Run (apt.dsoom.com).
 # Built from a clean Linux checkout, so no locally installed (e.g. Windows) node_modules leak in.
 
 FROM node:22-bookworm-slim AS build

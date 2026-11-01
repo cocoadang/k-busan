@@ -113,8 +113,8 @@ test('saveEvent keeps firstSeenAt and accumulates sources on the memory store', 
 test('preview proxy is opt-in and never active in production', () => {
   assert.deepEqual(resolvePreviewConfig({ NODE_ENV: 'development' } as any), { enabled: false, upstreamOrigin: null });
   assert.equal(resolvePreviewConfig({ PREVIEW_MODE: 'true', NODE_ENV: 'production' } as any).enabled, false);
-  const cfg = resolvePreviewConfig({ PREVIEW_MODE: 'true', PREVIEW_UPSTREAM_ORIGIN: 'https://api.dsoom.com/x' } as any);
-  assert.deepEqual(cfg, { enabled: true, upstreamOrigin: 'https://api.dsoom.com' });
+  const cfg = resolvePreviewConfig({ PREVIEW_MODE: 'true', PREVIEW_UPSTREAM_ORIGIN: 'https://apt.dsoom.com/x' } as any);
+  assert.deepEqual(cfg, { enabled: true, upstreamOrigin: 'https://apt.dsoom.com' });
   assert.equal(resolvePreviewConfig({ PREVIEW_MODE: 'true', PREVIEW_UPSTREAM_ORIGIN: 'http://insecure.example' } as any).upstreamOrigin, null);
 });
 

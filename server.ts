@@ -19,19 +19,12 @@ import { capCollectionCycleDoc } from './src/storage/cycleDocLimits.ts';
 
 import dotenv from 'dotenv';
 import express from 'express';
-import fs from 'fs';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { CHOKJIN3_BATCH1_ASSETS, CHOKJIN3_PLAN_VERSION } from './src/data/chokjin3PlanData.ts';
-import { DefaultCollectorQueryBuilder } from './src/collector/interfaces.ts';
 import { OfficialNoticeCollector, BusanCityNoticeCollector, getKstDateString } from './src/collector/officialCollector.ts';
 import { CollectionPipeline } from './src/pipeline/collectionPipeline.ts';
 import { REDEVELOPMENT_SEED_PROJECTS, defaultRegistry } from './src/registry/redevelopmentRegistry.ts';
-import { runDryRunVerificationSuite } from './src/tests/dryRunSuite.ts';
-import { runUnitTypeComparisonAudit } from './src/tests/unitTypeComparison.test.ts';
-import { runPlanConfigValidationAudit } from './src/tests/planConfigValidation.test.ts';
-import { runGenericInteractiveSitePlanAudit } from './src/tests/genericSitePlan.test.ts';
-import { ALL_ANALYSIS_CATEGORIES, CollectionCycleAudit, ExtractedEvent, TELEGRAM_MIN_IMPORTANCE_DEFAULT } from './src/types/redevelopment.ts';
+import { ALL_ANALYSIS_CATEGORIES, TELEGRAM_MIN_IMPORTANCE_DEFAULT } from './src/types/redevelopment.ts';
 import { FirestoreService, FirestoreUnavailableError } from './src/storage/firestoreService.ts';
 import { TelegramNotifier } from './src/notifier/telegramNotifier.ts';
 import { FirestoreCollectionCycleDoc } from './src/schema/firestoreSchema.ts';
@@ -377,150 +370,6 @@ app.post('/api/unit-types', async (req, res) => {
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: `Save unit type failed: ${err.message}` });
-  }
-});
-
-/**
- * Phase 4D-4C: Original Plan Assets Batch Audit Endpoint
- */
-app.get('/api/plans/assets/batch-status', async (req, res) => {
-  try {
-    const batchList = Object.values(CHOKJIN3_BATCH1_ASSETS);
-    const plansDir = path.join(process.cwd(), 'public', 'assets', 'plans', 'chokjin3');
-
-    let savedImagesCount = 0;
-    const items = batchList.map((item) => {
-      const filePath = path.join(plansDir, item.servedFileName);
-      let fileExists = false;
-      try {
-        fileExists = fs.existsSync(filePath);
-      } catch {
-        fileExists = false;
-      }
-      if (fileExists) savedImagesCount++;
-
-      let secondaryFileExists = false;
-      if (item.secondaryFileName) {
-        try {
-          secondaryFileExists = fs.existsSync(path.join(plansDir, item.secondaryFileName));
-        } catch {
-          secondaryFileExists = false;
-        }
-      }
-
-      return {
-        typeName: item.typeName,
-        originalFileName: item.originalFileName,
-        servedFileName: item.servedFileName,
-        assetPath: item.assetPath,
-        secondaryFileName: item.secondaryFileName,
-        secondaryAssetPath: item.secondaryAssetPath,
-        secondaryFileExists,
-        isDuplex: item.isDuplex,
-        isMultiLevel: item.isMultiLevel,
-        fileExists,
-        sourceAssetVerified: fileExists && (!item.secondaryFileName || secondaryFileExists),
-      };
-    });
-
-    res.json({
-      success: true,
-      phase: 'Phase 4D-4C-2B',
-      batchName: '촉진3 39개 타입 원본 평면 Asset 연결 및 감사',
-      totalAttachedBatchImages: batchList.length,
-      savedImagesCount,
-      plansDirectory: 'public/assets/plans/chokjin3/',
-      items,
-      preservedIntegrity: {
-        units: 'unchanged (3,365 non-rental, 3,545 total)',
-        allocation: 'unchanged',
-        verifiedFacts: 'unchanged',
-        specialFeatures: 'unchanged',
-        planVersion: CHOKJIN3_PLAN_VERSION.planVersionId,
-        confirmationStatus: CHOKJIN3_PLAN_VERSION.confirmationStatus,
-      },
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: `Failed to inspect batch assets: ${err.message}` });
-  }
-});
-
-/**
- * Phase 3A: Telegram Safe Test Endpoint
- * Sends exactly 1 test message to verify Telegram bot token & Chat ID.
- * Isolated from production events and telegramDeliveries history.
- */
-app.all('/api/test/telegram', async (req, res) => {
-  try {
-    const result = await telegramNotifier.sendTestMessage();
-    res.json({
-      test: true,
-      isolated: true,
-      productionStorageAffected: false,
-      ...result,
-    });
-  } catch (err: any) {
-    res.status(500).json({ success: false, test: true, error: `Telegram test failed: ${err.message}` });
-  }
-});
-
-/**
- * Firestore Simulation & Deduplication Verification Endpoint
- */
-app.all('/api/test/firestore-simulation', async (req, res) => {
-  try {
-    const simResult = await firestoreService.simulateFirestoreWrite();
-    res.json(simResult);
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: `Simulation failed: ${err.message}` });
-  }
-});
-
-/**
- * Phase 4D-8: Unit Type Comparison Audit Endpoint
- */
-app.get('/api/test/type-comparison-audit', (req, res) => {
-  try {
-    const auditResult = runUnitTypeComparisonAudit();
-    res.json(auditResult);
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: `Type comparison audit failed: ${err.message}` });
-  }
-});
-
-/**
- * Phase 4E-2: Plan Config Validation & Multi-Project Registry Audit Endpoint
- */
-app.get('/api/test/plan-config-validation', (req, res) => {
-  try {
-    const auditResult = runPlanConfigValidationAudit();
-    res.json(auditResult);
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: `Plan config validation failed: ${err.message}` });
-  }
-});
-
-/**
- * Phase 4E-3: Generic InteractiveSitePlan Component & Regression Audit Endpoint
- */
-app.get('/api/test/generic-site-plan', (req, res) => {
-  try {
-    const auditResult = runGenericInteractiveSitePlanAudit();
-    res.json(auditResult);
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: `Generic site plan audit failed: ${err.message}` });
-  }
-});
-
-/**
- * Automated Verification Suite API (TC-1 ~ TC-14)
- */
-app.all('/api/pipeline/dry-run', async (req, res) => {
-  try {
-    const summary = await runDryRunVerificationSuite();
-    res.json(summary);
-  } catch (err: any) {
-    res.status(500).json({ error: `Dry run suite failed: ${err.message}` });
   }
 });
 
@@ -969,79 +818,6 @@ app.all('/api/pipeline/run', async (req, res) => {
       return;
     }
     res.status(500).json({ error: `Pipeline execution failed: ${err.message}` });
-  }
-});
-
-/**
- * Phase 2D Official Saeol API Live Probe Endpoint
- */
-app.get('/api/official/saeol-probe', async (req, res) => {
-  try {
-    const todayKst = getKstDateString(0);
-    const yesterdayKst = getKstDateString(-1);
-
-    const probeResult = await officialCollector.fetchRawPage({
-      pbltnYmd: todayKst,
-      pageNo: 1,
-      numOfRows: 10,
-    });
-
-    res.json({
-      endpoint: 'https://apis.data.go.kr/6260000/SaeolAncmntInfoService/getSaeolAncmntInfo',
-      operation: '/getSaeolAncmntInfo',
-      todayKst,
-      yesterdayKst,
-      apiKeyConfigured: Boolean(process.env.DATA_GO_KR_API_KEY),
-      httpStatus: probeResult.httpStatus,
-      resultCode: probeResult.resultCode,
-      totalCount: probeResult.totalCount,
-      success: probeResult.success,
-      error: probeResult.error,
-      rawFieldNames: probeResult.rawFieldNames,
-      returnedItemsCount: probeResult.items.length,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: `Probe failed: ${err.message}` });
-  }
-});
-
-/**
- * Phase 2D Historical Official Search
- */
-app.get('/api/official/historical-search', async (req, res) => {
-  try {
-    const pbltnYmd = String(req.query.date || getKstDateString(-1));
-    const projectId = String(req.query.projectId || 'all');
-
-    const targetProjects =
-      projectId === 'all'
-        ? REDEVELOPMENT_SEED_PROJECTS
-        : REDEVELOPMENT_SEED_PROJECTS.filter((p) => p.id === projectId);
-
-    const projectResults: any[] = [];
-
-    for (const proj of targetProjects) {
-      const result = await officialCollector.historicalBackfill(pbltnYmd, proj);
-      projectResults.push({
-        projectId: proj.id,
-        projectName: proj.name,
-        totalNoticesInDate: result.totalCount,
-        matchedCount: result.matchedItems.length,
-        matchedItems: result.matchedItems,
-        error: result.error,
-        httpStatus: result.httpStatus,
-        resultCode: result.resultCode,
-        rawFieldNames: result.rawFieldNames,
-      });
-    }
-
-    res.json({
-      queryDate: pbltnYmd,
-      todayKst: getKstDateString(0),
-      results: projectResults,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: `Historical search failed: ${err.message}` });
   }
 });
 

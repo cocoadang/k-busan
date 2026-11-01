@@ -130,7 +130,7 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
       'https://www.busan.go.kr/gosi', // 부산광역시 고시공고
       'https://www.suyeong.go.kr', // 수영구청 고시공고
     ],
-    isActiveMonitoring: false, // Phase 4B: RSS 실시간 수집 대상 제외 (Historical Timeline 표시 준비 전용)
+    isActiveMonitoring: true, // 2026-11: 뉴스·새올 고시 실시간 수집 대상 포함
     createdAt: '2026-09-12T00:00:00.000Z',
     updatedAt: '2026-09-12T00:00:00.000Z',
   },
@@ -150,7 +150,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     "district": "과천시",
     "city": "과천시",
     "type": "재건축",
-    "stage": "확인 필요",
+    "stage": resolveProjectStatutoryStage('gwacheon-5').currentStage,
+    "nextStage": resolveProjectStatutoryStage('gwacheon-5').nextStage,
     "generalSaleStatus": "입주자모집공고 확인 필요",
     "description": "뉴스·과천시 고시 모니터링 활성. 조합 게시판은 공개 범위 및 연결 검증 중.",
     "officialSourceUrls": [
@@ -190,7 +191,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     "district": "과천시",
     "city": "과천시",
     "type": "재건축",
-    "stage": "확인 필요",
+    "stage": resolveProjectStatutoryStage('gwacheon-89').currentStage,
+    "nextStage": resolveProjectStatutoryStage('gwacheon-89').nextStage,
     "generalSaleStatus": "입주자모집공고 확인 필요",
     "description": "뉴스·과천시 고시 모니터링 활성. 조합 게시판은 공개 범위 및 연결 검증 중.",
     "officialSourceUrls": [
@@ -217,7 +219,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     "district": "과천시",
     "city": "과천시",
     "type": "재건축",
-    "stage": "확인 필요",
+    "stage": resolveProjectStatutoryStage('gwacheon-10').currentStage,
+    "nextStage": resolveProjectStatutoryStage('gwacheon-10').nextStage,
     "generalSaleStatus": "입주자모집공고 확인 필요",
     "description": "뉴스·과천시 고시 모니터링 활성. 조합 게시판은 공개 범위 및 연결 검증 중.",
     "officialSourceUrls": [

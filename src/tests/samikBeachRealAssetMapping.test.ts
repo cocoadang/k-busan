@@ -312,3 +312,14 @@ export function runSamikBeachRealAssetMappingSuite(): SamikBeachAuditSuiteReport
     results,
   };
 }
+
+// Make failures visible to node --test (previously only reported via return value).
+import nodeTest from 'node:test';
+import nodeAssert from 'node:assert/strict';
+
+nodeTest('삼익비치 실자산 매핑', () => {
+  const report = runSamikBeachRealAssetMappingSuite();
+  const failed = report.results.filter((r) => !r.passed);
+  nodeAssert.equal(failed.length, 0, JSON.stringify(failed, null, 2));
+  nodeAssert.ok(report.total > 0 && report.passed === report.total, `passed ${report.passed}/${report.total}`);
+});

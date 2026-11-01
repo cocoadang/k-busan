@@ -229,3 +229,14 @@ export function runMultiProfileTestSuite(): {
     results,
   };
 }
+
+// Make failures visible to node --test (previously only reported via return value).
+import nodeTest from 'node:test';
+import nodeAssert from 'node:assert/strict';
+
+nodeTest('청약 다중 프로필', () => {
+  const report = runMultiProfileTestSuite();
+  const failed = report.results.filter((r) => !r.passed);
+  nodeAssert.equal(failed.length, 0, JSON.stringify(failed, null, 2));
+  nodeAssert.ok(report.total > 0 && report.passed === report.total, `passed ${report.passed}/${report.total}`);
+});

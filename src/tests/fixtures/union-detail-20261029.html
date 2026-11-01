@@ -1,0 +1,1992 @@
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, target-densitydpi=medium-dpi" />
+
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+
+<!-- 공통 css -->
+<link rel="stylesheet" media="all" href="/cmmCss/common.css?ver=260310"/>
+<link rel="stylesheet" media="all" href="/cmmCss/defalut.css"/>
+<link rel="stylesheet" media="all" href="/cmmCss/navi.css"/>
+<link rel="stylesheet" media="all" href="/cmmCss/font-face.css"/>
+<link rel="stylesheet" media="all" href="/cmmCss/slick.css"/>
+<link rel="stylesheet" media="all" href="/cmmCss/jquery.mCustomScrollbar.css"/>
+<link rel="stylesheet" media="all" href="/cmmCss/table.rspnsv.css"/>
+
+<!-- 공통 js -->
+<script src="/cmmJs/jquery-1.11.0.js"></script>
+<!-- <script src="/cmmJs/jquery-3.5.1.min.js"></script> -->
+<script src="/cmmJs/jquery.easing.1.3.js"></script>
+<script src="/cmmJs/cmm_layout.js"></script>
+<script src="/cmmJs/slick.js"></script>
+<script src="/cmmJs/jquery.mCustomScrollbar.min.js"></script>
+<script src="/cmmJs/jquery.scrollbar.js"></script> <!-- 텍스트에리어 스크롤바 커스텀 -->
+<link rel="stylesheet" media="all" href="/cmmCss/jquery.scrollbar.css"/>
+<script src="/cmmJs/table.rspnsv.js"></script>
+
+
+<!-- 홈페이지 전용 css -->
+<link rel="stylesheet" media="all" href="/home/css/layout.css?ver=260310"/>
+<link rel="stylesheet" media="all" href="/home/css/main.css"/>
+<link rel="stylesheet" media="all" href="/home/css/content.css?ver=230628"/>
+<link rel="stylesheet" media="all" href="/home/css/sub.css?ver=220216"/>
+<link rel="stylesheet" media="all" href="/home/css/board.css?ver=230628"/>
+
+
+<!-- 홈페이지 전용 js -->
+<script src="/home/js/topHeader.js"></script>
+<script src="/home/js/main.js"></script>
+<script src="/home/js/layout.js"></script>
+<script src="/home/js/sub.js"></script>
+
+
+<title>부산광역시 정비사업 통합홈페이지</title>
+</head>
+
+<body id="sub">
+<!-- skipNavigation:S -->
+
+
+<div id="skipNavi">
+	<h1 class="blind"><!--사이트이릅 --> 부산시 정비사업 스킵네비게이션</h1>
+	<ul>
+		<li><a href="#container" class="skipLink">본문바로가기</a></li>
+		<li><a href="#gnb" class="skipLink">주메뉴바로가기</a></li>
+	</ul>
+</div>
+<!-- skipNavigation:E -->
+<div id="wrap">
+	<!-- header:S -->
+	
+
+<header class="header_wrap">
+	<div class="header-top">
+		<div class="inwrap">
+			<div class="left-box">
+				<ul>
+					<li>
+						<a href="/main.do">
+							<span>정비사업 통합</span>
+						</a>
+					</li>
+					
+					
+					
+					
+						
+						
+						
+					
+				</ul>
+			</div><!-- left-box :: e -->
+
+
+			<div class="right-box">
+				
+				<ul>
+					<li>
+						<a href="/view.do?no=103">
+							<span>회원가입</span>
+						</a>
+					</li>
+					
+					<!-- <li>
+						<a href="/dnmc/login.do" class="login">
+							<span>로그인</span>
+						</a>
+					</li> -->
+				</ul>
+				
+
+				<!-- 로그인 후 :: s -->
+				
+				<!-- 로그인 후 :: e -->
+			</div><!-- right-box :: e -->
+
+
+		</div><!-- inwrap :: e -->
+	</div><!-- header-top :: e -->
+<script>
+	function bmbaLogin(sessionId, busiAraId, guildmemberId, password){
+		
+		//로그인 세션확인
+		$.ajax({
+		    url:"/bmba/getBmbaSession.do",
+		    //dataType:"json",
+		    type:'POST',
+		    data: null,
+		    success:function(data){
+		    	 
+	    		var frm = document.shareBmbaForm;
+	    		frm.sessionId.value = sessionId;
+	    		frm.busiAraId.value = busiAraId;
+	    		frm.guildmemberId.value = guildmemberId;
+	    		frm.password.value = password;
+	    		frm.submit();
+	    		return;
+		    	 
+		    	 
+		    },
+		    error:function(jqXHR, textStatus, errorThrown){
+		       alert(textStatus)
+		    }
+		});
+		 
+		var frm = document.shareBmbaForm;
+		frm.sessionId.value = sessionId;
+		frm.busiAraId.value = busiAraId;
+		frm.guildmemberId.value = guildmemberId;
+		frm.password.value = password;
+		frm.submit();
+		 
+		
+	}
+</script>
+
+<form name="shareBmbaForm" method="post" action="/bmba/getDnmcSession.do">
+	<input type="hidden" name="sessionId" 	value="" />	
+	<input type="hidden" name="busiAraId" value="" />
+	<input type="hidden" name="password" value="" />	
+	<input type="hidden" name="guildmemberId" value="" />
+	<input type="hidden" name="certiCd" value="" />
+	<input type="hidden" name="_csrf" value="SYNTHETIC_FIXTURE_TOKEN" />
+</form>
+
+	
+
+
+<div id="gnb-box">
+	<div class="inwrap">
+		<a href="/home/BARA_0000000000151/main.do" class="gnb-logo">
+			<span class="img"></span>
+			<span class="txt">시민공원주변재정비촉진3구역 재개발</span>
+		</a>
+
+
+		<nav id="main-navi" class="gnb_wrap">
+			<div class="m-gnb-btnBox">
+				<a href="#n" class="m-gnb-btn">
+					<span>모바일 메뉴 열기</span>
+				</a>
+
+				<a href="#n" class="m-gnb-btn-closed">
+					<span>모바일 메뉴 닫기</span>
+				</a>
+			</div>
+			
+			
+			<div id="gnb">		
+				
+				<div class="m-member">
+					
+					
+					<ul class="login-list hide">
+						<li>
+							<a href="/dnmc/login.do" class="login">
+								<span>로그인</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="/view.do?no=103" class="join-member">
+								<span>회원가입</span>
+							</a>
+						</li>
+					</ul>
+					
+					
+					
+
+				</div>
+				<ul class="topmenu">
+
+
+
+
+	
+		
+	
+		
+	
+		
+	
+
+
+
+	
+					<li class="mn_l1 mn_type">
+						<a href="/home/BARA_0000000000151/view.do?no=311" class="depth1_tit">
+							<span>조합안내</span>
+						</a>
+						
+						<div class="depth2_wrap">
+							
+							
+							<ul class="depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=311" class="depth2_tit"><span>추진위원장/조합장 인사말</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=312" class="depth2_tit"><span>추진위원회/조합 안내</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=313" class="depth2_tit"><span>협력업체</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+					</li>
+		
+	
+
+
+
+
+	
+		
+	
+		
+	
+		
+	
+		
+	
+
+
+
+	
+					<li class="mn_l1 mn_type">
+						<a href="/home/BARA_0000000000151/view.do?no=316" class="depth1_tit">
+							<span>사업개요</span>
+						</a>
+						
+						<div class="depth2_wrap">
+							
+							
+							<ul class="depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=316" class="depth2_tit"><span>위치도</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=317" class="depth2_tit"><span>조감도</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=318" class="depth2_tit"><span>배치도 및 건축물 계획</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=319" class="depth2_tit"><span>추진경과</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+					</li>
+		
+	
+
+
+
+
+	
+		
+	
+		
+	
+		
+	
+
+
+
+	
+					<li class="mn_l1 mn_type">
+						<a href="/home/BARA_0000000000151/view.do?no=321" class="depth1_tit">
+							<span>정보공개</span>
+						</a>
+						
+						<div class="depth2_wrap">
+							
+							
+							<ul class="depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=321" class="depth2_tit"><span>정보공개안내</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=322" class="depth2_tit"><span>최근공개자료</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=323" class="depth2_tit"><span>단계별공개자료</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+					</li>
+		
+	
+
+
+
+
+
+
+	
+					<li class="mn_l1 mn_type">
+						<a href="/home/BARA_0000000000151/view.do?no=324" class="depth1_tit">
+							<span>전자결재 열람</span>
+						</a>
+						
+						<div class="depth2_wrap">
+							
+							
+						</div>						
+					</li>
+		
+	
+
+
+
+
+	
+		
+	
+		
+					
+		
+	
+		
+	
+
+
+
+	
+					<li class="mn_l1 mn_type">
+						<a href="/home/BARA_0000000000151/view.do?no=328" class="depth1_tit">
+							<span>알림마당</span>
+						</a>
+						
+						<div class="depth2_wrap">
+							
+							
+							<ul class="depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=328" class="depth2_tit"><span>자유게시판</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=329" class="depth2_tit"><span>입찰공고</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=327" class="depth2_tit"><span>조합원공지</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+					</li>
+		
+	
+
+
+
+
+	
+		
+	
+
+
+
+	
+					<li class="mn_l1 mn_type">
+						<a href="/home/BARA_0000000000151/view.do?no=332" class="depth1_tit">
+							<span>구청공지</span>
+						</a>
+						
+						<div class="depth2_wrap">
+							
+							
+							<ul class="depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=332" class="depth2_tit"><span>구청 공지사항</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+					</li>
+		
+	
+
+
+
+
+
+
+		
+	
+
+
+				</ul>
+				<div class="gnb-bg"></div>
+			</div>
+		</nav>
+				
+		
+
+		<div class="all-menuBox">
+			<a href="#n" class="all-menu">
+				<span>ALL MENU</span>
+			</a>
+		</div>
+	</div>
+	
+</div><!-- gnb-box :: e -->
+<div class="gnb-fade-bg"></div>
+
+
+
+
+
+
+<div class="all-menu-pop all-menu-bg">
+	<div class="inwrap">
+		<div class="all-menu-container">
+			<div class="rel-box">
+				<div class="top-box">
+					<a href="/home/BARA_0000000000151/main.do" class="logo">
+						<span class="img"></span>
+						<span class="txt">시민공원주변재정비촉진3구역 재개발</span>
+					</a>
+				</div>
+				
+
+				<div class="all-menu-box">
+
+
+
+
+	
+		
+	
+		
+	
+		
+	
+
+
+
+	
+					<div class="all-menu-dorm">
+						<a href="/home/BARA_0000000000151/view.do?no=311" class="depth1-tit">
+							<span>조합안내</span>
+						</a>
+						
+							
+							<ul class="all-menu-depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=311" class="depth2_tit"><span>추진위원장/조합장 인사말</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=312" class="depth2_tit"><span>추진위원회/조합 안내</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=313" class="depth2_tit"><span>협력업체</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+		
+	
+
+
+
+
+	
+		
+	
+		
+	
+		
+	
+		
+	
+
+
+
+	
+					<div class="all-menu-dorm">
+						<a href="/home/BARA_0000000000151/view.do?no=316" class="depth1-tit">
+							<span>사업개요</span>
+						</a>
+						
+							
+							<ul class="all-menu-depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=316" class="depth2_tit"><span>위치도</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=317" class="depth2_tit"><span>조감도</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=318" class="depth2_tit"><span>배치도 및 건축물 계획</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=319" class="depth2_tit"><span>추진경과</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+		
+	
+
+
+
+
+	
+		
+	
+		
+	
+		
+	
+
+
+
+	
+					<div class="all-menu-dorm">
+						<a href="/home/BARA_0000000000151/view.do?no=321" class="depth1-tit">
+							<span>정보공개</span>
+						</a>
+						
+							
+							<ul class="all-menu-depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=321" class="depth2_tit"><span>정보공개안내</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=322" class="depth2_tit"><span>최근공개자료</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=323" class="depth2_tit"><span>단계별공개자료</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+		
+	
+
+
+
+
+
+
+	
+					<div class="all-menu-dorm">
+						<a href="/home/BARA_0000000000151/view.do?no=324" class="depth1-tit">
+							<span>전자결재 열람</span>
+						</a>
+						
+							
+						</div>						
+		
+	
+
+
+
+
+	
+		
+	
+		
+					
+		
+	
+		
+	
+
+
+
+	
+					<div class="all-menu-dorm">
+						<a href="/home/BARA_0000000000151/view.do?no=328" class="depth1-tit">
+							<span>알림마당</span>
+						</a>
+						
+							
+							<ul class="all-menu-depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=328" class="depth2_tit"><span>자유게시판</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=329" class="depth2_tit"><span>입찰공고</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=327" class="depth2_tit"><span>조합원공지</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+		
+	
+
+
+
+
+	
+		
+	
+
+
+
+	
+					<div class="all-menu-dorm">
+						<a href="/home/BARA_0000000000151/view.do?no=332" class="depth1-tit">
+							<span>구청공지</span>
+						</a>
+						
+							
+							<ul class="all-menu-depth2">
+								
+								
+								
+									
+								
+								
+								
+								<li>
+									<a href="/home/BARA_0000000000151/view.do?no=332" class="depth2_tit"><span>구청 공지사항</span></a>
+									
+									
+									
+								</li>
+								
+								
+ 								
+ 								
+							</ul>
+							
+						</div>						
+		
+	
+
+
+
+
+
+
+		
+	
+				
+
+					
+					
+				</div><!-- all-menu-box :: e -->
+
+				
+
+				<div class="all-menu-bottomBox">
+					<ul>
+						<!-- <li>
+							<a href="/dnmc/login.do">
+								<span>로그인</span>
+							</a>
+						</li> -->
+
+						<li>
+							<a href="/view.do?no=103">
+								<span>회원가입</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="/view.do?no=104">
+								<span>아이디/비번 찾기</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="/view.do?no=107">
+								<span>회원 사업지구 승인요청</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="/view.do?no=96">
+								<span>이용약관</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="/view.do?no=97">
+								<span>개인정보처리방침</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="/view.do?no=98">
+								<span>홈페이지 개인정보처리방침</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="/view.do?no=99">
+								<span>저작권보호정책</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="/view.do?no=100">
+								<span>이메일무단수집거부</span>
+							</a>
+						</li>
+					</ul>
+				</div><!-- all-menu-bottomBox :: e -->
+
+
+				<a href="#n" class="pop-closed">
+					<span class="blinde">팝업창 닫기</span>
+				</a>
+			</div><!-- rel-box :: e -->
+		</div><!-- all-menu-container :: e -->
+	</div>
+</div><!-- all-menu-pop :: e -->
+
+</header><!-- header_wrap :: e -->
+	<!-- header:E-->
+
+
+
+
+<div id="sub-header" >
+
+	<div class="sub-header-topBox">
+		<div class="sub-inwrap">
+			<div class="sub-titBox ty01">
+				<h3 class="b-tit">입찰공고</h3>
+				<p class="s-txt">투명한 정비사업 정보제공을 통해 <br class="br-980"/>쾌적하고 살기 좋은 주거환경을 만들어갑니다</p>
+			</div><!-- sub-titBox :: e -->
+
+			<div class="sub-right-btnBox">
+				<div class="share-sel-box">
+					<a href="#n" class="sub-header-btn viewer-down-btn">
+						<span class="blinde">뷰어 다운로드</span>
+					</a>
+					
+					<div class="share-list-box viewer">
+						<ul class="share-list">
+							<li class="share-list-tit">
+								<span>뷰어 다운로드</span>
+							</li>
+
+							<li>
+								<a href="https://www.hancom.com/cs_center/csDownload.do" target="_blank" title="한글과 컴퓨터 다운로드(새창 열림)">
+									<img src="/home/img/sub/ico-viewer-down01.jpg" alt="한글과 컴퓨터 아이콘">
+								</a>
+							</li>
+
+							<li>
+								<a href="https://get.adobe.com/kr/reader/" target="_blank" title="Adobe Acrobat Reader DC 다운로드(새창 열림)">
+									<img src="/home/img/sub/ico-viewer-down02.jpg" alt="Adobe 아이콘">
+								</a>
+							</li>
+
+							<li>
+								<a href="https://www.microsoft.com/ko-kr/download/" target="_blank" title="Microsoft 워드 다운로드(새창 열림)">
+									<img src="/home/img/sub/ico-viewer-down03.jpg" alt="Microsoft 워드 아이콘">
+								</a>
+							</li>
+
+							<li>
+								<a href="https://www.microsoft.com/ko-kr/download/" target="_blank" title="Microsoft 엑셀 다운로드(새창 열림)">
+									<img src="/home/img/sub/ico-viewer-down04.jpg" alt="Microsoft 엑셀 아이콘">
+								</a>
+							</li>
+
+							<li>
+								<a href="https://www.microsoft.com/ko-kr/download/" target="_blank" title="Microsoft PPT 다운로드(새창 열림)">
+									<img src="/home/img/sub/ico-viewer-down05.jpg" alt="Microsoft PPT 아이콘">
+								</a>
+							</li>
+
+							<li class="share-list-close">
+								<a href="#n" title="뷰어 다운로드 닫기">
+									<img src="/home/img/sub/ico-sub-header-list-close.png" alt="뷰어 다운로드 버튼">
+								</a>
+							</li>
+						</ul>
+					</div><!-- share-list-box :: e -->
+				</div><!-- share-sel-box :: e -->		
+				
+				<div class="share-sel-box">
+					<a href="#n" class="sub-header-btn share-btn">
+						<span class="blinde">공유하기</span>
+					</a>
+					
+					<div class="share-list-box sns">
+						<ul class="share-list">
+							<li class="share-list-tit">
+								<span>공유하기</span>
+							</li>
+
+							<li>
+								<a href="#n" onclick="javascript:doShareTw();" title="트위터 공유하기(새창 열림)">
+									<img src="/home/img/sub/ico-sheare-tw.jpg" alt="트위터 아이콘">
+								</a>
+							</li>
+
+							<li>
+								<a href="#n" onclick="javascript:doShareFa();" title="페이스북 공유하기(새창 열림)">
+									<img src="/home/img/sub/ico-sheare-fb.jpg" alt="페이스북 아이콘">
+								</a>
+							</li>
+
+							<li>
+								<a href="#n" onclick="javascript:doShareKa();" title="카카오스토리 공유하기(새창 열림)">
+									<img src="/home/img/sub/ico-sheare-ct.jpg" alt="카카오스토리 아이콘">
+								</a>
+							</li>
+							
+							<li class="share-list-close">
+								<a href="#n" title="뷰어 다운로드 닫기">
+									<img src="/home/img/sub/ico-sub-header-list-close.png" alt="뷰어 다운로드 버튼">
+								</a>
+							</li>
+						</ul>
+					</div><!-- share-list-box :: e -->
+				</div><!-- share-sel-box :: e -->
+
+				<a href="#n" class="sub-header-btn print-btn" onclick="javascript:openprint();">
+					<span class="blinde">프린트하기</span>
+				</a>
+
+			</div><!-- sub-right-btnBox :: e -->
+		</div>
+	</div><!-- sub-header-topBox :: e -->
+	
+	<script>
+		function openprint(){
+			window.open('/home/pop_print.do','new_print','width=1100,height=600,scrollbars=yes');
+		}
+		function doShareFa(){
+            var popupOpt = "width=600, height=600";  // 팝업창 크기
+			window.open("http://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(window.location.href), "",popupOpt);
+        }
+        function doShareTw(){
+            var popupOpt = "width=600, height=600";  // 팝업창 크기
+			window.open("http://twitter.com/intent/tweet?url="+encodeURIComponent(window.location.href), "",popupOpt);
+        }
+        function doShareKa(){
+            var popupOpt = "width=600, height=600";  // 팝업창 크기
+			window.open("https://story.kakao.com/share?url="+encodeURIComponent(window.location.href), "",popupOpt);
+        }
+	</script>
+	
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	
+			
+		
+				
+					
+		
+				
+					
+		
+				
+					
+		
+	
+			
+		
+				
+					
+		
+				
+					
+		
+				
+					
+		
+				
+					
+		
+	
+			
+		
+				
+					
+		
+				
+					
+		
+				
+					
+		
+	
+			
+		
+	
+			
+		
+				
+					
+		
+			
+				
+				
+				
+				
+				
+				
+					
+		
+				
+					
+		
+	
+			
+		
+				
+					
+		
+	
+			
+		
+				
+					
+		
+				
+					
+		
+				
+					
+		
+				
+					
+		
+	
+	
+	<div id="sub-navi-container" class="depth4-ty">
+	
+		<div class="depth1To3-box">
+			<div class="sub-inwrap">
+				<a href="/home/BARA_0000000000151/main.do" class="go_main-btn">
+					<span class="blinde">홈으로 바로가기</span>
+				</a>
+				<div class="sub-nav-wrap">
+					<ul class="depth01-container">
+						
+						
+						<!-- 1 depth :: s -->
+						<li class="depth01-item">
+							<a href="#" class="depth01-title" title="현재 탭 축소 됨">
+								<span>알림마당</span>
+							</a>
+							<div class="depth02-wrap">
+								<ul class="depth02-container">
+									
+										
+											<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=311">조합안내</a></li>
+										
+										
+									
+										
+											<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=316">사업개요</a></li>
+										
+										
+									
+										
+											<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=321">정보공개</a></li>
+										
+										
+									
+										
+											<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=324">전자결재 열람</a></li>
+										
+										
+									
+										
+											<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=328">알림마당</a></li>
+										
+										
+									
+										
+											<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=332">구청공지</a></li>
+										
+										
+									
+										
+											<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=404">이용안내</a></li>
+										
+										
+									
+								</ul>
+							</div>
+						</li>
+						<!-- 1 depth :: e -->
+						
+
+						
+						<!-- 2 depth :: s -->
+						<li class="depth01-item">
+							<a href="#" class="depth01-title" title="현재 탭 축소 됨">
+								<span>입찰공고</span>
+							</a>
+							<div class="depth02-wrap">
+								<ul class="depth02-container">
+									
+										
+									
+										
+									
+										
+									
+										
+									
+										
+											
+												
+													<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=328">자유게시판</a></li>
+												
+												
+											
+												
+													<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=329">입찰공고</a></li>
+												
+												
+											
+												
+													<li class="depth02-item"><a href="/home/BARA_0000000000151/view.do?no=327">조합원공지</a></li>
+												
+												
+											
+										
+									
+										
+									
+										
+									
+								</ul>
+							</div>
+						</li>
+						<!-- 2 depth :: e -->
+						
+						
+					</ul>
+				</div><!-- sub-nav-wrap :: e -->
+			</div>
+		</div><!-- depth1To3-box ::e -->
+	</div><!-- sub-navi-container :: e -->
+		
+
+		
+</div><!-- sub-header :: e -->
+
+
+
+<!-- 4차,5차 메뉴가 있는 경우 탭으로 처리 -->
+ 
+
+<!-- 페이지 유형별 로드 -->
+  	
+ 		
+ 		
+ 	
+ 		<!-- 게시판 -->
+		
+		
+			
+			
+			
+			
+		
+
+
+
+
+<!-- UFocs Module Script Start -->
+
+<script>
+	function move_list(){
+		var frm = document.moveForm;
+		frm.pgMode.value = 'list';
+		$('#bbs_id').remove();
+		frm.submit();
+	}
+	function move_edit(ntt_id){
+		var frm = document.moveForm;
+		frm.ntt_id.value = ntt_id;
+		frm.pgMode.value = 'edit';
+		$('#bbs_id').remove();
+		frm.submit();
+	}
+	//파일다운로드
+	function fn_egov_downFile(atchFileId, fileSn){
+		if(confirm("다운받으시겠습니까?")){
+			
+			//location.href = "/cmm/fms/FileDown.do?atchFileId=" + atchFileId + "&fileSn=" + fileSn;			
+			location.href = "/cmm/fms/FileDown.do?atchFileId=" + encodeURIComponent(atchFileId) + "&fileSn=" + fileSn;
+		}
+	}
+	function go_del(nid, par){
+		var frm = document.writeForm;
+		if(confirm('정말 삭제하시겠습니까?')){
+			frm.action = "/dnmc/portal/board/destroy.do?_csrf=SYNTHETIC_FIXTURE_TOKEN";
+			frm.submit();
+			//location.href = "/board/board_delete.do?ntt_id=" + nid + "&" + par;
+		}
+	}
+	
+	function re_reply_open(nttId){
+		
+		var replyOpen = $("#replyOpen_"+nttId).val();
+		if(replyOpen != 'N'){
+			$("#reply_"+nttId).find('.reply-functionBox').fadeOut();
+			$("#reply_"+nttId).find('.reply-functionBox').removeAttr('title', '댓글 추가기능 박스 비활성화 됨');
+			return false;
+		}
+		
+		var html="";
+
+		html += '<div class="reply-contents">';
+		html += '	<textarea title="댓글을 등록하는 입력 폼 입니다." name="ntt_cn"></textarea>';
+		html += '	<button type="button" onclick="reply_insertProcess(\''+nttId+'\', \'0\', this);">';
+		html += '		<span>등록</span>';
+		html += '	</button>';
+		html += '</div>';
+		
+		$("#reply_"+nttId).append(html);
+		$("#replyOpen_"+nttId).val('Y');
+		
+		$("#reply_"+nttId).find('.reply-functionBox').fadeOut();
+		$("#reply_"+nttId).find('.reply-functionBox').removeAttr('title', '댓글 추가기능 박스 비활성화 됨');
+	}
+	
+	function reply_modi(nttId){
+		var replyModi = $("#replyModi_"+nttId).val();
+		if(replyModi != 'N'){
+			$("#reply_"+nttId).find('.reply-functionBox').fadeOut();
+			$("#reply_"+nttId).find('.reply-functionBox').removeAttr('title', '댓글 추가기능 박스 비활성화 됨');
+			return false;
+		}
+		
+		var value = $("#reply_"+nttId).find('.reply-contents').html();
+		var reply_parnts = $("#reply_"+nttId).find('input[name=replyParnts]').val();
+		var html="";
+
+		html += '<div class="reply-contents">';
+		html += '	<textarea title="댓글을 등록하는 입력 폼 입니다." name="ntt_cn">'+value+'</textarea>';
+		html += '	<button type="button" onclick="reply_insertProcess(\''+nttId+'\', \''+reply_parnts+'\', this);">';
+		html += '		<span>수정</span>';
+		html += '	</button>';
+		html += '</div>';
+		
+		
+		$("#reply_"+nttId).find('.reply-contents').html(html);
+		
+		$("#replyModi_"+nttId).val('Y');
+		$("#reply_"+nttId).find('.reply-functionBox').fadeOut();
+		$("#reply_"+nttId).find('.reply-functionBox').removeAttr('title', '댓글 추가기능 박스 비활성화 됨');
+	}
+
+	function reply_del(nttId, pr_ntt_id){
+		var frm = document.writeForm;
+		
+		if(confirm('정말 삭제하시겠습니까?')){
+			var returnUrl = frm.returnUrl.value;
+			returnUrl += "&ntt_id="+frm.ntt_id.value+"&pgMode=view";
+			
+			frm.action = "/dnmc/portal/board/replyDestroy.do?_csrf=SYNTHETIC_FIXTURE_TOKEN";
+			frm.returnUrl.value = returnUrl;
+			frm.ntt_id.value = nttId;
+			frm.submit();
+			//location.href = "/board/board_delete.do?ntt_id=" + nid + "&" + par;
+		}
+	}
+	
+	function reply_insertProcess(ntt_id, parnsctt_no, obj){
+		var frm = document.replyForm;
+		
+		var ntt_cn = $(obj).parent().find('textarea[name=ntt_cn]').val();
+		if(ntt_cn == ""){
+			alert("내용을 입력해주세요.");
+			return false;
+		}
+
+		var returnUrl = frm.returnUrl.value;
+		returnUrl += "&ntt_id="+frm.ntt_id.value+"&pgMode=view";
+		
+		frm.action = "/dnmc/portal/board/board_reply_submit.do?_csrf=SYNTHETIC_FIXTURE_TOKEN";
+		frm.ntt_cn.value = ntt_cn;
+		frm.returnUrl.value = returnUrl;
+		frm.ntt_id.value = ntt_id;
+		frm.parntsctt_no.value = parnsctt_no;
+		frm.submit();
+	}
+	
+	//최근 3일 이내에 작성된 글이 있는 게시판에 N마크 추가
+	$(document).ready(function(){
+	
+		var now = new Date("2026-10-29");
+		var diff = Math.abs(now.getTime()-(1000*3600*24*3));
+		
+		var dDay = new Date(diff);
+		var year = dDay.getFullYear();
+		var month = dDay.getMonth();
+		var day = dDay.getDate();
+		
+		var flag1=false, flag2=false, flag3=false, flag4=false;
+		
+		var date1 = new Date ("2026-10-27 11:10:27");
+		var date2 = new Date ("2026-10-21 17:10:21");
+		var date3 = new Date ("");
+		var date4 = new Date ("");
+		
+		if(year==date1.getFullYear() && month==date1.getMonth() && day<=date1.getDate()){flag1 = true;}
+		if(year==date2.getFullYear() && month==date2.getMonth() && day<=date2.getDate()){flag2 = true;}
+		if(year==date3.getFullYear() && month==date3.getMonth() && day<=date3.getDate()){flag3 = true;}
+		if(year==date4.getFullYear() && month==date4.getMonth() && day<=date4.getDate()){flag4 = true;}
+		
+		var newMark ="<span style=\"position:absolute;background:#f00;width:20px;height:20px;line-height:20px;text-align:center;color:#fff;font-size:15px;font-weight:600;top:20px;right:165px;\">N</span>"		
+		var target = $(".depth01-container").children(".depth01-item:eq(1)").children("div").children("ul");
+	
+		if(flag1==true){
+			if(target.children("li:eq(0)").children("a").text() == '공지사항'){
+				target.children("li:eq(0)").append(newMark);
+			}
+		}
+		if(flag2==true){
+			if(target.children("li:eq(1)").children("a").text() == '고시공고'){
+				target.children("li:eq(1)").append(newMark);
+				target.children("li:eq(1)").children("span").css("top","75px");
+			}
+		}
+		if(flag3==true){
+			if(target.children("li:eq(2)").children("a").text() == '조합입찰공고'){
+				target.children("li:eq(2)").append(newMark);
+				target.children("li:eq(2)").children("span").css({top:'130px', right:'140px' });
+			}
+		}
+		if(flag4==true){
+			if(target.children("li:eq(3)").children("a").text() == '교육게시판'){
+				target.children("li:eq(3)").append(newMark);
+				target.children("li:eq(3)").children("span").css({top:'185px', right:'155px' });
+			}
+		}
+		
+		
+		//댓글 depth 조절
+		var replyBox = $("ul.reply-box");
+		
+		for(var i=0; i<replyBox.children().length; i++){
+			var temp = replyBox.children("li:eq("+i+")").attr("class");
+			var times = 0;
+			if(temp.indexOf("re-reply-ty")>-1){
+				times = temp.substring((temp.length-1),temp.length)-2;
+			}
+			if(times > 0){
+				replyBox.children("li:eq("+i+")").css({'padding-left':(30+(20*times)),'background': 'url(/portal/img/board/ico-reply02.png) no-repeat top 25px left ' + (10+(20*times)) + "px"});
+			}					
+		}
+		
+		
+	});
+
+</script>
+
+<form name="moveForm" id="moveForm" method="get" action="/home/BARA_0000000000151/view.do?no=329"   >
+	<input type="hidden" name="listSize" value="" />
+	<input type="hidden" name="page" value="" />
+	<input type="hidden" name="pageIndex" value="1" />
+	<input type="hidden" name="pgMode" value="view" />
+	<input type="hidden" name="no" value="329" />
+	<input type="hidden" name="searchCondition" value="" />
+	<input type="hidden" name="searchKeyword" value="" />
+	<input type="hidden" name="bbs_id" id="bbs_id" value="BBSMSTR_000000000080" />
+	<input type="hidden" name="ntt_id" value="20680" />
+</form>
+
+<!-- container:S -->
+<div id="container" class="sub-container">
+	<div class="sub-inwrap">
+		<form name="replyForm" id="replyForm" method="get"   enctype="multipart/form-data" >
+			<input type="hidden" name="bbs_id" value="BBSMSTR_000000000080" />
+			<input type="hidden" name="ntt_id" value="20680" />
+			<input type="hidden" name="returnUrl" value="/home/BARA_0000000000151/view.do?no=329" />
+			<input type="hidden" name="no" value="329" />
+			<input type="hidden" name="pgMode" value="view" />
+			<input type="hidden" name="busiAraId" value="BARA_0000000000151" />
+			<input type="hidden" name="ntt_cn" value="" />
+			<input type="hidden" name="parntsctt_no" value="0" />
+		</form>
+
+		<div class="board-viewBox">
+			<div class="view-box">
+				<form name="writeForm" id="writeForm" method="get"   enctype="multipart/form-data" >
+			        <input type="hidden" name="listSize" value="" />
+					<input type="hidden" name="page" value="" />
+					<input type="hidden" name="pageIndex" value="1" />
+			        <input type="hidden" name="searchCondition" value="" />
+					<input type="hidden" name="searchKeyword" value="" />
+					<input type="hidden" name="bbs_id" value="BBSMSTR_000000000080" />
+					<input type="hidden" name="ntt_id" value="20680" />
+					<input type="hidden" name="atch_file_id" value="FILE_000000000137578" />
+					<input type="hidden" name="atchFileId" value="" /> 
+					<input type="hidden" name="fileSn" value="" />
+					<input type="hidden" name="fileListCnt" value="2" />
+					<input type="hidden" name="returnUrl" value="/home/BARA_0000000000151/view.do?no=329" />
+					<input type="hidden" name="no" value="329" />
+					<input type="hidden" name="pgMode" value="view" />
+					<input type="hidden" name="busiAraId" value="BARA_0000000000151" />
+					<div class="tit-box">
+						<h3 class="b-tit">촉진3구역입찰공고 - 협력업체 [기반시설공사 건설사업관리] [부지정지공사]선정 입찰 공고</h3>
+					</div>
+					<div class="board-view-dataBox">
+							
+								
+								
+									<div class="board-view-data-psBox">
+										<span>등록일 : 
+							2026-10-08</span>
+										
+										
+											
+											
+												<span class="registration">등록자 : 최금성</span>
+											
+										
+										
+										<span class="page-view">조회수 : 95</span>
+									</div><!-- board-view-data-psBox :: e -->
+								
+							
+					</div><!-- board-view-dataBox :: e -->
+					<div class="board-view-contants">
+						<p><br></p>
+					</div><!-- board-view-contants :: e -->
+					
+						
+						<div class="board-view-foot mt0">
+							
+							<a href="javascript:fn_egov_downFile('cx%2FkwSBivSgCWAb6LQl1VsZfC66U6UI68b9jjwGleXs%3D','1')" class="board-view-fileDown">
+								<p class="board-view-fileName">(20261008)입찰공고 - 협력업체 【기반시설공사 건설사업관리】선정 입찰 공고(공고 2026-12호).pdf  <span>[66369&nbsp;byte]</span></p>
+							
+								<span class="ico">다운로드</span>
+							</a>
+						</div><!-- board-view-foot :: e -->
+						
+						<div class="board-view-foot mt0">
+							
+							<a href="javascript:fn_egov_downFile('cx%2FkwSBivSgCWAb6LQl1VsZfC66U6UI68b9jjwGleXs%3D','2')" class="board-view-fileDown">
+								<p class="board-view-fileName">(20261008)입찰공고 - 협력업체 【부지정지공사 용역】선정 입찰 공고(공고 2026-11호).pdf  <span>[56513&nbsp;byte]</span></p>
+							
+								<span class="ico">다운로드</span>
+							</a>
+						</div><!-- board-view-foot :: e -->
+						
+					
+					
+					</form>
+					
+			</div><!-- tit-box :: e -->
+
+		</div><!-- board-viewBox :: e -->		
+		
+		
+
+
+		<div class="board-btnBox">
+			<a href="#n" class="ty01" onclick="javascript:move_list();">
+				<span>목록</span>
+			</a>
+			
+		</div>
+ 
+	</div><!-- inwrap :: e -->
+</div><!-- #sub-container :: e -->
+<!-- container:E -->
+
+
+
+		
+ 	
+ 	
+	 
+ 
+  
+ 
+	<!-- footer:S -->
+	
+
+<footer id="footer">
+	<div class="f-banner-zone">
+		<div class="inwrap">
+			<div class="f-banner-controlor">
+				<a href="#n" class="prev">
+					<span class="blinde">이전</span>
+				</a>
+
+				<a href="#n" class="next">
+					<span class="blinde">다음</span>
+				</a>
+
+				<a href="#n" class="stop">
+					<span class="blinde">멈춤</span>
+				</a>
+
+				<a href="#n" class="play" style="display:none;">
+					<span class="blinde">재생</span>
+				</a>
+			</div><!-- f-banner-controlor :: e -->
+			
+			<ul class="f-banner-slide">
+				
+					<li>
+						<a href="https://www.busan.go.kr" target="_blank" rel="noopener noreferrer" title="부산광역시">
+							<img src="/data/banner/IMGR_202305220531022040.png" height="45" alt="부산광역시">
+						</a>
+					</li>
+				
+					<li>
+						<a href="https://www.molit.go.kr" target="_blank" rel="noopener noreferrer" title="국토교통부">
+							<img src="/data/banner/IMGR_202112210336466410.png" height="45" alt="국토교통부">
+						</a>
+					</li>
+				
+					<li>
+						<a href="https://www.lx.or.kr" target="_blank" rel="noopener noreferrer" title="LX 한국국토정보공사">
+							<img src="/data/banner/IMGR_202112210337184930.png" height="45" alt="LX 한국국토정보공사">
+						</a>
+					</li>
+				
+					<li>
+						<a href="http://www.iros.go.kr/" target="_blank" rel="noopener noreferrer" title="대한민국 법원 인터넷등기소">
+							<img src="/data/banner/IMGR_202112210337274690.jpg" height="45" alt="대한민국 법원 인터넷등기소">
+						</a>
+					</li>
+				
+					<li>
+						<a href="https://www.bmc.busan.kr" target="_blank" rel="noopener noreferrer" title="BMC 부산도시공사">
+							<img src="/data/banner/IMGR_202112210337434080.jpg" height="45" alt="BMC 부산도시공사">
+						</a>
+					</li>
+				
+					<li>
+						<a href="http://www.eum.go.kr/web/am/amMain.jsp" target="_blank" rel="noopener noreferrer" title="토지이음">
+							<img src="/data/banner/IMGR_202112210338106860.png" height="45" alt="토지이음">
+						</a>
+					</li>
+				
+					<li>
+						<a href="https://www.law.go.kr/" target="_blank" rel="noopener noreferrer" title="법제처 국가법령정보센터">
+							<img src="/data/banner/IMGR_202202030359384210.png" height="45" alt="법제처 국가법령정보센터">
+						</a>
+					</li>
+				
+					<li>
+						<a href="https://www.khug.or.kr/index.jsp" target="_blank" rel="noopener noreferrer" title="HUG 주택도시보증공사">
+							<img src="/data/banner/IMGR_202202030400471450.png" height="45" alt="HUG 주택도시보증공사">
+						</a>
+					</li>
+				
+					<li>
+						<a href="https://www.reb.or.kr/reb/main.do" target="_blank" rel="noopener noreferrer" title="REB 한국부동산원">
+							<img src="/data/banner/IMGR_202202030401075020.png" height="45" alt="REB 한국부동산원">
+						</a>
+					</li>
+				
+					<li>
+						<a href="https://jeongbi.lh.or.kr" target="_blank" rel="noopener noreferrer" title="LH 한국토지주택공사 정비사업지원기구">
+							<img src="/data/banner/IMGR_202204270258108420.jpg" height="45" alt="LH 한국토지주택공사 정비사업지원기구">
+						</a>
+					</li>
+				
+				<!-- <li>
+					<a href="http://www.busan.go.kr/open/index.jsp" target="_blank" title="부산광역시 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner01.jpg" alt="부산광역시 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="http://www.molit.go.kr/portal.do" target="_blank" title="국토교통부 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner02.jpg" alt="국토교통부 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="https://www.lh.or.kr/index.do" target="_blank" title="LH 한국토지주택공사 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner03.jpg" alt="LH 한국토지주택공사 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="https://www.lx.or.kr/kor.do" target="_blank" title="LX 한국국토정보공사 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner04.jpg" alt="LX 한국국토정보공사 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="http://www.khug.or.kr/" target="_blank" title="HUG 주택도시보증공사 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner05.jpg" alt="HUG 주택도시보증공사 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="https://www.nts.go.kr/" target="_blank" title="국세청 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner06.jpg" alt="국세청 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="https://www.moleg.go.kr" target="_blank" title="법제처 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner07.jpg" alt="법제처 로고">
+					</a>
+				</li>
+
+
+
+				반복문 :: s
+				<li>
+					<a href="http://www.busan.go.kr/open/index.jsp" target="_blank" title="부산광역시 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner01.jpg" alt="부산광역시 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="http://www.molit.go.kr/portal.do" target="_blank" title="국토교통부 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner02.jpg" alt="국토교통부 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="https://www.lh.or.kr/index.do" target="_blank" title="LH 한국토지주택공사 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner03.jpg" alt="LH 한국토지주택공사 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="https://www.lx.or.kr/kor.do" target="_blank" title="LX 한국국토정보공사 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner04.jpg" alt="LX 한국국토정보공사 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="http://www.khug.or.kr/" target="_blank" title="HUG 주택도시보증공사 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner05.jpg" alt="HUG 주택도시보증공사 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="https://www.nts.go.kr/" target="_blank" title="국세청 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner06.jpg" alt="국세청 로고">
+					</a>
+				</li>
+
+				<li>
+					<a href="https://www.moleg.go.kr" target="_blank" title="법제처 홈페이지 바로가기 (새창 열림)">
+						<img src="/est/img/layout/f-banner07.jpg" alt="법제처 로고">
+					</a>
+				</li> -->
+				<!-- 반복문 :: e -->
+
+			</ul><!-- f-banner-slide :: e -->
+		</div><!-- inwrap :: e -->
+	</div><!-- f-banner-zone :: e -->
+
+
+
+	<div class="foot02">
+		<div class="inwrap">
+			<div class="footer-linkBox">
+				<ul class="footer-link">
+					<li>
+						<a href="/home/BARA_0000000000151/view.do?no=404">
+							<span>이용약관</span>
+						</a>
+					</li>
+
+					<li>
+						<a href="/home/BARA_0000000000151/view.do?no=405" class="point">
+							<span>개인정보처리방침</span>
+						</a>
+					</li>
+					
+					<!-- 
+					<li>
+						<a href="/view.do?no=98">
+							<span>홈페이지 개인정보처리방침</span>
+						</a>
+					</li>
+					 -->
+
+					<li>
+						<a href="/home/BARA_0000000000151/view.do?no=406">
+							<span>저작권보호정책</span>
+						</a>
+					</li>
+
+					<li>
+						<a href="/home/BARA_0000000000151/view.do?no=407">
+							<span>이메일무단수집거부</span>
+						</a>
+					</li>
+
+					<li class="all-menuBox">
+						<a href="#n" class="all-menu">
+							<span>사이트맵</span>
+						</a>
+					</li>
+				</ul><!-- footer-link :: e -->
+			</div><!-- footer-linkBox :: e -->
+			<!--
+			<div class="footer-address">
+				<p class="address">
+					[47545] 부산광역시 연제구 중앙대로 1001(연산동)
+					<span>홈페이지 관련 문의: tel 000-0000-0000(헬프데스크), 000-0000-0000, 4252 (월~금 09:00-18:00, 공휴일 제외)</span>
+				</p>
+				<p class="copyright">© Busan Metropolitan City all rights reserved.</p>
+			</div>
+			-->
+		</div><!-- inwrap :: e -->
+	</div>
+</footer>
+	<!-- footer:E -->
+</div>
+</body>
+</html>
+				

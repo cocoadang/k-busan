@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/* Phase 4D-4C-2C: Mobile UX layout constraints */
+html,
+body {
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  -webkit-text-size-adjust: 100%;
+}
+
+#root {
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Korean UI text default line-breaking and wrap rules: prevent single-character vertical drops */
+body,
+button,
+input,
+select,
+textarea,
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* Horizontal scroll track without ugly scrollbar */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

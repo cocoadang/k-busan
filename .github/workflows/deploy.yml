@@ -12,10 +12,10 @@ permissions:
 
 # Filled in from ops/setup-github-deploy.sh output (one-time GCP setup).
 env:
-  GCP_PROJECT_ID: ''
-  GCP_PROJECT_NUMBER: ''
-  GCP_REGION: ''
-  CLOUD_RUN_SERVICE: ''
+  GCP_PROJECT_ID: busan-redevelopment
+  GCP_PROJECT_NUMBER: '432348267432'
+  GCP_REGION: asia-south1
+  CLOUD_RUN_SERVICE: busan-redevelopment-news-monitor
   AR_REPO: kbusan-images
 
 jobs:

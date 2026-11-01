@@ -2,7 +2,9 @@ import { createApiSecurity, SECURITY_VERSION } from './src/security/apiSecurity.
 import { GwacheonCityNoticeCollector } from './src/collector/officialCollector';
 import { existsSync } from 'node:fs';
 import { AssociationNoticeCollector } from './src/collector/associationCollector';
-import { ANALYSIS_VERSION } from './src/analyzer/geminiAnalyzer';
+import { ANALYSIS_VERSION, GEMINI_ANALYSIS_SETTINGS, resolveGeminiModel } from './src/analyzer/geminiAnalyzer';
+import { TtlCache, toPublicOverview, publicErrorBody } from './src/utils/publicApi.ts';
+import { capCollectionCycleDoc } from './src/storage/cycleDocLimits.ts';
 /**
  * Busan Redevelopment News Monitor - Server Entrypoint
  * Express + Vite Full-stack architecture
@@ -33,7 +35,8 @@ import { ALL_ANALYSIS_CATEGORIES, CollectionCycleAudit, ExtractedEvent, TELEGRAM
 import { FirestoreService, FirestoreUnavailableError } from './src/storage/firestoreService.ts';
 import { TelegramNotifier } from './src/notifier/telegramNotifier.ts';
 import { FirestoreCollectionCycleDoc } from './src/schema/firestoreSchema.ts';
-import { evaluateProductionReadiness, createPreviewReadOnlyMiddleware } from './src/storage/readinessService.ts';
+import { evaluateProductionReadiness, createPreviewReadOnlyMiddleware, resolvePreviewConfig } from './src/storage/readinessService.ts';
+import { FIRESTORE_COLLECTIONS } from './src/schema/firestoreSchema.ts';
 
 dotenv.config();
 
@@ -89,9 +92,11 @@ app.get('/api/official/diagnostics', async (req, res) => {
   });
 });
 
-// AI Studio development preview: public production reads only, all writes blocked.
-app.use('/api', createPreviewReadOnlyMiddleware(process.env.NODE_ENV !== 'production'));
-console.log('[PREVIEW] Read-only production data:', process.env.NODE_ENV !== 'production');
+// Optional development preview: proxies public reads to PREVIEW_UPSTREAM_ORIGIN, blocks writes.
+// Opt-in via PREVIEW_MODE=true (never active when NODE_ENV=production).
+const previewConfig = resolvePreviewConfig();
+app.use('/api', createPreviewReadOnlyMiddleware(previewConfig.enabled, previewConfig.upstreamOrigin));
+console.log('[PREVIEW] Read-only production proxy:', previewConfig.enabled ? previewConfig.upstreamOrigin || 'NOT CONFIGURED' : 'off');
 
 // Phase 4D-4C: Serve plan assets with JFIF MIME support
 app.use('/assets/plans', (req, res, next) => {
@@ -115,6 +120,23 @@ console.log(`[STARTUP] Poll Job Secret Configured: ${Boolean(process.env.POLL_JO
 console.log('====================================================');
 
 const pipeline = new CollectionPipeline();
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+// Public read endpoints change only when a collection cycle runs (every 30 min), so a short
+// shared cache removes most Firestore reads without making data noticeably stale.
+const publicReadCache = new TtlCache(Number(process.env.PUBLIC_CACHE_TTL_MS) || 60_000);
+const aiAnalysisInfo = () => ({ version: ANALYSIS_VERSION, model: resolveGeminiModel(), ...GEMINI_ANALYSIS_SETTINGS });
+// Upper bound for one polling cycle; the lock expires after this even if the instance dies.
+const POLL_LOCK_TTL_MS = Number(process.env.POLL_LOCK_TTL_MS) || 15 * 60_000;
+
+class PollInProgressError extends Error {
+  constructor() { super('POLL_ALREADY_RUNNING'); this.name = 'PollInProgressError'; }
+}
+
+/** Logs the real error server-side and answers public clients with a fixed code only. */
+function sendPublicError(res: express.Response, code: string, err: unknown) {
+  console.error(`[PublicAPI] ${code}:`, (err as any)?.name, (err as any)?.message);
+  res.status(500).json(publicErrorBody(code));
+}
 const officialCollector = new OfficialNoticeCollector();
 const firestoreService = new FirestoreService();
 const telegramNotifier = new TelegramNotifier();
@@ -160,13 +182,13 @@ app.get('/api/health', async (req, res) => {
  */
 app.get('/api/status', async (req, res) => {
   const readiness = await getProductionReadiness();
-  res.json({ ...readiness, securityVersion: SECURITY_VERSION, aiAnalysis: { version: ANALYSIS_VERSION, model: 'gemini-3.8-flash', concurrency: 4, timeoutMs: 45000, thinkingLevel: 'low', maxOutputTokens: 4096 } });
+  res.json({ ...readiness, securityVersion: SECURITY_VERSION, aiAnalysis: aiAnalysisInfo() });
 });
 
 app.get('/api/readiness', async (req, res) => {
   const readiness = await getProductionReadiness();
   const statusCode = readiness.readyForProduction ? 200 : 503;
-  res.status(statusCode).json({ ...readiness, aiAnalysis: { version: ANALYSIS_VERSION, model: 'gemini-3.8-flash', concurrency: 4, timeoutMs: 45000, thinkingLevel: 'low', maxOutputTokens: 4096 } });
+  res.status(statusCode).json({ ...readiness, aiAnalysis: aiAnalysisInfo() });
 });
 
 /**
@@ -207,10 +229,10 @@ app.get('/api/taxonomy', (req, res) => {
  */
 app.get('/api/storage/overview', async (req, res) => {
   try {
-    const data = await firestoreService.getDashboardData();
+    const data = await publicReadCache.get('overview', async () => toPublicOverview(await firestoreService.getDashboardData()));
     res.json(data);
   } catch (err: any) {
-    res.status(500).json({ error: `Storage overview failed: ${err.message}` });
+    sendPublicError(res, 'STORAGE_OVERVIEW_FAILED', err);
   }
 });
 
@@ -220,20 +242,21 @@ app.get('/api/storage/overview', async (req, res) => {
 app.get('/api/developments', async (req, res) => {
   try {
     const projectId = req.query.projectId ? String(req.query.projectId) : undefined;
-    const developments = await firestoreService.getAreaDevelopments(projectId);
+    const developments = await publicReadCache.get(`developments:${projectId || ''}`, () => firestoreService.getAreaDevelopments(projectId));
     res.json({
       total: developments.length,
       projectId: projectId || 'all',
       developments,
     });
   } catch (err: any) {
-    res.status(500).json({ error: `Fetch developments failed: ${err.message}` });
+    sendPublicError(res, 'FETCH_DEVELOPMENTS_FAILED', err);
   }
 });
 
 app.post('/api/developments/seed', async (req, res) => {
   try {
-    const result = await firestoreService.seedAreaDevelopments();
+    const result = await firestoreService.seedAreaDevelopments({ production: IS_PRODUCTION });
+    publicReadCache.clear();
     res.json({
       success: true,
       ...result,
@@ -249,8 +272,8 @@ app.post('/api/developments/seed', async (req, res) => {
 app.get('/api/plans', async (req, res) => {
   try {
     const projectId = req.query.projectId ? String(req.query.projectId) : undefined;
-    const planVersions = await firestoreService.getPlanVersions(projectId);
-    const planAssets = await firestoreService.getPlanAssets(projectId);
+    const [planVersions, planAssets] = await publicReadCache.get(`plans:${projectId || ''}`, () =>
+      Promise.all([firestoreService.getPlanVersions(projectId), firestoreService.getPlanAssets(projectId)]));
     res.json({
       total: planVersions.length,
       projectId: projectId || 'all',
@@ -258,7 +281,7 @@ app.get('/api/plans', async (req, res) => {
       planAssets,
     });
   } catch (err: any) {
-    res.status(500).json({ error: `Fetch plans failed: ${err.message}` });
+    sendPublicError(res, 'FETCH_PLANS_FAILED', err);
   }
 });
 
@@ -266,7 +289,7 @@ app.get('/api/unit-types', async (req, res) => {
   try {
     const projectId = req.query.projectId ? String(req.query.projectId) : undefined;
     const areaGroup = req.query.areaGroup ? String(req.query.areaGroup) : undefined;
-    const unitTypes = await firestoreService.getUnitTypes(projectId, areaGroup);
+    const unitTypes = await publicReadCache.get(`unitTypes:${projectId || ''}:${areaGroup || ''}`, () => firestoreService.getUnitTypes(projectId, areaGroup));
     res.json({
       total: unitTypes.length,
       projectId: projectId || 'all',
@@ -274,7 +297,7 @@ app.get('/api/unit-types', async (req, res) => {
       unitTypes,
     });
   } catch (err: any) {
-    res.status(500).json({ error: `Fetch unit types failed: ${err.message}` });
+    sendPublicError(res, 'FETCH_UNIT_TYPES_FAILED', err);
   }
 });
 
@@ -284,28 +307,28 @@ app.get('/api/unit-types', async (req, res) => {
 app.get('/api/site-plans', async (req, res) => {
   try {
     const projectId = req.query.projectId ? String(req.query.projectId) : undefined;
-    const sitePlans = await firestoreService.getSitePlans(projectId);
+    const sitePlans = await publicReadCache.get(`sitePlans:${projectId || ''}`, () => firestoreService.getSitePlans(projectId));
     res.json({
       total: sitePlans.length,
       projectId: projectId || 'all',
       sitePlans,
     });
   } catch (err: any) {
-    res.status(500).json({ error: `Fetch site plans failed: ${err.message}` });
+    sendPublicError(res, 'FETCH_SITE_PLANS_FAILED', err);
   }
 });
 
 app.get('/api/buildings', async (req, res) => {
   try {
     const sitePlanId = req.query.sitePlanId ? String(req.query.sitePlanId) : undefined;
-    const buildings = await firestoreService.getBuildings(sitePlanId);
+    const buildings = await publicReadCache.get(`buildings:${sitePlanId || ''}`, () => firestoreService.getBuildings(sitePlanId));
     res.json({
       total: buildings.length,
       sitePlanId: sitePlanId || 'all',
       buildings,
     });
   } catch (err: any) {
-    res.status(500).json({ error: `Fetch buildings failed: ${err.message}` });
+    sendPublicError(res, 'FETCH_BUILDINGS_FAILED', err);
   }
 });
 
@@ -315,6 +338,7 @@ app.get('/api/buildings', async (req, res) => {
 app.post('/api/plans/seed', async (req, res) => {
   try {
     const result = await firestoreService.seedChokjin3ProposalPlans();
+    publicReadCache.clear();
     res.json({
       success: true,
       ...result,
@@ -335,6 +359,7 @@ app.post('/api/plan-versions', async (req, res) => {
       return res.status(400).json({ error: 'Missing planVersionId in body' });
     }
     const result = await firestoreService.savePlanVersion(planDoc);
+    publicReadCache.clear();
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: `Save plan version failed: ${err.message}` });
@@ -348,6 +373,7 @@ app.post('/api/unit-types', async (req, res) => {
       return res.status(400).json({ error: 'Missing unitTypeId in body' });
     }
     const result = await firestoreService.saveUnitType(unitDoc);
+    publicReadCache.clear();
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: `Save unit type failed: ${err.message}` });
@@ -506,7 +532,9 @@ async function executeProductionPollingCycle(options: {
   enableTelegram: boolean;
   production?: boolean;
 }) {
-  const isProduction = options.production ?? (options.source === 'scheduler');
+  // Any run on a production server (scheduler or manual button) is held to the same
+  // fail-closed rules: no memory fallback, no Telegram without durable delivery records.
+  const isProduction = options.production ?? (options.source === 'scheduler' || IS_PRODUCTION);
 
   // Strict Fail-Closed Check for Production runs
   if (isProduction) {
@@ -518,17 +546,30 @@ async function executeProductionPollingCycle(options: {
     }
   }
 
+  const lockOwner = `${options.source}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const acquired = await firestoreService.acquirePollLock(lockOwner, POLL_LOCK_TTL_MS, { production: isProduction });
+  if (!acquired) throw new PollInProgressError();
+  try {
+    return await runPollingCycleLocked(isProduction, options.enableTelegram);
+  } finally {
+    await firestoreService.releasePollLock(lockOwner);
+    publicReadCache.clear();
+  }
+}
+
+async function runPollingCycleLocked(isProduction: boolean, enableTelegram: boolean) {
   const startedAt = new Date().toISOString();
   const existingEvents = await firestoreService.getRecentEvents(50);
+  const activeProjects = defaultRegistry.getAllActiveProjects();
 
   // Run pipeline: Phase 3A News-Only mode (official-api disabled)
   const result = await pipeline.run({
-    projects: REDEVELOPMENT_SEED_PROJECTS,
+    projects: activeProjects,
     analysisCache: {
       get: async (key) => {
         const client = await firestoreService.getClient();
         if (!client) throw new Error('AI_CACHE_UNAVAILABLE');
-        const doc = await client.collection('analysisCache').doc(key).get();
+        const doc = await client.collection(FIRESTORE_COLLECTIONS.ANALYSIS_CACHE).doc(key).get();
         const data = doc.data();
         return data && data.expiresAt?.toMillis() > Date.now() ? data.result : null;
       },
@@ -536,7 +577,7 @@ async function executeProductionPollingCycle(options: {
         const client = await firestoreService.getClient();
         if (!client) throw new Error('AI_CACHE_UNAVAILABLE');
         // JSON serialization drops optional undefined fields; this collection is server-only.
-        await client.collection('analysisCache').doc(key).set({result: JSON.parse(JSON.stringify(value)),
+        await client.collection(FIRESTORE_COLLECTIONS.ANALYSIS_CACHE).doc(key).set({result: JSON.parse(JSON.stringify(value)),
           expiresAt: new Date(Date.now() + 30 * 86400000), updatedAt: new Date()});
       },
     },
@@ -648,7 +689,7 @@ async function executeProductionPollingCycle(options: {
   let telegramFailed = 0;
   const dispatchedIds: string[] = [];
 
-  if (options.enableTelegram && telegramNotifier.isConfigured()) {
+  if (enableTelegram && telegramNotifier.isConfigured()) {
     for (const evt of result.events) {
       // Check prior dispatch status
       const isDelivered = await firestoreService.isEventDelivered(evt.id, { production: isProduction });
@@ -680,6 +721,14 @@ async function executeProductionPollingCycle(options: {
 
         // Step 3: Telegram API 호출
         const sendRes = await telegramNotifier.dispatchEvent(evt, project);
+
+        if (sendRes.outcomeUnknown) {
+          // The message may already be delivered. Leave the reservation 'pending': it becomes
+          // STALE_PENDING_NEEDS_REVIEW after the lock window and is never auto-resent.
+          telegramFailed++;
+          console.error(`[Telegram] Outcome unknown for event ${evt.id}: ${sendRes.error}. Held as pending for review (no automatic resend).`);
+          continue;
+        }
 
         // Step 4 / 5: Update status to 'sent' or 'failed'
         const updatedDelivery = await firestoreService.updateTelegramDeliveryResult(
@@ -732,7 +781,8 @@ async function executeProductionPollingCycle(options: {
 
   Object.assign(cycleDoc, { aiUsage: result.aiUsage });
   console.log('[AI_USAGE]', JSON.stringify(result.aiUsage));
-  await firestoreService.saveCollectionCycle(cycleDoc, { production: isProduction });
+  // Firestore documents are capped at 1 MiB; oversized audits would fail the cycle after alerts went out.
+  await firestoreService.saveCollectionCycle(capCollectionCycleDoc(cycleDoc), { production: isProduction });
 
   // Phase 3B: Structured Operational Log for Cloud Logging / Cloud Run
   const operationalLog = {
@@ -868,6 +918,10 @@ app.all('/api/jobs/poll', async (req, res) => {
       ...pollResult,
     });
   } catch (err: any) {
+    if (err instanceof PollInProgressError) {
+      return res.status(409).json({ success: false, statusCode: 409, error: 'POLL_ALREADY_RUNNING',
+        message: '다른 수집 작업이 실행 중입니다. 이번 호출은 건너뜁니다.' });
+    }
     const diagnostic = err instanceof FirestoreUnavailableError ? {
       operation: err.operation,
       collection: err.collection,
@@ -910,6 +964,10 @@ app.all('/api/pipeline/run', async (req, res) => {
       message: '실제 뉴스 수집 및 Firestore 저장/Telegram 파이프라인 실행 완료',
     });
   } catch (err: any) {
+    if (err instanceof PollInProgressError) {
+      res.status(409).json({ success: false, error: 'POLL_ALREADY_RUNNING', message: '다른 수집 작업이 실행 중입니다.' });
+      return;
+    }
     res.status(500).json({ error: `Pipeline execution failed: ${err.message}` });
   }
 });
@@ -1006,7 +1064,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
       success: false,
       statusCode: 500,
       error: 'INTERNAL_SERVER_ERROR',
-      message: err?.message || 'An unexpected server error occurred',
+      message: 'An unexpected server error occurred',
     });
   }
   next(err);

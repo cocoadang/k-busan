@@ -256,14 +256,16 @@ export function runUnitPlanViewCommonAudit(): { passed: boolean; results: AuditR
 
     results.push({
       suite: 'Phase 4G-2 Project Test (samik-beach)',
-      name: 'samik-beach has sitePlan and unitPlans normalized without coordinates/buildingMappings',
+      // Interactive coordinates and building mappings were onboarded later (see
+      // samikBeachInteractiveSitePlan / samikBeachRealAssetMapping tests); flags must match data.
+      name: 'samik-beach has sitePlan and unitPlans normalized; coordinate/mapping flags match data',
       passed:
         !!samikConfig &&
         samikConfig.capabilities.hasSitePlan === true &&
         samikConfig.capabilities.hasUnitPlans === true &&
         samikConfig.capabilities.hasUnitComparison === true &&
-        samikConfig.capabilities.hasInteractiveCoordinates === false &&
-        samikConfig.capabilities.hasBuildingMappings === false,
+        samikConfig.capabilities.hasInteractiveCoordinates === ((samikConfig.coordinates || []).length > 0) &&
+        samikConfig.capabilities.hasBuildingMappings === ((samikConfig.buildings || []).length > 0),
       details: JSON.stringify(samikConfig?.capabilities),
     });
   }

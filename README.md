@@ -24,6 +24,19 @@ The npm lockfile supports development installs. The existing bun lockfile is ret
 
 Use the official GitHub integration and grant access only to this private repository after reviewing its permission request. Make changes on a branch, run checks, and submit a pull request. Do not share cloud credentials, logs, private data or database exports. No automatic deployment workflow or cloud authentication is included here.
 
+## Operational safeguards
+
+- **Single collection run at a time.** `/api/jobs/poll` and `/api/pipeline/run` take a Firestore lock (`locks/poll`, expires after `POLL_LOCK_TTL_MS`, default 15 min). An overlapping call gets HTTP 409 `POLL_ALREADY_RUNNING`.
+- **Fail-closed everywhere in production.** With `NODE_ENV=production`, manual runs follow the same rules as the scheduler: no memory fallback, no Telegram without durable delivery records.
+- **Telegram at-most-once.** Sends time out after 10 s. A timeout or dropped connection leaves the delivery `pending`; after 2 minutes it becomes `STALE_PENDING_NEEDS_REVIEW` and is never re-sent automatically. Plain failures retry on later cycles up to 3 attempts. Messages are capped at 4,000 characters.
+- **Public APIs.** Read endpoints are cached in memory for `PUBLIC_CACHE_TTL_MS` (default 60 s) and cleared after each run and seed. `/api/storage/overview` returns a public view without Telegram chat IDs, message bodies, raw collector errors or per-item audits. 5xx responses carry fixed error codes; details stay in server logs.
+- **AI analysis.** Model comes from `GEMINI_ANALYSIS_MODEL` (default `gemini-3.8-flash`; the old `GEMINI_MODEL` variable is ignored on purpose). Collected text is fenced as untrusted data in the prompt, 429/5xx responses retry with backoff, and at most `AI_MAX_ITEMS_PER_CYCLE` (default 80) items are analysed per cycle, newest first.
+- **Collection cycle documents** are trimmed below 700 KB (Firestore limit 1 MiB) and record what was dropped in `truncated`.
+- **Preview proxy** is opt-in: `PREVIEW_MODE=true` plus `PREVIEW_UPSTREAM_ORIGIN` (https). It is never active when `NODE_ENV=production`.
+- **TLS for the association board.** The `start` script appends the RapidSSL TLS RSA CA G1 intermediate (expires 2027-11-02) for `dynamice.busan.go.kr`, which serves an incomplete chain. Replace it before expiry or when the site changes certificates.
+
+Recommended Firestore TTL policies: `analysisCache.expiresAt`. Collections `documents`, `collectionCycles` and `telegramDeliveries` grow without cleanup.
+
 ## Collector behavior
 
 Access restrictions stop requests; the app must not bypass them. Failed or incomplete collection must not be recorded as proof that no new material exists. A valid attachment URL or HTML detail page does not prove PDF download or text extraction success. The collector does not implement OCR.
@@ -36,10 +49,9 @@ The intended repository contains application source and development documentatio
 
 Plan images, project history, aggregate plan/supply data, subscription comparisons and related tests are included for private development. Source availability and redistribution rights have not been independently verified for every item. Inclusion is not a license or proof of public availability. Keep this repository private and review rights before any further distribution. See docs/SOURCE_PROVENANCE.md.
 
-## Known test limitation
+## Tests
 
-The extended reference-data suite has one pre-existing expectation mismatch in unitPlanViewCommon.test.ts: its Samik Beach scenario expects interactive coordinates/building mappings to be absent, while the current configuration enables them. This import preserves application behavior and does not silently change that assertion. Collector regression tests, type checking and build passed locally with Node 22.23.4 and existing installed dependencies; a fresh lockfile-only install has not been revalidated.
-
+All suites pass: `node --import tsx --test src/tests/*.test.ts`. Plan-data tests check that capability flags (coordinates, building mappings) match the data actually present, since later phases onboarded verified coordinates for 우동3 and 삼익비치.
 
 ## 사용자 직접 GitHub 업로드
 

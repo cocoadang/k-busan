@@ -141,9 +141,14 @@ export function runMultiProjectPlanEngineAudit(): PlanEngineAuditSummary {
 
     results.push({
       suite: 'Scenario B: 촉진3 → 우동3 전환',
-      name: '촉진3 buildingNumber 잔존 = 0',
-      passed: switchedState.selectedDong === '' && !switchedState.selectedDong.includes('101동'),
-      details: `selectedDong: "${switchedState.selectedDong}"`,
+      // Both projects number their buildings from 101동, so the label alone cannot show residue.
+      // The selection must be either empty (no mappings) or a building that exists in the target project.
+      name: '촉진3 buildingNumber 잔존 = 0 (전환 후 선택 동은 우동3 주동이거나 미선택)',
+      passed: targetConfig?.capabilities?.hasBuildingMappings
+        ? (targetConfig.buildings || []).some((b) => b.buildingNumber === switchedState.selectedDong)
+          && switchedState.selectedDong === targetConfig.buildings?.[0]?.buildingNumber
+        : switchedState.selectedDong === '',
+      details: `selectedDong: "${switchedState.selectedDong}" (udong-3 hasBuildingMappings=${targetConfig?.capabilities?.hasBuildingMappings})`,
     });
 
     results.push({
@@ -227,14 +232,14 @@ export function runMultiProjectPlanEngineAudit(): PlanEngineAuditSummary {
 
     results.push({
       suite: 'Scenario D & E: 삼익비치 양방향 전환',
-      name: '삼익비치 Phase 4G-2 capabilities (sitePlan/unitPlans=true, coordinates/buildingMappings=false)',
+      name: '삼익비치 capabilities (sitePlan/unitPlans=true, 좌표·주동매핑 플래그는 실제 데이터와 일치)',
       passed:
         !!samikConfig &&
         samikConfig.capabilities.hasSitePlan === true &&
         samikConfig.capabilities.hasUnitPlans === true &&
         samikConfig.capabilities.hasUnitComparison === true &&
-        samikConfig.capabilities.hasInteractiveCoordinates === false &&
-        samikConfig.capabilities.hasBuildingMappings === false,
+        samikConfig.capabilities.hasInteractiveCoordinates === ((samikConfig.coordinates || []).length > 0) &&
+        samikConfig.capabilities.hasBuildingMappings === ((samikConfig.buildings || []).length > 0),
       details: JSON.stringify(samikConfig?.capabilities),
     });
   }

@@ -11,13 +11,16 @@ interface AreaDevelopmentsViewProps {
 
 export const AreaDevelopmentsView: React.FC<AreaDevelopmentsViewProps> = ({
   areaDevelopments,
-  selectedProjectId: initialProjectId = 'chokjin-3',
+  selectedProjectId,
   onSelectProject,
 }) => {
-  const [activeProject, setActiveProject] = useState<string>(initialProjectId);
+  // Controlled by the parent when it passes selectedProjectId, so switching the project on
+  // another tab is reflected here; falls back to local state when used standalone.
+  const [localProject, setLocalProject] = useState<string>(selectedProjectId || 'chokjin-3');
+  const activeProject = selectedProjectId ?? localProject;
 
   const handleSelect = (id: string) => {
-    setActiveProject(id);
+    setLocalProject(id);
     if (onSelectProject) {
       onSelectProject(id);
     }

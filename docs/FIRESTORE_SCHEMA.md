@@ -1,5 +1,11 @@
 # Busan Redevelopment News Monitor - Dedicated Firestore Schema Specification
 
+> **현재 기준 안내 (2026-11):** 이 문서는 초기 설계안입니다. 실제 컬렉션 이름과 필드는
+> `src/schema/firestoreSchema.ts`의 `FIRESTORE_COLLECTIONS`가 기준입니다:
+> `projects`, `documents`, `events`, `collectionCycles`, `telegramDeliveries`, `areaDevelopments`,
+> `planVersions`, `unitTypes`, `planAssets`, `sitePlans`, `buildings`, `analysisCache`, `locks`.
+> 아래의 `raw_collected_items` 등 이름은 코드에 존재하지 않습니다.
+
 ## 1. 개요 및 원칙
 
 본 프로젝트는 **부산 재개발(촉진3구역, 우동3구역)** 전용 독립 시스템으로 설계되었습니다.

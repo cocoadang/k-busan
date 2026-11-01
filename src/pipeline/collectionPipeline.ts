@@ -67,6 +67,15 @@ export class CollectionPipeline {
   }
 
   public async run(options: PipelineRunOptions = {}): Promise<PipelineRunResult> {
+    this.officialCollector.beginRun?.();
+    try {
+      return await this.runInternal(options);
+    } finally {
+      this.officialCollector.endRun?.();
+    }
+  }
+
+  private async runInternal(options: PipelineRunOptions): Promise<PipelineRunResult> {
     this.geminiAnalyzer.beginRun(options.analysisCache);
     const projects = options.projects || REDEVELOPMENT_SEED_PROJECTS;
     const isOfficialEnabled = (options.enableOfficialApi ?? true) && process.env.ENABLE_OFFICIAL_API !== 'false' && Boolean(process.env.DATA_GO_KR_API_KEY?.trim());
@@ -216,12 +225,30 @@ export class CollectionPipeline {
     // 3. 2ND PASS: GEMINI SEMANTIC VALIDATION (Parallelized)
     const itemsToExtract: Array<{ item: RawCollectedItem; project: RedevelopmentProject }> = [];
 
-    const semanticValidations = await mapWithConcurrency(
-      passed1stGate, 4, async ({ item, project, gateReason }) => {
-        const result = await this.geminiAnalyzer.validateRelatedness(item, project);
-        return { item, project, gateReason, result };
-      }
-    );
+    // Cost/duration guard: analyse the newest items first and cap AI calls per cycle so one
+    // burst of articles cannot push the cycle past the Cloud Run request timeout. Items over
+    // the cap are reported as 'uncertain' and are picked up again on the next cycle.
+    const maxAiItems = Math.max(1, Number(process.env.AI_MAX_ITEMS_PER_CYCLE) || 80);
+    const chosen = new Set([...passed1stGate].sort((a, b) =>
+      new Date(b.item.publishedAt).getTime() - new Date(a.item.publishedAt).getTime()).slice(0, maxAiItems));
+    // Original order is preserved so event merging behaves exactly as before when under the cap.
+    const toAnalyze = passed1stGate.filter(entry => chosen.has(entry));
+    const deferred = passed1stGate.filter(entry => !chosen.has(entry));
+    if (deferred.length > 0) {
+      errors.push(`AI 분석 상한(${maxAiItems}건) 초과: ${deferred.length}건은 다음 주기로 이월`);
+    }
+    const semanticValidations = [
+      ...(await mapWithConcurrency(
+        toAnalyze, 4, async ({ item, project, gateReason }) => {
+          const result = await this.geminiAnalyzer.validateRelatedness(item, project);
+          return { item, project, gateReason, result };
+        }
+      )),
+      ...deferred.map(({ item, project, gateReason }) => ({
+        item, project, gateReason,
+        result: { status: 'uncertain' as const, confidence: 0, explanation: 'AI 분석 상한 초과로 이번 주기 미분석 (다음 주기 재시도)' },
+      })),
+    ];
 
     for (const { item, project, gateReason, result } of semanticValidations) {
       const matchedAlias = item.matchedKeywords.length > 0 ? item.matchedKeywords.join(', ') : project.aliases[0];

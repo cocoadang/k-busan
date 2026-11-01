@@ -880,7 +880,7 @@ export const UnitPlanView: React.FC<UnitPlanViewProps> = ({
                           id="plan-zoom-out-btn"
                           onClick={handleZoomOut}
                           disabled={zoomLevel <= 1}
-                          className="min-h-[34px] min-w-[34px] p-1.5 rounded hover:bg-white text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-40"
+                          className="min-h-[40px] min-w-[40px] p-1.5 rounded hover:bg-white text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-40"
                           title="축소"
                         >
                           <ZoomOut className="w-3.5 h-3.5" />
@@ -888,7 +888,7 @@ export const UnitPlanView: React.FC<UnitPlanViewProps> = ({
                         <button
                           id="plan-zoom-reset-btn"
                           onClick={handleResetZoom}
-                          className="min-h-[34px] px-2.5 rounded hover:bg-white text-slate-700 flex items-center gap-1 cursor-pointer text-xs font-bold"
+                          className="min-h-[40px] px-2.5 rounded hover:bg-white text-slate-700 flex items-center gap-1 cursor-pointer text-xs font-bold"
                           title="화면맞춤"
                         >
                           <RotateCcw className="w-3 h-3 text-slate-400" />
@@ -898,7 +898,7 @@ export const UnitPlanView: React.FC<UnitPlanViewProps> = ({
                           id="plan-zoom-in-btn"
                           onClick={handleZoomIn}
                           disabled={zoomLevel >= 2.5}
-                          className="min-h-[34px] min-w-[34px] p-1.5 rounded hover:bg-white text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-40"
+                          className="min-h-[40px] min-w-[40px] p-1.5 rounded hover:bg-white text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-40"
                           title="확대"
                         >
                           <ZoomIn className="w-3.5 h-3.5" />
@@ -969,6 +969,8 @@ export const UnitPlanView: React.FC<UnitPlanViewProps> = ({
                                 {fl.assetPath ? (
                                   <img
                                     src={fl.assetPath}
+                                    loading="lazy"
+                                    decoding="async"
                                     alt={`${selectedTypeCode} ${fl.label}`}
                                     className="w-full h-full object-contain block mx-auto rounded select-none pointer-events-none"
                                     referrerPolicy="no-referrer"
@@ -1005,6 +1007,7 @@ export const UnitPlanView: React.FC<UnitPlanViewProps> = ({
                                 id={`plan-asset-img-${selectedTypeCode}`}
                                 ref={planImgRef}
                                 src={activePlanSrc}
+                                decoding="async"
                                 alt={`${currentUnitDoc?.typeName || selectedTypeCode} 평면도`}
                                 className="w-full h-full object-contain block select-none pointer-events-none"
                                 style={{

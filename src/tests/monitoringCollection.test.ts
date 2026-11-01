@@ -182,7 +182,7 @@ test('미리보기는 운영 조회만 허용하고 수집·저장 요청은 차
  const res:any={code:0,data:null,setHeader(){},status(n:number){this.code=n;return this;},json(v:any){this.data=v;return this;}};
  try{
   globalThis.fetch=(async(target:any,options:any)=>{calls++;assert.equal(new URL(String(target)).origin,'https://k-busan.ai.studio');assert.equal(options.headers.Authorization,undefined);return new Response(JSON.stringify({documents:[{id:'actual'}]}),{headers:{'content-type':'application/json'}});}) as typeof fetch;
-  const middleware=createPreviewReadOnlyMiddleware(true);
+  const middleware=createPreviewReadOnlyMiddleware(true,'https://k-busan.ai.studio');
   for(const [method,path] of [['POST','/jobs/poll'],['POST','/developments/seed'],['GET','/official/saeol-probe'],['GET','/poll'],['GET','/unknown']]){
    await middleware({method,path,originalUrl:'/api'+path} as any,res,()=>assert.fail('preview bypass'));assert.equal(res.code,403);
   }

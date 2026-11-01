@@ -11,6 +11,19 @@ export interface TelegramSendResult {
   chatId: string;
   messageText: string;
   isTest?: boolean;
+  /**
+   * True when the request timed out or the connection dropped after it may have reached
+   * Telegram. The message might already be delivered, so callers must not retry it automatically.
+   */
+  outcomeUnknown?: boolean;
+}
+
+/** Telegram sendMessage hard limit is 4096 chars; keep headroom for the ellipsis. */
+export const TELEGRAM_MAX_MESSAGE_LENGTH = 4000;
+export const TELEGRAM_REQUEST_TIMEOUT_MS = 10_000;
+
+export function clampTelegramText(text: string): string {
+  return text.length > TELEGRAM_MAX_MESSAGE_LENGTH ? text.slice(0, TELEGRAM_MAX_MESSAGE_LENGTH - 1) + '…' : text;
 }
 
 /**
@@ -113,7 +126,7 @@ export class TelegramNotifier {
       new Date().toISOString().slice(0, 10);
     const primaryUrl = event.primarySourceUrl || primarySource?.url || '#';
 
-    return `[${shortProject}] 중요도 ${stars}
+    return clampTelegramText(`[${shortProject}] 중요도 ${stars}
 
 ${event.title}
 
@@ -130,7 +143,7 @@ ${sourceName}
 ${publishedDate}
 
 원문:
-${primaryUrl}`;
+${primaryUrl}`);
   }
 
   /**
@@ -208,6 +221,7 @@ ${primaryUrl}`;
           text: testText,
           disable_web_page_preview: true,
         }),
+        signal: AbortSignal.timeout(TELEGRAM_REQUEST_TIMEOUT_MS),
       });
 
       const contentType = res.headers.get('content-type') || '';
@@ -305,6 +319,7 @@ ${primaryUrl}`;
           text: messageText,
           disable_web_page_preview: false,
         }),
+        signal: AbortSignal.timeout(TELEGRAM_REQUEST_TIMEOUT_MS),
       });
 
       const contentType = res.headers.get('content-type') || '';
@@ -343,9 +358,15 @@ ${primaryUrl}`;
         isTest: false,
       };
     } catch (err: any) {
+      const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
       return {
         success: false,
-        error: `Telegram 전송 네트워크 오류: ${err.message || String(err)}`,
+        error: timedOut
+          ? `TELEGRAM_TIMEOUT: ${TELEGRAM_REQUEST_TIMEOUT_MS}ms 내 응답 없음 (발송 여부 불명)`
+          : `Telegram 전송 네트워크 오류: ${err.message || String(err)}`,
+        // A timeout means the request may have been delivered; a connection refusal before
+        // sending would surface as a different error, but we stay conservative for both.
+        outcomeUnknown: true,
         sentAt,
         messageHash,
         chatId: this.chatId || '',

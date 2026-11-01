@@ -148,12 +148,43 @@ export function sanitizeForFirestore<T>(data: T, seen = new WeakSet()): T {
  * - Telegram send ordering: Event 저장 -> delivery pending 기록 (atomic) -> API 호출 -> 결과 sent/failed 기록.
  * - Memory fallback allowed strictly for development/dashboard viewing.
  */
+/**
+ * Caps for the in-process mirror. Live data is in Firestore; the mirror only serves dev views
+ * and fallback reads, so unbounded growth on a long-lived Cloud Run instance is a leak.
+ */
+const MEMORY_LIMITS = { documents: 500, events: 1000, cycles: 20, deliveries: 200 } as const;
+/** Drops the oldest-inserted entries beyond limit. Entries matching keep() (seeded history) are never dropped. */
+function trimMap<K, V>(map: Map<K, V>, limit: number, keep: (value: V) => boolean = () => false) {
+  if (map.size <= limit) return;
+  for (const [key, value] of map) {
+    if (keep(value)) continue;
+    map.delete(key);
+    if (map.size <= limit) break;
+  }
+}
+
+/** Union of event sources keyed by URL (existing first, capped to keep documents small). */
+export function mergeEventSources<T extends { url?: string }>(existing: T[] | undefined, incoming: T[] | undefined): T[] {
+  const merged = new Map<string, T>();
+  for (const src of [...(existing || []), ...(incoming || [])]) {
+    if (!src) continue;
+    const key = src.url || JSON.stringify(src);
+    if (!merged.has(key)) merged.set(key, src);
+  }
+  return Array.from(merged.values()).slice(0, 30);
+}
+
 export class FirestoreService {
   private firestore: Firestore | null = null;
   private isConnected = false;
   private initAttempted = false;
   private initError: string | null = null;
   private forceFail = false;
+  // Lazily-created clients may retry after a failed first connection (cold-start blips
+  // must not pin an instance to memory mode until restart). Injected clients never retry.
+  private initRetryable = true;
+  private lastInitAttemptAt = 0;
+  private static readonly INIT_RETRY_INTERVAL_MS = 30_000;
 
   // In-memory operational store (serves as view cache for development/inspection)
   private memoryProjects = new Map<string, FirestoreProjectDoc>();
@@ -177,16 +208,19 @@ export class FirestoreService {
       this.firestore = options.firestore;
       this.isConnected = options.firestore !== null;
       this.initAttempted = true;
+      this.initRetryable = false;
     }
     if (options?.forceFail) {
       this.forceFail = true;
       this.isConnected = false;
       this.initAttempted = true;
+      this.initRetryable = false;
       this.initError = 'Simulated Firestore connection failure for fail-closed test';
     }
     if (options?.simulatedConnected) {
       this.isConnected = true;
       this.initAttempted = true;
+      this.initRetryable = false;
       this.initError = null;
       this.firestore = this.createSimulatedFirestoreClient() as any;
     }
@@ -329,9 +363,13 @@ export class FirestoreService {
     }
 
     if (this.initAttempted) {
-      return this.firestore;
+      const canRetry = this.initRetryable && this.firestore === null &&
+        Date.now() - this.lastInitAttemptAt >= FirestoreService.INIT_RETRY_INTERVAL_MS;
+      if (!canRetry) return this.firestore;
+      console.log('[FirestoreService] Retrying Firestore connection after earlier failure.');
     }
     this.initAttempted = true;
+    this.lastInitAttemptAt = Date.now();
 
     try {
       const databaseId = process.env.FIRESTORE_DATABASE_ID || '(default)';
@@ -557,6 +595,7 @@ export class FirestoreService {
 
     const isExistingInMemory = this.memoryDocuments.has(docId);
     this.memoryDocuments.set(docId, normalizedDoc);
+    trimMap(this.memoryDocuments, MEMORY_LIMITS.documents);
 
     if (client) {
       try {
@@ -641,12 +680,15 @@ export class FirestoreService {
     const mergedEvent: FirestoreEventDoc = sanitizeForFirestore({
       ...event,
       id: docId,
+      firstSeenAt: existingMemory?.firstSeenAt || event.firstSeenAt,
+      sources: mergeEventSources(existingMemory?.sources, event.sources),
       alreadyDispatched,
       telegramDispatchedAt,
       lastSeenAt: new Date().toISOString(),
     });
 
     this.memoryEvents.set(docId, mergedEvent);
+    trimMap(this.memoryEvents, MEMORY_LIMITS.events, (e) => Boolean(e.isHistorical));
 
     if (client) {
       try {
@@ -656,6 +698,9 @@ export class FirestoreService {
           const remoteData = existing.data() as FirestoreEventDoc;
           mergedEvent.alreadyDispatched = remoteData.alreadyDispatched || alreadyDispatched;
           mergedEvent.telegramDispatchedAt = remoteData.telegramDispatchedAt || telegramDispatchedAt;
+          // Keep the original discovery time and accumulate sources instead of overwriting them.
+          if (remoteData.firstSeenAt) mergedEvent.firstSeenAt = remoteData.firstSeenAt;
+          mergedEvent.sources = mergeEventSources(remoteData.sources, mergedEvent.sources);
           await docRef.set(mergedEvent, { merge: true });
           return { isNew: false };
         } else {
@@ -732,6 +777,79 @@ export class FirestoreService {
   // 4. Telegram Deliveries & Atomic Concurrency Strategy
   // ==========================================
 
+  // ==========================================
+  // Poll cycle lock (prevents overlapping scheduler/manual runs across instances)
+  // ==========================================
+  private memoryPollLock: { owner: string; expiresAt: number } | null = null;
+
+  /**
+   * Acquires the single poll-cycle lock. The lock expires on its own (ttlMs) so a crashed
+   * run cannot block collection forever. Returns false when another run holds a live lock.
+   */
+  public async acquirePollLock(owner: string, ttlMs: number, options?: StorageWriteOptions): Promise<boolean> {
+    const client = await this.getClient();
+    if (options?.production && (!client || !this.isConnected)) {
+      throw new FirestoreUnavailableError('Cannot acquire poll lock: Firestore is unavailable.');
+    }
+    const now = Date.now();
+    if (client && this.isConnected) {
+      const ref = client.collection(FIRESTORE_COLLECTIONS.LOCKS).doc('poll');
+      return client.runTransaction(async (tx) => {
+        const doc = await tx.get(ref);
+        const data = doc.exists ? (doc.data() as { owner?: string; expiresAt?: number }) : undefined;
+        if (data?.owner && (data.expiresAt || 0) > now && data.owner !== owner) return false;
+        tx.set(ref, { owner, acquiredAt: new Date(now).toISOString(), expiresAt: now + ttlMs });
+        return true;
+      });
+    }
+    if (this.memoryPollLock && this.memoryPollLock.expiresAt > now && this.memoryPollLock.owner !== owner) return false;
+    this.memoryPollLock = { owner, expiresAt: now + ttlMs };
+    return true;
+  }
+
+  public async releasePollLock(owner: string): Promise<void> {
+    if (this.memoryPollLock?.owner === owner) this.memoryPollLock = null;
+    const client = await this.getClient();
+    if (!client || !this.isConnected) return;
+    try {
+      const ref = client.collection(FIRESTORE_COLLECTIONS.LOCKS).doc('poll');
+      await client.runTransaction(async (tx) => {
+        const doc = await tx.get(ref);
+        if (doc.exists && (doc.data() as { owner?: string }).owner === owner) {
+          tx.set(ref, { owner: '', releasedAt: new Date().toISOString(), expiresAt: 0 });
+        }
+      });
+    } catch (err: any) {
+      // The lock expires by TTL anyway; never fail a finished cycle because release failed.
+      console.warn('[FirestoreService] Poll lock release failed:', err?.code || err?.name || 'unknown');
+    }
+  }
+
+  /** Pending reservations younger than this are treated as an in-flight send by another run. */
+  public static readonly PENDING_LOCK_MS = 2 * 60 * 1000;
+  /** Failed deliveries are retried on later cycles up to this many total attempts. */
+  public static readonly MAX_DELIVERY_ATTEMPTS = 3;
+
+  /**
+   * Decides whether an existing delivery record blocks a new reservation.
+   * A pending record older than the lock window means a previous run crashed or timed out
+   * AFTER possibly sending — the Telegram API may already have delivered the message, so it
+   * is held for manual review instead of being re-sent automatically (at-most-once policy).
+   */
+  public static evaluateExistingDelivery(
+    existing: FirestoreTelegramDeliveryDoc
+  ): 'ALREADY_SENT' | 'CONCURRENT_PENDING_LOCK' | 'STALE_PENDING_NEEDS_REVIEW' | 'MAX_ATTEMPTS_REACHED' | null {
+    if (existing.status === 'sent' || existing.status === 'success') return 'ALREADY_SENT';
+    if (existing.status === 'pending') {
+      const ageMs = Date.now() - new Date(existing.createdAt || 0).getTime();
+      return ageMs < FirestoreService.PENDING_LOCK_MS ? 'CONCURRENT_PENDING_LOCK' : 'STALE_PENDING_NEEDS_REVIEW';
+    }
+    if (existing.status === 'failed' && (existing.attempts || 1) >= FirestoreService.MAX_DELIVERY_ATTEMPTS) {
+      return 'MAX_ATTEMPTS_REACHED';
+    }
+    return null;
+  }
+
   /**
    * Atomic Delivery Reservation (Strict Ordering Step 2)
    *
@@ -746,7 +864,7 @@ export class FirestoreService {
     options?: StorageWriteOptions
   ): Promise<{
     allowed: boolean;
-    reason?: 'ALREADY_SENT' | 'CONCURRENT_PENDING_LOCK' | 'RESERVED';
+    reason?: 'ALREADY_SENT' | 'CONCURRENT_PENDING_LOCK' | 'STALE_PENDING_NEEDS_REVIEW' | 'MAX_ATTEMPTS_REACHED' | 'RESERVED';
     deliveryId: string;
     existingDelivery?: FirestoreTelegramDeliveryDoc;
   }> {
@@ -773,14 +891,10 @@ export class FirestoreService {
             if (existing.status === 'sent' || existing.status === 'success') {
               return { allowed: false, reason: 'ALREADY_SENT', deliveryId, existingDelivery: existing };
             }
-            // If pending within 2 minutes lock window, reject concurrent attempt
-            if (existing.status === 'pending') {
-              const ageMs = Date.now() - new Date(existing.createdAt || 0).getTime();
-              if (ageMs < 2 * 60 * 1000) {
-                return { allowed: false, reason: 'CONCURRENT_PENDING_LOCK', deliveryId, existingDelivery: existing };
-              }
-            }
+            const blocked = FirestoreService.evaluateExistingDelivery(existing);
+            if (blocked) return { allowed: false, reason: blocked, deliveryId, existingDelivery: existing };
           }
+          const attempts = (doc.exists ? (doc.data() as FirestoreTelegramDeliveryDoc).attempts || 0 : 0) + 1;
 
           const pendingDoc: FirestoreTelegramDeliveryDoc = sanitizeForFirestore({
             id: deliveryId,
@@ -791,6 +905,7 @@ export class FirestoreService {
             messageHash,
             chatId: process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHANNEL_ID || '',
             importance,
+            attempts,
           });
 
           transaction.set(delivRef, pendingDoc, { merge: true });
@@ -820,16 +935,13 @@ export class FirestoreService {
       if (existing.status === 'sent' || existing.status === 'success') {
         return { allowed: false, reason: 'ALREADY_SENT', deliveryId, existingDelivery: existing };
       }
-      if (existing.status === 'pending') {
-        const ageMs = Date.now() - new Date(existing.createdAt || 0).getTime();
-        if (ageMs < 2 * 60 * 1000) {
-          return { allowed: false, reason: 'CONCURRENT_PENDING_LOCK', deliveryId, existingDelivery: existing };
-        }
-      }
+      const blocked = FirestoreService.evaluateExistingDelivery(existing);
+      if (blocked) return { allowed: false, reason: blocked, deliveryId, existingDelivery: existing };
 
       existing.status = 'pending';
       existing.createdAt = nowIso;
       existing.messageHash = messageHash;
+      existing.attempts = (existing.attempts || 0) + 1;
       return { allowed: true, reason: 'RESERVED', deliveryId, existingDelivery: existing };
     }
 
@@ -842,8 +954,10 @@ export class FirestoreService {
       messageHash,
       chatId: process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHANNEL_ID || '',
       importance,
+      attempts: 1,
     };
     this.memoryDeliveries.unshift(pendingDoc);
+    this.memoryDeliveries.length = Math.min(this.memoryDeliveries.length, MEMORY_LIMITS.deliveries);
     return { allowed: true, reason: 'RESERVED', deliveryId, existingDelivery: pendingDoc };
   }
 
@@ -963,10 +1077,8 @@ export class FirestoreService {
         if (delivDoc.exists) {
           const data = delivDoc.data() as FirestoreTelegramDeliveryDoc;
           if (data.status === 'sent' || data.status === 'success') return true;
-          if (data.status === 'pending') {
-            const ageMs = Date.now() - new Date(data.createdAt || 0).getTime();
-            if (ageMs < 2 * 60 * 1000) return true;
-          }
+          // Fresh pending = in-flight elsewhere; stale pending = outcome unknown (held for review).
+          if (data.status === 'pending') return true;
         }
 
         const evtDoc = await client.collection(FIRESTORE_COLLECTIONS.EVENTS).doc(eventId).get();
@@ -1135,6 +1247,7 @@ export class FirestoreService {
 
     const sanitizedCycle = sanitizeForFirestore(cycle);
     this.memoryCycles.unshift(sanitizedCycle);
+    this.memoryCycles.length = Math.min(this.memoryCycles.length, MEMORY_LIMITS.cycles);
 
     if (client) {
       try {

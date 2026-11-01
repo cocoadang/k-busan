@@ -1,3 +1,4 @@
+import { resolveGeminiModel } from '../analyzer/geminiAnalyzer';
 import type { RequestHandler } from 'express';
 import { FirestoreService } from './firestoreService';
 import { OfficialNoticeCollector } from '../collector/officialCollector';
@@ -65,7 +66,7 @@ export async function evaluateProductionReadiness(
   const internalSchedulerEnabled = process.env.ENABLE_INTERNAL_SCHEDULER === 'true';
   const schedulerMode = internalSchedulerEnabled ? 'internal-interval' : 'cloud-scheduler';
   const pollSecretConfigured = Boolean(process.env.POLL_JOB_SECRET || process.env.CRON_SECRET);
-  const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const geminiModel = resolveGeminiModel();
   const officialApiConfigured = Boolean(
     process.env.DATA_GO_KR_API_KEY && process.env.DATA_GO_KR_API_KEY.trim() !== ''
   );
@@ -113,7 +114,8 @@ export async function evaluateProductionReadiness(
         available: fsHealth.available,
         ready: fsHealth.ready,
         databaseId: process.env.FIRESTORE_DATABASE_ID || '(default)',
-        error: fsHealth.error,
+        // Raw driver errors stay in server logs; public readiness only exposes a code.
+        error: fsHealth.error ? 'FIRESTORE_UNAVAILABLE' : null,
       },
       telegram: {
         configured: telegramConfigured,
@@ -143,7 +145,25 @@ export async function evaluateProductionReadiness(
 
 
 /** Preview reads already-public production data; no cross-project credentials. */
-export function createPreviewReadOnlyMiddleware(isPreview: boolean): RequestHandler {
+/**
+ * Preview mode = a development instance that shows production data read-only by proxying
+ * public GET endpoints to PREVIEW_UPSTREAM_ORIGIN. It is opt-in: set PREVIEW_MODE=true.
+ * A missing NODE_ENV on a real server must never silently turn the whole API into a proxy.
+ */
+export function resolvePreviewConfig(env: NodeJS.ProcessEnv = process.env): { enabled: boolean; upstreamOrigin: string | null } {
+  const enabled = env.PREVIEW_MODE === 'true' && env.NODE_ENV !== 'production';
+  const raw = env.PREVIEW_UPSTREAM_ORIGIN?.trim();
+  let upstreamOrigin: string | null = null;
+  if (raw) {
+    try {
+      const url = new URL(raw);
+      if (url.protocol === 'https:') upstreamOrigin = url.origin;
+    } catch { upstreamOrigin = null; }
+  }
+  return { enabled, upstreamOrigin };
+}
+
+export function createPreviewReadOnlyMiddleware(isPreview: boolean, upstreamOrigin: string | null = null): RequestHandler {
   const allowed = new Set(['/storage/overview', '/status', '/readiness', '/health',
     '/registry', '/taxonomy', '/developments', '/plans', '/unit-types', '/site-plans', '/buildings']);
   return async (req, res, next) => {
@@ -154,9 +174,14 @@ export function createPreviewReadOnlyMiddleware(isPreview: boolean): RequestHand
         message: '미리보기는 운영 데이터 조회만 가능합니다. 수집·저장·발송은 차단됩니다.' });
       return;
     }
+    if (!upstreamOrigin) {
+      res.status(503).json({ success: false, error: 'PREVIEW_UPSTREAM_NOT_CONFIGURED',
+        message: '미리보기용 운영 주소(PREVIEW_UPSTREAM_ORIGIN)가 설정되지 않았습니다.' });
+      return;
+    }
     try {
       // Fixed origin and allowlist; never forward cookies, secrets or auth headers.
-      const target = new URL('/api' + req.path, 'https://k-busan.ai.studio');
+      const target = new URL('/api' + req.path, upstreamOrigin);
       target.search = new URL(req.originalUrl, 'http://localhost').search;
       const upstream = await fetch(target, { signal: AbortSignal.timeout(15000),
         headers: { Accept: 'application/json' }, redirect: 'error' });

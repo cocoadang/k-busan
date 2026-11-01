@@ -428,6 +428,30 @@ export class OfficialNoticeCollector {
   }
 
   /**
+   * Per-cycle memo of date queries. Every Busan project needs the same 7 dates; without this
+   * each project re-downloaded identical pages. Active only between beginRun() and endRun().
+   */
+  private runDateCache: Map<string, ReturnType<OfficialNoticeCollector['fetchAllNoticesForDate']>> | null = null;
+
+  public beginRun(): void {
+    this.runDateCache = new Map();
+  }
+
+  public endRun(): void {
+    this.runDateCache = null;
+  }
+
+  private fetchDateShared(ymd: string, options: { timeoutMs?: number }) {
+    if (!this.runDateCache) return this.fetchAllNoticesForDate(ymd, options);
+    let pending = this.runDateCache.get(ymd);
+    if (!pending) {
+      pending = this.fetchAllNoticesForDate(ymd, options);
+      this.runDateCache.set(ymd, pending);
+    }
+    return pending;
+  }
+
+  /**
    * Standard Monitoring Cycle Fetch
    * Queries the latest seven calendar dates (KST) to handle midnight boundaries
    */
@@ -450,7 +474,7 @@ export class OfficialNoticeCollector {
     let lastHttpStatus: number | undefined;
 
     for (const ymd of targetDates) {
-      const result = await this.fetchAllNoticesForDate(ymd, { timeoutMs: options.timeoutMs });
+      const result = await this.fetchDateShared(ymd, { timeoutMs: options.timeoutMs });
       if (!result.success) {
         errors.push(`[${ymd}] ${result.error}`);
         lastHttpStatus = result.httpStatus;

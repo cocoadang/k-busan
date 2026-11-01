@@ -56,6 +56,10 @@ export const FIRESTORE_COLLECTIONS = {
   SITE_PLANS: 'sitePlans',
   /** 11. 주동 정보 및 동-타입 매핑 (Phase 4D-5D) */
   BUILDINGS: 'buildings',
+  /** 12. AI 분석 결과 캐시 (서버 전용, expiresAt TTL 정책 대상) */
+  ANALYSIS_CACHE: 'analysisCache',
+  /** 13. 수집 주기 실행 잠금 (스케줄러·수동 실행 중복 방지) */
+  LOCKS: 'locks',
 } as const;
 
 /**
@@ -384,6 +388,8 @@ export interface FirestoreTelegramDeliveryDoc {
   messageText?: string;
   importance?: number;
   isTest?: boolean;
+  /** Number of dispatch attempts (reservations). Failed deliveries stop retrying at the cap. */
+  attempts?: number;
 }
 
 /**

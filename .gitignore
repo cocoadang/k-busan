@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+coverage/
+tmp/
+evidence/
+.env*
+!.env.example
+*.log
+*.pem
+*.key
+*service-account*.json
+*credentials*.json
+.DS_Store

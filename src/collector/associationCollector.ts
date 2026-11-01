@@ -1,9 +1,13 @@
 import { createHash } from 'node:crypto';
 import { load } from 'cheerio';
-import type { RawCollectedItem, RedevelopmentProject } from '../types/redevelopment';
+import type { AssociationBoardConfig, RawCollectedItem, RedevelopmentProject } from '../types/redevelopment';
 
+/** Legacy default (촉진3구역 board); the per-project config lives in the registry. */
 export const ASSOCIATION_LIST_URL = 'https://dynamice.busan.go.kr/view.do?no=287';
-const DETAIL_BASE = 'https://dynamice.busan.go.kr/home/BARA_0000000000151/view.do?no=329&pgMode=view';
+type BoardSelector = Pick<AssociationBoardConfig, 'listUrl' | 'boardId' | 'areaId' | 'detailMenuNo' | 'titlePattern'>;
+const DEFAULT_BOARD: BoardSelector = {
+  listUrl: ASSOCIATION_LIST_URL, boardId: 'BBSMSTR_000000000080', areaId: 'BARA_0000000000151', detailMenuNo: '329', titlePattern: '촉진\\s*3',
+};
 const HOURS72 = 72 * 3600000;
 export function canonicalAssociationUrl(value: string): string {
   const url = new URL(value, ASSOCIATION_LIST_URL);
@@ -25,8 +29,11 @@ export function parseKstDate(text: string): string | undefined {
   return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}T${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}+09:00`;
 }
 export interface BoardEntry { title: string; url: string; publishedAt: string; }
-export function parseAssociationList(html: string): { entries: BoardEntry[]; nextUrl?: string; oldestPublishedAt?: string } {
+export function parseAssociationList(html: string, board: BoardSelector = DEFAULT_BOARD): { entries: BoardEntry[]; nextUrl?: string; oldestPublishedAt?: string } {
   const $ = load(html);
+  const listUrl = board.listUrl, listNo = new URL(listUrl).searchParams.get('no');
+  const detailBase = `https://dynamice.busan.go.kr/home/${board.areaId}/view.do?no=${board.detailMenuNo}&pgMode=view`;
+  const titleRe = new RegExp(board.titlePattern);
   // The live portal uses cards and move_view(id, board, area), not direct links.
   const cards = $('.board-list-ul > li');
   if (cards.length) {
@@ -36,10 +43,10 @@ export function parseAssociationList(html: string): { entries: BoardEntry[]; nex
       const call = (a.attr('onclick') || '').match(/move_view\(\s*['"](\d+)['"]\s*,\s*['"](BBSMSTR_\d+)['"]\s*,\s*['"](BARA_\d+)['"]\s*\)/);
       const publishedAt = parseKstDate(card.find('.left-box').text());
       const title = clean(card.find('.b-tit').clone().find('span').remove().end().text());
-      if (!call || !publishedAt || !title || call[2] !== 'BBSMSTR_000000000080') throw new Error('BOARD_PARSE_UNVERIFIED: 카드 링크 또는 게시일 확인 실패');
+      if (!call || !publishedAt || !title || call[2] !== board.boardId) throw new Error('BOARD_PARSE_UNVERIFIED: 카드 링크 또는 게시일 확인 실패');
       dates.push(publishedAt);
-      if (call[3] === 'BARA_0000000000151') {
-        entries.push({title, publishedAt, url: canonicalAssociationUrl(`/home/${call[3]}/view.do?no=329&pgMode=view&ntt_id=${call[1]}`)});
+      if (call[3] === board.areaId) {
+        entries.push({title, publishedAt, url: canonicalAssociationUrl(`/home/${call[3]}/view.do?no=${board.detailMenuNo}&pgMode=view&ntt_id=${call[1]}`)});
       }
     });
     const current = Number($('#boardFrm input[name="pageIndex"]').val());
@@ -47,7 +54,7 @@ export function parseAssociationList(html: string): { entries: BoardEntry[]; nex
     const pageNumbers = $('.board-paging a').map((_, el) => Number(($(el).attr('onclick') || '').match(/linkPage\((\d+)\)/)?.[1] || 0)).get();
     let nextUrl: string | undefined;
     if (pageNumbers.some(n => n > current)) {
-      const u = new URL(ASSOCIATION_LIST_URL);
+      const u = new URL(listUrl);
       $('#boardFrm input[name],#boardFrm select[name]').each((_, el) => {
         const name = $(el).attr('name')!, value = String($(el).val() || '');
         if (['no','pgMode','searchCondition','searchKeyword'].includes(name) && value) u.searchParams.set(name,value);
@@ -62,15 +69,15 @@ export function parseAssociationList(html: string): { entries: BoardEntry[]; nex
   let recognized = false, malformed = false;
   $('tr, li').each((_, row) => {
     const block = $(row), text = clean(block.text());
-    if (!/촉진\s*3\s*(구역)?/.test(text)) return;
+    if (!titleRe.test(text)) return;
     block.find('a').each((_, link) => {
       const a = $(link), title = clean(a.text());
-      if (!/촉진\s*3/.test(title)) return;
+      if (!titleRe.test(title)) return;
       let href = a.attr('href') || '';
       if (!href.includes('ntt_id=')) {
         const script = a.attr('onclick') || href;
         const id = script.match(/ntt_id\s*[=:]\s*['"]?(\d+)/)?.[1];
-        if (id) href = `${DETAIL_BASE}&ntt_id=${id}`;
+        if (id) href = `${detailBase}&ntt_id=${id}`;
       }
       if (!href.includes('ntt_id=')) return;
       recognized = true;
@@ -78,7 +85,7 @@ export function parseAssociationList(html: string): { entries: BoardEntry[]; nex
       if (!publishedAt) { malformed = true; return; }
       try {
         const url = canonicalAssociationUrl(href);
-        if (!url.includes('/BARA_0000000000151/')) return;
+        if (!url.includes(`/${board.areaId}/`)) return;
         entries.set(url, { title, url, publishedAt });
       } catch { malformed = true; }
     });
@@ -91,7 +98,7 @@ export function parseAssociationList(html: string): { entries: BoardEntry[]; nex
   let nextUrl: string | undefined;
   if (next && !next.startsWith('javascript')) {
     const candidate = canonicalAssociationUrl(next);
-    if (new URL(candidate).searchParams.get('no') === '287') nextUrl = candidate;
+    if (new URL(candidate).searchParams.get('no') === listNo) nextUrl = candidate;
   }
   return { entries: [...entries.values()], nextUrl };
 }
@@ -160,17 +167,18 @@ export class AssociationNoticeCollector {
   constructor(private fetcher: typeof fetch = fetch, private clock: () => Date = () => new Date()) {}
   async fetchForProject(project: RedevelopmentProject, options: { timeoutMs?: number; maxPages?: number } = {}) {
     const items: RawCollectedItem[] = [], errors: string[] = [];
-    if (project.id !== 'chokjin-3') return { items, error: undefined, configured: false };
+    const board = project.associationBoard;
+    if (!board) return { items, error: undefined, configured: false };
     const now = this.clock();
     const read = (url: string) => readAssociationHtml(this.fetcher,url,options.timeoutMs || 15000);
     let pagesRead=0;
-    let next: string | undefined = ASSOCIATION_LIST_URL;
+    let next: string | undefined = board.listUrl;
     const visited = new Set<string>(), seen = new Set<string>();
     try {
       for (let page = 0; next && page < (options.maxPages || 5); page++) {
         if (visited.has(next)) throw new Error('BOARD_PAGINATION_LOOP');
         visited.add(next);
-        const parsed = parseAssociationList(await read(next));
+        const parsed = parseAssociationList(await read(next), board);
         pagesRead++;
         for (const entry of parsed.entries) {
           const age = now.getTime() - Date.parse(entry.publishedAt);
@@ -188,9 +196,9 @@ export class AssociationNoticeCollector {
           const nttId = new URL(entry.url).searchParams.get('ntt_id');
           const fingerprint = `association:${project.id}:${nttId}`;
           items.push({ id: createHash('sha256').update(fingerprint).digest('hex'), projectId: project.id,
-            sourceTier: 'official', sourceType: 'official-web', sourceName: '촉진3구역 조합 입찰공고 (부산 정비사업 통합홈페이지)',
+            sourceTier: 'official', sourceType: 'official-web', sourceName: board.sourceName,
             sourceUrl: entry.url, title: entry.title, content, publishedAt: entry.publishedAt, collectedAt: now.toISOString(),
-            rawFingerprint: fingerprint, matchedKeywords: ['촉진3구역'], actorType: 'association', detailVerified, attachmentUrls,
+            rawFingerprint: fingerprint, matchedKeywords: [...board.matchedKeywords], actorType: 'association', detailVerified, attachmentUrls,
             attachmentContentStatus: attachmentUrls.length ? 'unverified' : 'not_applicable' });
         }
         next = parsed.oldestPublishedAt && now.getTime() - Date.parse(parsed.oldestPublishedAt) > HOURS72 ? undefined : parsed.nextUrl;

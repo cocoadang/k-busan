@@ -109,6 +109,38 @@ export type ImportanceLevel = 1 | 2 | 3 | 4 | 5;
 export const TELEGRAM_MIN_IMPORTANCE_DEFAULT: ImportanceLevel = 4;
 
 /**
+ * 부산 정비사업 통합홈페이지(dynamice.busan.go.kr) 조합 게시판 수집 설정
+ */
+export interface AssociationBoardConfig {
+  /** 게시판 목록 URL (예: 'https://dynamice.busan.go.kr/view.do?no=287') */
+  listUrl: string;
+  /** 카드 move_view() 호출의 게시판 ID (예: 'BBSMSTR_000000000080') */
+  boardId: string;
+  /** 해당 구역 게시물의 영역 ID (예: 'BARA_0000000000151') */
+  areaId: string;
+  /** 상세 페이지 메뉴 번호 (view.do?no=…) */
+  detailMenuNo: string;
+  /** 구형 표 목록에서 이 구역 게시물을 고르는 정규식 원문 (예: '촉진\\s*3') */
+  titlePattern: string;
+  /** 수집 항목의 sourceName */
+  sourceName: string;
+  /** 수집 감사(sourceDetails)에 표시할 출처명 */
+  auditSourceName: string;
+  /** 수집 항목의 matchedKeywords */
+  matchedKeywords: string[];
+}
+
+/**
+ * 관련보도 묶음 규칙: 제목(정규화 후)이 allOf 정규식을 모두 만족하고 noneOf 를
+ * 만족하지 않으면 같은 날 보도를 key 로 묶는다. (선정·계약 등 결과 보도는 noneOf 로 분리)
+ */
+export interface RelatedReportRule {
+  key: string;
+  allOf: string[];
+  noneOf?: string;
+}
+
+/**
  * 정비사업 Registry 인터페이스
  * 필수 필드: id, name, aliases, locationKeywords, district, city
  */
@@ -135,6 +167,21 @@ export interface RedevelopmentProject {
   description?: string;
   generalSaleStatus?: string; // 일반분양 여부 (예: '확인 필요' 등)
   officialSourceUrls?: string[]; // 해당 구역 관련 고시·공고 페이지
+
+  // ── 수집·분석·알림 설정 (새 구역 추가 시 코드 수정 없이 여기만 채움) ──
+  /** Telegram 알림 머리말 등에 쓰는 짧은 표시명 (예: '촉진3구역'). 없으면 name 사용 */
+  shortName?: string;
+  /**
+   * Google News RSS 검색어. 지정하면 별칭 OR 검색 대신 이 검색어들을 각각 개별 질의함
+   * (각 검색어마다 `when:7d` 질의 + 기간 무제한 질의). 별칭이 구두점이 많아 OR 검색이
+   * 넓어지는 구역용.
+   */
+  newsSearchTerms?: string[];
+  /** 조합 공고 게시판 수집 설정. 없으면 조합 게시판을 수집하지 않음 */
+  associationBoard?: AssociationBoardConfig;
+  /** 같은 날 같은 사안을 다룬 여러 언론 보도를 하나의 관련보도 묶음으로 보여주는 규칙 */
+  relatedReportRules?: RelatedReportRule[];
+
   isActiveMonitoring: boolean;
   createdAt: string;
   updatedAt: string;

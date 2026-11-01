@@ -1,6 +1,7 @@
 import { evaluateDispatch } from './dispatchPolicy';
 import { createHash } from 'crypto';
 import { ExtractedEvent, RedevelopmentProject } from '../types/redevelopment';
+import { REDEVELOPMENT_SEED_PROJECTS } from '../registry/redevelopmentRegistry';
 
 export interface TelegramSendResult {
   success: boolean;
@@ -97,22 +98,10 @@ export class TelegramNotifier {
    * URL
    */
   public formatEventMessage(event: ExtractedEvent, project?: RedevelopmentProject): string {
-    const projectName =
-      project?.name ||
-      (event.projectId === 'chokjin-3'
-        ? '부산시민공원 촉진3구역'
-        : event.projectId === 'udong-3'
-        ? '해운대구 우동3구역'
-        : event.projectId);
-
-    const shortProject =
-      event.projectId === 'chokjin-3'
-        ? '촉진3구역'
-        : event.projectId === 'udong-3'
-        ? '우동3구역'
-        : event.projectId === 'samik-beach'
-        ? '삼익비치'
-        : projectName;
+    // Display names come from the registry (shortName → name); the id is the last resort.
+    const entry = project || REDEVELOPMENT_SEED_PROJECTS.find((p) => p.id === event.projectId);
+    const projectName = entry?.name || event.projectId;
+    const shortProject = entry?.shortName || projectName;
 
     const stars = this.formatImportanceStars(event.importance);
     const categoryText = event.category ? `${event.category}` : '정비사업 현황';

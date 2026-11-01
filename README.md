@@ -45,6 +45,24 @@ Recommended Firestore TTL policies: `analysisCache.expiresAt`. Collections `docu
 
 Access restrictions stop requests; the app must not bypass them. Failed or incomplete collection must not be recorded as proof that no new material exists. A valid attachment URL or HTML detail page does not prove PDF download or text extraction success. The collector does not implement OCR.
 
+## 새 정비구역 추가 방법
+
+수집·분석·알림 설정은 모두 `src/registry/redevelopmentRegistry.ts`의 `REDEVELOPMENT_SEED_PROJECTS` 항목 하나로 정해집니다(타입: `src/types/redevelopment.ts`의 `RedevelopmentProject`). 새 구역은 이 배열에 항목만 추가하면 되고, 수집기·파이프라인·알림 코드는 고칠 필요가 없습니다.
+
+필수:
+- `id`: 고유 식별자(예: `'gwacheon-10'`). 핑거프린트·이벤트 ID에 쓰이므로 정한 뒤에는 바꾸지 않습니다.
+- `name`, `aliases`, `locationKeywords`, `district`, `city`: 매칭과 관련성 판정에 씁니다. 부산시 고시와 새올 수집은 `city: '부산광역시'`인 구역에만, 과천시 고시 수집은 `city: '과천시'`인 구역에만 적용됩니다.
+- `isActiveMonitoring: true`: 수집 대상에 넣습니다.
+- `createdAt`, `updatedAt`.
+
+선택(수집·알림 동작):
+- `shortName`: Telegram 머리말 `[shortName]`에 쓰는 짧은 이름입니다. 없으면 `name`을 씁니다.
+- `newsSearchTerms`: Google News RSS 검색어 목록입니다. 지정하면 별칭 OR 검색 대신 검색어마다 개별로 질의합니다(`when:7d` 질의와 기간 없는 질의를 각각 보냅니다). 구두점이 많은 별칭에 씁니다.
+- `associationBoard`: 부산 정비사업 통합홈페이지(dynamice.busan.go.kr) 조합 게시판 설정입니다(`listUrl`, `boardId`, `areaId`, `detailMenuNo`, `titlePattern`, `sourceName`, `auditSourceName`, `matchedKeywords`). 이 값이 있는 구역만 조합 게시판을 수집합니다.
+- `relatedReportRules`: 같은 날 같은 사안을 다룬 보도를 하나로 묶는 규칙입니다(`key`, `allOf` 정규식 목록, 제외 정규식 `noneOf`).
+
+화면 표시용 메타데이터(`stage`, `builder`, `officialSourceUrls` 등)와 단지계획·진행이력 데이터(`src/data/`)는 따로 관리합니다.
+
 ## Publication scope
 
 The intended repository contains application source and development documentation. Excludes operational incident reports, audit records, real environment files, credentials, database exports, logs, generated builds and dependency directories.

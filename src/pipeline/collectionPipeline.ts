@@ -126,10 +126,10 @@ export class CollectionPipeline {
 
         // 1-B. Official Notices Collector (Phase 3A: official-api disabled / pending auth by default)
         // Configuration permits requests; only successful upstream responses mark active.
-        if (project.id === 'chokjin-3') {
+        if (project.associationBoard) {
           sourcesChecked++;
           const association = await this.associationCollector.fetchForProject(project, { timeoutMs: options.timeoutMs || 15000 });
-          sourceDetails.push({ sourceName: '촉진3 조합 입찰 게시판', sourceTier: 'official', status: association.error ? 'failed' : 'success', itemsCount: association.items.length, error: association.error });
+          sourceDetails.push({ sourceName: project.associationBoard.auditSourceName, sourceTier: 'official', status: association.error ? 'failed' : 'success', itemsCount: association.items.length, error: association.error });
           if (association.error) errors.push(association.error);
           discoveredItems.push(...association.items);
         }

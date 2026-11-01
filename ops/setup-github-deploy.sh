@@ -40,8 +40,11 @@ gcloud iam service-accounts describe "$DEPLOY_SA" >/dev/null 2>&1 || \
   gcloud iam service-accounts create kbusan-github-deploy --display-name="k-busan GitHub deploy" --quiet
 # A new service account takes a short while to become visible to IAM policy updates.
 retry() { for i in 1 2 3 4 5 6; do "$@" && return 0; echo "IAM 반영 대기 중... ($i/6)"; sleep 10; done; return 1; }
-retry gcloud run services add-iam-policy-binding "$SERVICE" --region "$REGION" \
-  --member="serviceAccount:$DEPLOY_SA" --role=roles/run.developer --quiet >/dev/null
+# Project-level run.developer: "gcloud run services replace" (used to drop the source-deploy
+# annotations left by AI Studio) needs project access, not just the service. This project
+# hosts only the Busan service.
+retry gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:$DEPLOY_SA" --role=roles/run.developer --condition=None --quiet >/dev/null
 retry gcloud iam service-accounts add-iam-policy-binding "$RUNTIME_SA" \
   --member="serviceAccount:$DEPLOY_SA" --role=roles/iam.serviceAccountUser --quiet >/dev/null
 retry gcloud artifacts repositories add-iam-policy-binding "$AR_REPO" --location "$REGION" \

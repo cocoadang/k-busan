@@ -183,12 +183,17 @@ export function newsArticleKey(item: { title?: string; sourceName?: string; publ
 }
 
 /** Conservative related-report grouping. This does not assert that a contractor was appointed. */
-export function relatedReportKey(doc: any, projectIds: string[]): string | undefined {
+/** Rules come from each project's registry entry (relatedReportRules). */
+export function relatedReportKey(doc: any, projects: readonly RedevelopmentProject[]): string | undefined {
   const title = normalizedNewsTitle(doc);
-  if (!newsArticleDay(doc.publishedAt)) return undefined;
-  if (projectIds.includes('gwacheon-10') && /과천역|지하철/.test(title) && /연결통로/.test(title) && /타당성/.test(title) && /업체|용역/.test(title)
-    && !/낙찰|선정완료|계약체결|개통|착공|취소|재공고|유찰|선정했다|선정됐다/.test(title)) {
-    return JSON.stringify(['gwacheon-10', newsArticleDay(doc.publishedAt), 'station-passage-feasibility-procurement']);
+  const day = newsArticleDay(doc.publishedAt);
+  if (!day) return undefined;
+  for (const project of projects) {
+    for (const rule of project.relatedReportRules || []) {
+      if (rule.allOf.every(pattern => new RegExp(pattern).test(title)) && !(rule.noneOf && new RegExp(rule.noneOf).test(title))) {
+        return JSON.stringify([project.id, day, rule.key]);
+      }
+    }
   }
   return undefined;
 }
@@ -206,7 +211,7 @@ export function curateNewsDocuments(documents: any[], projects: readonly Redevel
     });
     if (!matchedProjectIds.length) continue;
     const key = newsArticleKey(doc);
-    const relatedKey = relatedReportKey(doc, matchedProjectIds);
+    const relatedKey = relatedReportKey(doc, matchedProjectIds.map(id => projects.find(p => p.id === id)!));
     const existing = groups.get(key) || (relatedKey ? relatedGroups.get(relatedKey) : undefined);
     const report = { title: doc.title, sourceName: doc.sourceName, publishedAt: doc.publishedAt, url: doc.sourceUrl || doc.url || doc.primarySourceUrl };
     if (existing) {

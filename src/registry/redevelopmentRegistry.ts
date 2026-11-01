@@ -1,6 +1,7 @@
 /**
  * Busan Redevelopment Project Registry
- * 초기 모니터링 대상 정확히 2개 구역 (촉진3구역, 우동3구역) Seed 정의
+ * 모니터링 대상 구역 Seed 정의. 새 구역은 이 배열에 항목을 추가하는 것만으로
+ * 수집(뉴스·조합 게시판·고시)·분석·알림 설정이 반영된다 (README '새 정비구역 추가 방법').
  */
 
 import { RedevelopmentProject } from '../types/redevelopment.ts';
@@ -48,6 +49,17 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
       'https://www.busan.go.kr/gosi', // 부산광역시 고시공고
       'https://www.busanjin.go.kr/board/list.busanjin?boardId=BBS_0000021', // 부산진구청 고시/공고
     ],
+    shortName: '촉진3구역',
+    associationBoard: {
+      listUrl: 'https://dynamice.busan.go.kr/view.do?no=287',
+      boardId: 'BBSMSTR_000000000080',
+      areaId: 'BARA_0000000000151',
+      detailMenuNo: '329',
+      titlePattern: '촉진\\s*3',
+      sourceName: '촉진3구역 조합 입찰공고 (부산 정비사업 통합홈페이지)',
+      auditSourceName: '촉진3 조합 입찰 게시판',
+      matchedKeywords: ['촉진3구역'],
+    },
     isActiveMonitoring: true,
     createdAt: '2026-09-11T00:00:00.000Z',
     updatedAt: '2026-09-11T00:00:00.000Z',
@@ -90,6 +102,7 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
       'https://www.busan.go.kr/gosi', // 부산광역시 고시공고
       'https://www.haeundae.go.kr/board/list.do?boardId=BBS_0000021', // 해운대구청 고시/공고
     ],
+    shortName: '우동3구역',
     isActiveMonitoring: true,
     createdAt: '2026-09-11T00:00:00.000Z',
     updatedAt: '2026-09-11T00:00:00.000Z',
@@ -130,6 +143,7 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
       'https://www.busan.go.kr/gosi', // 부산광역시 고시공고
       'https://www.suyeong.go.kr', // 수영구청 고시공고
     ],
+    shortName: '삼익비치',
     isActiveMonitoring: true, // 2026-11: 뉴스·새올 고시 실시간 수집 대상 포함
     createdAt: '2026-09-12T00:00:00.000Z',
     updatedAt: '2026-09-12T00:00:00.000Z',
@@ -199,6 +213,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
       "https://www.gccity.go.kr/portal/saeol/gosi/list.do?mId=0301040000",
       "https://www.gg.go.kr/onnuri/mbiz/home/BARA_0000000000624/main.do"
     ],
+    // 구두점이 많은 별칭 OR 검색은 Google RSS 가 넓게 해석하므로 정밀 검색어를 개별 질의
+    "newsSearchTerms": ['과천 "8단지" 재건축', '과천 "9단지" 재건축', '과천 "8 9단지" 재건축'],
     "isActiveMonitoring": true,
     "createdAt": "2026-10-14T05:04:00.000Z",
     "updatedAt": "2026-10-14T05:04:00.000Z"
@@ -226,6 +242,14 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     "officialSourceUrls": [
       "https://www.gccity.go.kr/portal/saeol/gosi/list.do?mId=0301040000",
       "https://m.gc10.kr/"
+    ],
+    "relatedReportRules": [
+      {
+        // 같은 날 과천역 연결통로 타당성 용역 입찰 보도는 묶되, 선정·계약 등 결과 보도는 분리
+        "key": "station-passage-feasibility-procurement",
+        "allOf": ["과천역|지하철", "연결통로", "타당성", "업체|용역"],
+        "noneOf": "낙찰|선정완료|계약체결|개통|착공|취소|재공고|유찰|선정했다|선정됐다"
+      }
     ],
     "isActiveMonitoring": true,
     "createdAt": "2026-10-14T05:04:00.000Z",

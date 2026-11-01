@@ -57,9 +57,10 @@ export class NewsCollector {
    * Build targeted Korean search queries for each monitored project
    */
   public buildSearchQueries(project: RedevelopmentProject): string[] {
-    if (project.id === 'gwacheon-89') {
-      // Avoid one long punctuation-heavy OR expression; Google RSS may broaden it.
-      const targeted = ['과천 "8단지" 재건축', '과천 "9단지" 재건축', '과천 "8 9단지" 재건축'];
+    if (project.newsSearchTerms?.length) {
+      // Registry-defined precise queries, each sent separately: avoids one long
+      // punctuation-heavy OR expression that Google RSS may broaden.
+      const targeted = [...project.newsSearchTerms];
       return [...targeted.map(query => `${query} when:7d`), ...targeted];
     }
     const aliases = Array.from(new Set(project.aliases)).map(alias => `"${alias.replace(/"/g, '')}"`);

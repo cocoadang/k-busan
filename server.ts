@@ -673,7 +673,13 @@ async function runPollingCycleLocked(isProduction: boolean, enableTelegram: bool
 /** Records the scheduled run outcome; never lets alerting failures affect the response. */
 async function trackPollHealth(outcome: { ok: true } | { ok: false; reason: string }) {
   try {
-    const result = await recordPollOutcome(firestoreService, telegramNotifier, outcome);
+    // Failure/recovery messages go to Telegram only when OPS_TELEGRAM_ALERTS=true (off by
+    // default at the owner's request). Failures are still tracked and logged either way.
+    const opsSender = process.env.OPS_TELEGRAM_ALERTS === 'true'
+      ? telegramNotifier
+      : { isConfigured: () => false, sendOpsAlert: async () => ({ success: false }) };
+    const result = await recordPollOutcome(firestoreService, opsSender, outcome);
+    if (!outcome.ok) console.warn('[PollHealth] Scheduled run failed:', result.state.lastFailureReason, `(consecutive ${result.state.consecutiveFailures})`);
     if (result.alertSent) console.warn('[PollHealth] Failure alert sent:', result.state.consecutiveFailures);
     if (result.recoverySent) console.log('[PollHealth] Recovery message sent');
   } catch (err: any) {

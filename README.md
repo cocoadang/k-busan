@@ -47,7 +47,7 @@ Stored documents carry an `expiresAt` timestamp: collection cycles 30 days, news
 
 ## 운영 알림
 
-Collection runs once a day at 08:00 KST (Cloud Scheduler job `busan-redevelopment-poll-30m`). When the scheduled run (`/api/jobs/poll`) fails (threshold `POLL_FAILURE_ALERT_THRESHOLD`, default 1) (Firestore unavailable, missing Gemini key, or a run error), one Telegram operations message is sent, repeated at most every 6 hours while it keeps failing, and a recovery message follows the next successful run. State is kept in `opsState/pollHealth`. A crash before the app answers (container fails to start) cannot be reported by the app itself; Cloud Scheduler then shows the failed attempts.
+Collection runs once a day at 08:00 KST (Cloud Scheduler job `busan-redevelopment-poll-30m`). Failed scheduled runs are tracked in `opsState/pollHealth` and logged as `[PollHealth] Scheduled run failed` in Cloud Logging. Telegram failure/recovery messages are **off by default**; set `OPS_TELEGRAM_ALERTS=true` on the Cloud Run service to turn them on (sent on the first failure, repeated at most every 6 hours, plus one recovery message). Event alerts (importance ≥ 4) are unaffected.
 
 ## Collector behavior
 

@@ -52,6 +52,8 @@ function pickCycleSummary(cycle: AnyRecord | null | undefined) {
     relevantItems: cycle.relevantItems,
     eventsCreated: cycle.eventsCreated,
     eventsMerged: cycle.eventsMerged,
+    newEventsStored: cycle.newEventsStored,
+    newDocumentsStored: cycle.newDocumentsStored,
     telegramSent: cycle.telegramSent,
     errorCount: Array.isArray(cycle.errors) ? cycle.errors.length : 0,
   };

@@ -366,6 +366,10 @@ export interface FirestoreCollectionCycleDoc {
   telegramCandidates: number;
   telegramSent: number;
   telegramFailed: number;
+  /** Events written to Firestore as new documents in this cycle. */
+  newEventsStored?: number;
+  /** Source documents written to Firestore as new in this cycle. */
+  newDocumentsStored?: number;
   errors: string[];
   explanationWhyNoAlert?: string;
   itemAudits?: ItemAuditRecord[];

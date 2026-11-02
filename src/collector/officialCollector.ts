@@ -592,6 +592,7 @@ export async function readCityNoticeHtml(fetcher: typeof fetch, url: string, tim
   }
   throw new Error('CITY_FETCH_FAILED');
 }
+export const CITY_LIST_TRANSIENT_EMPTY = 'CITY_LIST_TRANSIENT_EMPTY';
 export function parseCityNoticeList(html: string) {
   const $ = load(html), entries: {title:string;url:string;publishedAt:string;noticeNumber:string}[] = [];
   let malformed = false;
@@ -604,6 +605,10 @@ export function parseCityNoticeList(html: string) {
       entries.push({title:cityClean(a.text()),url:canonicalCityNoticeUrl(a.attr('href')!),publishedAt:date,noticeNumber:cityClean(r.find('td').first().text())});
     } catch { malformed = true; }
   });
+  // The Busan board intermittently answers a valid page with a "데이터가 없습니다" table and a
+  // single-page pager (seen on ~15% of requests, 2026-11). That is a server glitch, not the end
+  // of the list, so it is reported as a retryable condition and never as "no notices".
+  if (!entries.length && !malformed && /데이터가\s*없습니다/.test($('table').text())) throw new Error(CITY_LIST_TRANSIENT_EMPTY);
   const empty = /등록된\s*(게시물|자료|글)(?:이|가)?\s*(없|존재하지)|검색된\s*(자료|결과)가?\s*없/.test($.text());
   if (malformed || (!entries.length && !empty)) throw new Error('CITY_LIST_PARSE_UNVERIFIED');
   const pageLinks = new Map<number,string>();
@@ -632,8 +637,9 @@ export function parseCityNoticeDetail(html:string, url:string) {
   $('a[href]').each((_,el)=>{const href=$(el).attr('href')!;if(/download|fileDown|\.pdf|\.hwpx?/i.test(href)){const u=new URL(href,url);if(u.protocol==='https:' && u.hostname==='www.busan.go.kr')attachments.push(u.toString());}});
   return {title,publishedAt,noticeNumber,content,attachments:[...new Set(attachments)]};
 }
+const CITY_TRANSIENT_RETRIES = 3;
 export class BusanCityNoticeCollector {
-  constructor(private fetcher:typeof fetch=fetch, private clock:()=>Date=()=>new Date()) {}
+  constructor(private fetcher:typeof fetch=fetch, private clock:()=>Date=()=>new Date(), private retryDelayMs=1000) {}
   async fetchForProjects(projects:readonly RedevelopmentProject[], options:{timeoutMs?:number;maxPages?:number;maxRequests?:number;budgetMs?:number}={}) {
     const now=this.clock(), items:RawCollectedItem[]=[],errors:string[]=[];
     const maxPages=Math.min(20,Math.max(1,options.maxPages||20));
@@ -657,7 +663,15 @@ export class BusanCityNoticeCollector {
     try {
       for(let page=1;page<=maxPages;page++){
         if(!nextPageUrl) throw new Error('CITY_NEXT_PAGE_UNVERIFIED');
-        const parsed=parseCityNoticeList(await read(nextPageUrl));
+        // Retry a page that comes back as the server's spurious empty table (see parser note).
+        let parsed:ReturnType<typeof parseCityNoticeList>|undefined;
+        for(let attempt=0;;attempt++){
+          try { parsed=parseCityNoticeList(await read(nextPageUrl)); break; }
+          catch(e){
+            if((e as Error).message!==CITY_LIST_TRANSIENT_EMPTY || attempt>=CITY_TRANSIENT_RETRIES)throw e;
+            await new Promise(r=>setTimeout(r,this.retryDelayMs*(attempt+1)));
+          }
+        }
         const pageKey=parsed.entries.map(e=>e.url).join('|');
         if(pageKey && seenPages.has(pageKey))throw new Error('CITY_DUPLICATE_PAGE');
         seenPages.add(pageKey);

@@ -626,6 +626,10 @@ async function runPollingCycleLocked(isProduction: boolean, enableTelegram: bool
     telegramCandidates: result.audit.telegramCandidates,
     telegramSent,
     telegramFailed,
+    // Stored as genuinely new in Firestore this cycle (eventsCreated counts events extracted
+    // by the pipeline, including ones that already existed and were only refreshed).
+    newEventsStored: newEventsCount,
+    newDocumentsStored: newDocsCount,
     errors: result.audit.errors,
     explanationWhyNoAlert: result.audit.explanationWhyNoAlert,
     itemAudits: result.audit.itemAudits,
@@ -645,6 +649,8 @@ async function runPollingCycleLocked(isProduction: boolean, enableTelegram: bool
     relevantItems: result.audit.relevantItems,
     eventsCreated: result.audit.eventsCreated,
     eventsMerged: result.audit.eventsMerged,
+    newEventsStored: newEventsCount,
+    newDocumentsStored: newDocsCount,
     telegramCandidates: result.audit.telegramCandidates,
     telegramSent,
     telegramFailed,

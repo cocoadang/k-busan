@@ -393,3 +393,23 @@ test('실제 카드 구조: 구역번호 식별·제목 분리·GET 페이지 �
  assert.equal(r.oldestPublishedAt,'2026-10-07T00:00:00+09:00');
  assert.throws(()=>parseAssociationList(html.replace('2026-10-08','날짜 없음')));
 });
+
+test('부산시 목록의 일시적 "데이터가 없습니다" 응답은 재시도하고, 계속되면 실패로 보고', async () => {
+ const {BusanCityNoticeCollector,parseCityNoticeList}=await import('../collector/officialCollector');
+ const glitch='<table><tbody><tr><td colspan="4">데이터가 없습니다.</td></tr></tbody></table><a href="/nbgosi?curPage=1">1</a>';
+ assert.throws(()=>parseCityNoticeList(glitch),/CITY_LIST_TRANSIENT_EMPTY/);
+ const row=(sno:number,date:string)=>`<tr><td>2026-1</td><td><a href="/nbgosi/view?sno=${sno}&gosiGbn=A&curPage=1">일반 공고 ${sno}</a></td><td>부서</td><td>${date}</td><td>1</td></tr>`;
+ const page1='<table><tbody>'+row(1,'2026.11.02')+row(2,'2026.10.20')+'</tbody></table>';
+ let listCalls=0;
+ const flaky=(async(u:any)=>{
+  const url=String(u);
+  if(url.includes('/view?'))return new Response('<html><body>x</body></html>');
+  listCalls++;return new Response(listCalls<=2?glitch:page1);
+ }) as typeof fetch;
+ const ok=await new BusanCityNoticeCollector(flaky,()=>new Date('2026-11-02T00:00:00Z'),1).fetchForProjects([project]);
+ assert.equal(listCalls,3,'two glitches retried, third answer parsed');
+ assert.ok(!ok.error?.includes('부산시 고시 목록 수집 실패'), ok.error);
+ const always=(async(u:any)=>new Response(String(u).includes('/view?')?'<html></html>':glitch)) as typeof fetch;
+ const bad=await new BusanCityNoticeCollector(always,()=>new Date('2026-11-02T00:00:00Z'),1).fetchForProjects([project]);
+ assert.match(bad.error||'',/목록 수집 실패: CITY_LIST_TRANSIENT_EMPTY/);
+});

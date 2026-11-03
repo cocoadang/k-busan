@@ -5,7 +5,7 @@
  */
 
 import { RedevelopmentProject } from '../types/redevelopment.ts';
-import { resolveProjectStatutoryStage } from '../utils/redevelopmentStages.ts';
+import { SEED_PROJECT_STAGES } from './seedProjectStages.ts';
 
 export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
   {
@@ -39,8 +39,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     district: '부산진구',
     city: '부산광역시',
     type: '재개발',
-    stage: resolveProjectStatutoryStage('chokjin-3').currentStage,
-    nextStage: resolveProjectStatutoryStage('chokjin-3').nextStage,
+    stage: SEED_PROJECT_STAGES['chokjin-3'].currentStage,
+    nextStage: SEED_PROJECT_STAGES['chokjin-3'].nextStage,
     builder: 'DL이앤씨 (하이엔드 브랜드: 아크로 라로체)',
     estimatedUnits: 3554,
     description:
@@ -92,8 +92,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     district: '해운대구',
     city: '부산광역시',
     type: '재개발',
-    stage: resolveProjectStatutoryStage('udong-3').currentStage,
-    nextStage: resolveProjectStatutoryStage('udong-3').nextStage,
+    stage: SEED_PROJECT_STAGES['udong-3'].currentStage,
+    nextStage: SEED_PROJECT_STAGES['udong-3'].nextStage,
     builder: '현대건설 (하이엔드 브랜드: 디에이치 아센테르)',
     estimatedUnits: 2503,
     description:
@@ -132,8 +132,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     district: '부산광역시 수영구 남천동',
     city: '부산광역시',
     type: '재건축',
-    stage: resolveProjectStatutoryStage('samik-beach').currentStage,
-    nextStage: resolveProjectStatutoryStage('samik-beach').nextStage,
+    stage: SEED_PROJECT_STAGES['samik-beach'].currentStage,
+    nextStage: SEED_PROJECT_STAGES['samik-beach'].nextStage,
     builder: 'GS건설',
     estimatedUnits: 3060,
     description:
@@ -164,8 +164,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     "district": "과천시",
     "city": "과천시",
     "type": "재건축",
-    "stage": resolveProjectStatutoryStage('gwacheon-5').currentStage,
-    "nextStage": resolveProjectStatutoryStage('gwacheon-5').nextStage,
+    "stage": SEED_PROJECT_STAGES['gwacheon-5'].currentStage,
+    "nextStage": SEED_PROJECT_STAGES['gwacheon-5'].nextStage,
     "generalSaleStatus": "입주자모집공고 확인 필요",
     "description": "뉴스·과천시 고시 모니터링 활성. 조합 게시판은 공개 범위 및 연결 검증 중.",
     "officialSourceUrls": [
@@ -205,8 +205,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     "district": "과천시",
     "city": "과천시",
     "type": "재건축",
-    "stage": resolveProjectStatutoryStage('gwacheon-89').currentStage,
-    "nextStage": resolveProjectStatutoryStage('gwacheon-89').nextStage,
+    "stage": SEED_PROJECT_STAGES['gwacheon-89'].currentStage,
+    "nextStage": SEED_PROJECT_STAGES['gwacheon-89'].nextStage,
     "generalSaleStatus": "입주자모집공고 확인 필요",
     "description": "뉴스·과천시 고시 모니터링 활성. 조합 게시판은 공개 범위 및 연결 검증 중.",
     "officialSourceUrls": [
@@ -235,8 +235,8 @@ export const REDEVELOPMENT_SEED_PROJECTS: readonly RedevelopmentProject[] = [
     "district": "과천시",
     "city": "과천시",
     "type": "재건축",
-    "stage": resolveProjectStatutoryStage('gwacheon-10').currentStage,
-    "nextStage": resolveProjectStatutoryStage('gwacheon-10').nextStage,
+    "stage": SEED_PROJECT_STAGES['gwacheon-10'].currentStage,
+    "nextStage": SEED_PROJECT_STAGES['gwacheon-10'].nextStage,
     "generalSaleStatus": "입주자모집공고 확인 필요",
     "description": "뉴스·과천시 고시 모니터링 활성. 조합 게시판은 공개 범위 및 연결 검증 중.",
     "officialSourceUrls": [

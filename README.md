@@ -57,6 +57,8 @@ Access restrictions stop requests; the app must not bypass them. Failed or incom
 
 수집·분석·알림 설정은 모두 `src/registry/redevelopmentRegistry.ts`의 `REDEVELOPMENT_SEED_PROJECTS` 항목 하나로 정해집니다(타입: `src/types/redevelopment.ts`의 `RedevelopmentProject`). 새 구역은 이 배열에 항목만 추가하면 되고, 수집기·파이프라인·알림 코드는 고칠 필요가 없습니다.
 
+현재 단계(`stage`·`nextStage`)는 진행이력 기반 계산 결과를 `src/registry/seedProjectStages.ts`에 적어 둔 값을 씁니다(브라우저 첫 화면 번들에서 이력 데이터를 빼기 위함). 구역을 추가하거나 진행이력을 바꾼 뒤 `src/tests/seedProjectStages.test.ts`가 실패하면, 실패 메시지에 나온 값으로 이 표를 갱신합니다.
+
 필수:
 - `id`: 고유 식별자(예: `'gwacheon-10'`). 핑거프린트·이벤트 ID에 쓰이므로 정한 뒤에는 바꾸지 않습니다.
 - `name`, `aliases`, `locationKeywords`, `district`, `city`: 매칭과 관련성 판정에 씁니다. 부산시 고시와 새올 수집은 `city: '부산광역시'`인 구역에만, 과천시 고시 수집은 `city: '과천시'`인 구역에만 적용됩니다.

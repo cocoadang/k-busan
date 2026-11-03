@@ -4,7 +4,7 @@ import { GwacheonCityNoticeCollector } from '../collector/officialCollector';
 import { REDEVELOPMENT_SEED_PROJECTS } from '../registry/redevelopmentRegistry';
 
 const project = REDEVELOPMENT_SEED_PROJECTS.find(p => p.id === 'gwacheon-10')!;
-const list = '<form id="list"><input name="page" value="1"></form><table class="bod_list gosi"><tbody><tr><td>�ڷᰡ �����ϴ�</td></tr></tbody></table>';
+const list = '<form id="list"><input name="page" value="1"></form><table class="bod_list gosi"><tbody><tr><td>자료가 없습니다</td></tr></tbody></table>';
 const socket = () => new TypeError('fetch failed', {cause: Object.assign(new Error('socket closed'), {code:'UND_ERR_SOCKET'})});
 const run = (fetcher: typeof fetch) => new GwacheonCityNoticeCollector(fetcher, () => new Date('2026-11-03T00:00:00Z')).fetchForProjects([project]);
 
@@ -62,10 +62,10 @@ test('Gwacheon invalid HTML fails closed without transport retries',async()=>{
 });
 
 test('Gwacheon header socket retry waits and does not duplicate a recovered notice',async()=>{
-  const title='��õ�ְ�10���� ����� ����';
+  const title='과천주공10단지 재건축 공고';
   const detailUrl='/portal/saeol/gosi/view.do?notAncmtMgtNo=123';
   const row=`<form id="list"><input name="page" value="1"></form><table class="bod_list gosi"><tbody><tr><td><a data-action="${detailUrl}">${title}</a></td><td class="list_date">2026-11-03</td></tr></tbody></table>`;
-  const detail=`<div class="bod_view"><h4>${title}</h4><div class="view_date">2026-11-03</div><div class="view_cont">��õ�ְ�10���� ����� �������� ���� ���� �����Դϴ�.</div></div>`;
+  const detail=`<div class="bod_view"><h4>${title}</h4><div class="view_date">2026-11-03</div><div class="view_cont">과천주공10단지 재건축 정비사업의 공개 고시 내용입니다.</div></div>`;
   const calls:{url:string;at:number}[]=[];
   const result=await run((async input=>{
     const url=String(input);calls.push({url,at:Date.now()});

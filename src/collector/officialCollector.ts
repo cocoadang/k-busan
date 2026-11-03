@@ -71,7 +71,7 @@ export interface SaeolFetchResponse {
  */
 export class OfficialNoticeCollector {
   private readonly baseUrl = 'https://apis.data.go.kr/6260000/SaeolAncmntInfoService/getSaeolAncmntInfo';
-  private readonly sourceName = '�λ걤���� ���ð�������';
+  private readonly sourceName = '부산광역시 새올고시정보';
 
   /**
    * Safe access to API Key (Never logged or printed)
@@ -131,7 +131,7 @@ export class OfficialNoticeCollector {
         pageNo,
         numOfRows,
         items: [],
-        error: 'DATA_GO_KR_API_KEY ȯ�溯���� �������� ���� (���� API �̰��� / Fail-Closed)',
+        error: 'DATA_GO_KR_API_KEY 환경변수가 설정되지 않음 (공식 API 미검증 / Fail-Closed)',
         rawFieldNames: [],
       };
     }
@@ -183,7 +183,7 @@ export class OfficialNoticeCollector {
       } catch {
         return { success: false, httpStatus, resultCode: 'INVALID_API_RESPONSE',
           totalCount: 0, pageNo, numOfRows, items: [],
-          error: `���� API ���� �Ľ� ���� (HTTP ${httpStatus})`, rawFieldNames: [] };
+          error: `공식 API 응답 파싱 실패 (HTTP ${httpStatus})`, rawFieldNames: [] };
       }
 
       const responseHeader = parsed.response?.header || parsed.result;
@@ -196,7 +196,7 @@ export class OfficialNoticeCollector {
       // Check for OpenAPI_ServiceResponse error format (e.g. key errors)
       if (parsed.OpenAPI_ServiceResponse?.cmmMsgHeader) {
         const header = parsed.OpenAPI_ServiceResponse.cmmMsgHeader;
-        const errMsg = header.errMsg || header.returnAuthMsg || 'API ���� ����';
+        const errMsg = header.errMsg || header.returnAuthMsg || 'API 에러 응답';
         const returnReasonCode = header.returnReasonCode || 'UNKNOWN';
         return {
           success: false,
@@ -206,7 +206,7 @@ export class OfficialNoticeCollector {
           pageNo,
           numOfRows,
           items: [],
-          error: `�λ� ���ð��� API ����: ${errMsg} (Code: ${returnReasonCode}) [HTTP ${httpStatus}]`,
+          error: `부산 새올고시 API 오류: ${errMsg} (Code: ${returnReasonCode}) [HTTP ${httpStatus}]`,
           rawFieldNames: Object.keys(header),
         };
       }
@@ -217,7 +217,7 @@ export class OfficialNoticeCollector {
       const resultCode = String(header?.resultCode ?? 'UNKNOWN');
 
       if (!response.ok || (resultCode !== '00' && resultCode !== '0')) {
-        const resultMsg = header?.resultMsg || 'API ���� ������ �ڵ�';
+        const resultMsg = header?.resultMsg || 'API 응답 비정상 코드';
         return {
           success: false,
           httpStatus,
@@ -226,12 +226,12 @@ export class OfficialNoticeCollector {
           pageNo,
           numOfRows,
           items: [],
-          error: `�λ� ���ð��� API ������ �ڵ� ��ȯ: ${resultMsg} (Code: ${resultCode})`,
+          error: `부산 새올고시 API 비정상 코드 반환: ${resultMsg} (Code: ${resultCode})`,
           rawFieldNames: header ? Object.keys(header) : [],
         };
       }
 
-      if (!body || !/^\d+$/.test(String(body.totalCount ?? '')) || !Number.isSafeInteger(Number(body.totalCount))) return { success: false, httpStatus, resultCode: 'BODY_UNVERIFIED', totalCount: 0, pageNo, numOfRows, items: [], error: '���� API ���� ���� Ȯ�� ����', rawFieldNames: [] };
+      if (!body || !/^\d+$/.test(String(body.totalCount ?? '')) || !Number.isSafeInteger(Number(body.totalCount))) return { success: false, httpStatus, resultCode: 'BODY_UNVERIFIED', totalCount: 0, pageNo, numOfRows, items: [], error: '새올 API 응답 본문 확인 실패', rawFieldNames: [] };
       const totalCount = Number(body.totalCount);
       let rawItems: SaeolRawNoticeItem[] = [];
 
@@ -247,7 +247,7 @@ export class OfficialNoticeCollector {
       const expected = Math.min(numOfRows, Math.max(0, totalCount - (pageNo - 1) * numOfRows));
       if (rawItems.length !== expected || rawItems.some(item => !item || typeof item !== 'object' || Array.isArray(item))) {
         return { success: false, httpStatus, resultCode: 'ITEMS_UNVERIFIED', totalCount, pageNo, numOfRows,
-          items: [], error: '���� API �ѰǼ��� ������ �׸� ����ġ (���� �̿Ϸ�)', rawFieldNames };
+          items: [], error: '새올 API 총건수와 페이지 항목 불일치 (수집 미완료)', rawFieldNames };
       }
 
       return {
@@ -269,7 +269,7 @@ export class OfficialNoticeCollector {
         pageNo,
         numOfRows,
         items: [],
-        error: `�λ� ���ð��� API ����/���� ���� ���� [${err?.cause?.code || err?.name || 'UNKNOWN'}]`,
+        error: `부산 새올고시 API 연결/본문 수신 실패 [${err?.cause?.code || err?.name || 'UNKNOWN'}]`,
         rawFieldNames: [],
       };
     }
@@ -315,7 +315,7 @@ export class OfficialNoticeCollector {
     const numOfRows = firstPage.numOfRows;
     const totalPages = Math.min(Math.ceil(totalCount / numOfRows), maxPages);
     const errors: string[] = [];
-    if (Math.ceil(totalCount / numOfRows) > maxPages) errors.push('���� API ������ ����: ��ü Ȯ�� �̿Ϸ�');
+    if (Math.ceil(totalCount / numOfRows) > maxPages) errors.push('새올 API 페이지 제한: 전체 확인 미완료');
 
     // Fetch subsequent pages if totalCount > 50
     for (let page = 2; page <= totalPages; page++) {
@@ -327,7 +327,7 @@ export class OfficialNoticeCollector {
       });
       if (nextPage.success && nextPage.items.length > 0) {
         allItems.push(...nextPage.items);
-      } else if (!nextPage.success) errors.push(nextPage.error || '���� �ļ� ������ ����');
+      } else if (!nextPage.success) errors.push(nextPage.error || '새올 후속 페이지 실패');
     }
 
     return {
@@ -364,16 +364,16 @@ export class OfficialNoticeCollector {
 
       // Check administrative/redevelopment context
       const hasContext =
-        combinedText.includes('�ΰ�') ||
-        combinedText.includes('����') ||
-        combinedText.includes('����') ||
-        combinedText.includes('����') ||
-        combinedText.includes('����') ||
-        combinedText.includes('�簳��') ||
-        combinedText.includes('����') ||
-        combinedText.includes('�ð�') ||
-        combinedText.includes('����') ||
-        combinedText.includes('����');
+        combinedText.includes('인가') ||
+        combinedText.includes('고시') ||
+        combinedText.includes('공고') ||
+        combinedText.includes('정비') ||
+        combinedText.includes('촉진') ||
+        combinedText.includes('재개발') ||
+        combinedText.includes('조합') ||
+        combinedText.includes('시공') ||
+        combinedText.includes('선정') ||
+        combinedText.includes('입찰');
 
       if (!hasContext) continue;
 
@@ -383,7 +383,7 @@ export class OfficialNoticeCollector {
       const noticeNo = raw.mngNo || raw.ancmntNo || raw.manageNo || raw.seq || raw.noticeNo || '';
       const rawUrl = (raw.ancmntUrl || raw.detailUrl || raw.linkUrl || raw.url || '').trim();
 
-      // Stable Document Key: ��� + ���ù�ȣ + �������� (�Ǵ� noticeNo)
+      // Stable Document Key: 기관 + 고시번호 + 게재일자 (또는 noticeNo)
       const stableDocKey = noticeNo
         ? `saeol_${noticeNo}`
         : `${deptNm}_${noticeNo}_${title.slice(0, 30)}_${pbltnYmd}`;
@@ -412,7 +412,7 @@ export class OfficialNoticeCollector {
         sourceName: this.sourceName,
         sourceUrl: rawUrl || `${this.baseUrl}?pbltnYmd=${pbltnYmd}&noticeNo=${noticeNo || stableHash}`,
         title,
-        content: content || `[���� ���� ���á�����] ${title} (${deptNm || '����ü'} / ${seNm || '����'} ��${noticeNo || 'N/A'}ȣ)`,
+        content: content || `[공식 행정 고시·공고] ${title} (${deptNm || '지자체'} / ${seNm || '고시'} 제${noticeNo || 'N/A'}호)`,
         author: deptNm || undefined,
         publishedAt: isoPublishedAt,
         collectedAt: new Date().toISOString(),
@@ -605,11 +605,11 @@ export function parseCityNoticeList(html: string) {
       entries.push({title:cityClean(a.text()),url:canonicalCityNoticeUrl(a.attr('href')!),publishedAt:date,noticeNumber:cityClean(r.find('td').first().text())});
     } catch { malformed = true; }
   });
-  // The Busan board intermittently answers a valid page with a "�����Ͱ� �����ϴ�" table and a
+  // The Busan board intermittently answers a valid page with a "데이터가 없습니다" table and a
   // single-page pager (seen on ~15% of requests, 2026-11). That is a server glitch, not the end
   // of the list, so it is reported as a retryable condition and never as "no notices".
-  if (!entries.length && !malformed && /�����Ͱ�\s*�����ϴ�/.test($('table').text())) throw new Error(CITY_LIST_TRANSIENT_EMPTY);
-  const empty = /��ϵ�\s*(�Խù�|�ڷ�|��)(?:��|��)?\s*(��|��������)|�˻���\s*(�ڷ�|���)��?\s*��/.test($.text());
+  if (!entries.length && !malformed && /데이터가\s*없습니다/.test($('table').text())) throw new Error(CITY_LIST_TRANSIENT_EMPTY);
+  const empty = /등록된\s*(게시물|자료|글)(?:이|가)?\s*(없|존재하지)|검색된\s*(자료|결과)가?\s*없/.test($.text());
   if (malformed || (!entries.length && !empty)) throw new Error('CITY_LIST_PARSE_UNVERIFIED');
   const pageLinks = new Map<number,string>();
   $('a[href]').each((_,el)=>{
@@ -624,14 +624,14 @@ export function parseCityNoticeList(html: string) {
 export function parseCityNoticeDetail(html:string, url:string) {
   const $ = load(html); $('script,style,nav,header,footer').remove();
   const text = cityClean($('body').text() || $.text());
-  const title = cityClean($('h4,h3,h2,h1').toArray().map(el=>$(el).text()).find(t=>/����|�簳��|�����/.test(t)) || '');
-  const dateText = text.match(/��������\s*(20\d{2}[.\-/]\d{1,2}[.\-/]\d{1,2})/)?.[1];
+  const title = cityClean($('h4,h3,h2,h1').toArray().map(el=>$(el).text()).find(t=>/정비|재개발|재건축/.test(t)) || '');
+  const dateText = text.match(/공고일자\s*(20\d{2}[.\-/]\d{1,2}[.\-/]\d{1,2})/)?.[1];
   const publishedAt = dateText && parseKstDate(dateText);
-  const noticeNumber = text.match(/���ð�����ȣ\s*([\d-]+)/)?.[1];
-  const start = text.indexOf('����', text.indexOf('���ð�����ȣ'));
+  const noticeNumber = text.match(/고시공고번호\s*([\d-]+)/)?.[1];
+  const start = text.indexOf('내용', text.indexOf('고시공고번호'));
   if (!title || !publishedAt || !noticeNumber || start < 0) throw new Error('CITY_DETAIL_PARSE_UNVERIFIED');
   let content = text.slice(start + 2);
-  content = content.split('������ ������')[0].split('�ڷ���� ���μ�')[0].slice(0,20000).trim();
+  content = content.split('페이지 만족도')[0].split('자료관리 담당부서')[0].slice(0,20000).trim();
   if (content.length < 20) throw new Error('CITY_DETAIL_CONTENT_MISSING');
   const attachments:string[]=[];
   $('a[href]').each((_,el)=>{const href=$(el).attr('href')!;if(/download|fileDown|\.pdf|\.hwpx?/i.test(href)){const u=new URL(href,url);if(u.protocol==='https:' && u.hostname==='www.busan.go.kr')attachments.push(u.toString());}});
@@ -685,8 +685,8 @@ export class BusanCityNoticeCollector {
         nextPageUrl=parsed.pageLinks.get(page+1);
         if(!nextPageUrl && parsed.entries.length<10){complete=true;break;}
       }
-      if(!complete)errors.push('CITY_BOARD_PAGE_LIMIT: �ֱ�7�� ��ü Ȯ�� �̿Ϸ�');
-    }catch(e){errors.push(`�λ�� ���� ��� ���� ����: ${(e as Error).message}`);}
+      if(!complete)errors.push('CITY_BOARD_PAGE_LIMIT: 최근7일 전체 확인 미완료');
+    }catch(e){errors.push(`부산시 고시 목록 수집 실패: ${(e as Error).message}`);}
     // Recovery page is checked live even if list pagination fails.
     candidates.set(canonicalCityNoticeUrl(RECOVERY_NOTICE),{});
     for(const [url] of candidates){
@@ -699,9 +699,9 @@ export class BusanCityNoticeCollector {
         if(age<0 || age>(recovery?14:7)*86400000)continue;
         for(const project of projects){const aliases=aliasMatch(detail.title+' '+detail.content,project);if(!aliases.length)continue;
           const fingerprint=`city:${project.id}:${new URL(url).searchParams.get('sno')}`;
-          items.push({id:'official_city_'+createHash('sha256').update(fingerprint).digest('hex').slice(0,16),projectId:project.id,sourceTier:'official',sourceType:'official-web',sourceName:'�λ걤���� ���� ���ð���',sourceUrl:url,title:detail.title,content:detail.content,publishedAt:detail.publishedAt,collectedAt:now.toISOString(),rawFingerprint:fingerprint,matchedKeywords:aliases,noticeNumber:detail.noticeNumber,actorType:'official',detailVerified:true,attachmentUrls:detail.attachments});
+          items.push({id:'official_city_'+createHash('sha256').update(fingerprint).digest('hex').slice(0,16),projectId:project.id,sourceTier:'official',sourceType:'official-web',sourceName:'부산광역시 공식 고시공고',sourceUrl:url,title:detail.title,content:detail.content,publishedAt:detail.publishedAt,collectedAt:now.toISOString(),rawFingerprint:fingerprint,matchedKeywords:aliases,noticeNumber:detail.noticeNumber,actorType:'official',detailVerified:true,attachmentUrls:detail.attachments});
         }
-      }catch(e){errors.push(`�λ�� ���� ���� Ȯ�� ���� ${url}: ${(e as Error).message}`);}
+      }catch(e){errors.push(`부산시 고시 원문 확인 실패 ${url}: ${(e as Error).message}`);}
     }
     return {items,error:errors.length?errors.join('; '):undefined};
   }
@@ -713,7 +713,7 @@ export function parseGwacheonNoticeList(html: string) {
   if (!$('table.bod_list.gosi').length) throw new Error('GWACHEON_LIST_UNVERIFIED');
   $('table.bod_list.gosi tbody tr').each((_,el)=>{
     const row=$(el), a=row.find('a[data-action]').first();
-    if(!a.length) { if(!/��|��������/.test(row.text()))throw new Error('GWACHEON_ROW_UNVERIFIED'); return; }
+    if(!a.length) { if(!/없|존재하지/.test(row.text()))throw new Error('GWACHEON_ROW_UNVERIFIED'); return; }
     const title=a.text().replace(/\s+/g,' ').trim(), publishedAt=parseKstDate(row.find('.list_date').text());
     const u=new URL(a.attr('data-action')!,GWACHEON_NOTICE_LIST);
     if(!title || !publishedAt || u.hostname!=='www.gccity.go.kr' || u.pathname!=='/portal/saeol/gosi/view.do' || !/^\d+$/.test(u.searchParams.get('notAncmtMgtNo')||''))throw new Error('GWACHEON_ROW_UNVERIFIED');
@@ -740,7 +740,7 @@ export function parseGwacheonNoticeDetail(html:string,url:string) {
 export class GwacheonCityNoticeCollector {
   constructor(private fetcher:typeof fetch=fetch,private clock:()=>Date=()=>new Date()){}
   async fetchForProjects(projects:readonly RedevelopmentProject[],options:{timeoutMs?:number;maxPages?:number}={}) {
-    const targets=projects.filter(p=>p.city==='��õ��'&&p.isActiveMonitoring);
+    const targets=projects.filter(p=>p.city==='과천시'&&p.isActiveMonitoring);
     const items:RawCollectedItem[]=[],errors:string[]=[],now=this.clock();let pagesRead=0;
     if(!targets.length)return {items,pagesRead,error:undefined};
     let accessStopped=false;
@@ -782,7 +782,7 @@ export class GwacheonCityNoticeCollector {
       }
       }throw new Error('GWACHEON_FETCH_FAILED');
     };
-    const matches=(text:string,p:RedevelopmentProject)=>p.aliases.filter(a=>text.replace(/[\s��??,]/g,'').includes(a.replace(/[\s��??,]/g,'')));
+    const matches=(text:string,p:RedevelopmentProject)=>p.aliases.filter(a=>text.replace(/[\sㆍ∙‧,]/g,'').includes(a.replace(/[\sㆍ∙‧,]/g,'')));
     const seen=new Set<string>(), cutoff=72*3600000;
     for(const seCode of ['01','02']){
       if(accessStopped)break;
@@ -797,15 +797,15 @@ export class GwacheonCityNoticeCollector {
             if(accessStopped)break;
             const age=now.getTime()-Date.parse(entry.publishedAt);if(age<0||age>cutoff||seen.has(entry.url))continue;
             const matched=targets.filter(p=>matches(entry.title,p).length);if(!matched.length)continue;seen.add(entry.url);
-            let detail;try{detail=parseGwacheonNoticeDetail(await read(entry.url),entry.url);}catch(e){errors.push(`��õ ���� �� Ȯ�� ����: ${(e as Error).message}`);continue;}
+            let detail;try{detail=parseGwacheonNoticeDetail(await read(entry.url),entry.url);}catch(e){errors.push(`과천 고시 상세 확인 실패: ${(e as Error).message}`);continue;}
             if(detail.title!==entry.title||detail.publishedAt!==entry.publishedAt){errors.push('GWACHEON_DETAIL_MISMATCH');continue;}
             for(const p of matched){const fingerprint=`gwacheon:${p.id}:${new URL(entry.url).searchParams.get('notAncmtMgtNo')}`;
-              items.push({id:createHash('sha256').update(fingerprint).digest('hex'),projectId:p.id,title:detail.title,content:detail.content,publishedAt:detail.publishedAt,collectedAt:now.toISOString(),sourceUrl:entry.url,sourceTier:'official',sourceType:'official-web',sourceName:'��õ�� ���á�����',rawFingerprint:fingerprint,matchedKeywords:matches(entry.title,p),actorType:'official',detailVerified:true,attachmentUrls:detail.attachments});}
+              items.push({id:createHash('sha256').update(fingerprint).digest('hex'),projectId:p.id,title:detail.title,content:detail.content,publishedAt:detail.publishedAt,collectedAt:now.toISOString(),sourceUrl:entry.url,sourceTier:'official',sourceType:'official-web',sourceName:'과천시 고시·공고',rawFingerprint:fingerprint,matchedKeywords:matches(entry.title,p),actorType:'official',detailVerified:true,attachmentUrls:detail.attachments});}
           }
           if(!parsed.hasNext||!parsed.entries.length||parsed.entries.every(e=>now.getTime()-Date.parse(e.publishedAt)>cutoff)){complete=true;break;}
         }
         if(!complete)errors.push('GWACHEON_PAGINATION_LIMIT');
-      }catch(e){errors.push(`��õ�� ���� ���� ����: ${(e as Error).message}`);}
+      }catch(e){errors.push(`과천시 고시 수집 실패: ${(e as Error).message}`);}
     }
     return {items,pagesRead,error:errors.length?errors.join('; '):undefined};
   }

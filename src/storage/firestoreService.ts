@@ -148,6 +148,17 @@ export function sanitizeForFirestore<T>(data: T, seen = new WeakSet()): T {
  * - Telegram send ordering: Event 저장 -> delivery pending 기록 (atomic) -> API 호출 -> 결과 sent/failed 기록.
  * - Memory fallback allowed strictly for development/dashboard viewing.
  */
+/** Plan image files ship inside the image and never change at runtime: check each path once. */
+const assetExistsCache = new Map<string, boolean>();
+function assetFileExists(filePath: string): boolean {
+  let exists = assetExistsCache.get(filePath);
+  if (exists === undefined) {
+    try { exists = fs.existsSync(filePath); } catch { exists = false; }
+    assetExistsCache.set(filePath, exists);
+  }
+  return exists;
+}
+
 /**
  * Retention for Firestore TTL policies on the `expiresAt` field (enable once per collection:
  * see README "데이터 보관 기간"). Events and Telegram delivery records are kept indefinitely
@@ -1488,11 +1499,7 @@ export class FirestoreService {
       if (relPath) {
         const cleanPath = relPath.startsWith('/') ? relPath.slice(1) : relPath;
         const localFilePath = path.join(process.cwd(), 'public', cleanPath);
-        try {
-          fileExists = fs.existsSync(localFilePath);
-        } catch {
-          fileExists = false;
-        }
+        fileExists = assetFileExists(localFilePath);
       }
       return {
         ...doc,
@@ -1804,7 +1811,8 @@ export class FirestoreService {
       this.getRecentEvents(100),
       this.getRecentDocuments(100),
       this.getRecentDeliveries(50),
-      this.getRecentCycles(10),
+      // Only the latest cycle is shown; each cycle document can hold hundreds of KB of audits.
+      this.getRecentCycles(1),
       this.getAreaDevelopments(),
       this.getPlanVersions(),
       this.getUnitTypes(),

@@ -21,7 +21,6 @@ import { recordPollOutcome } from './src/notifier/pollHealthMonitor.ts';
 import dotenv from 'dotenv';
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { OfficialNoticeCollector, BusanCityNoticeCollector, getKstDateString } from './src/collector/officialCollector.ts';
 import { CollectionPipeline } from './src/pipeline/collectionPipeline.ts';
 import { REDEVELOPMENT_SEED_PROJECTS, defaultRegistry } from './src/registry/redevelopmentRegistry.ts';
@@ -883,6 +882,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    // Vite is a build/dev tool only; loading it lazily keeps it out of the production
+    // image's runtime dependencies and off the cold-start path.
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',

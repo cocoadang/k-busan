@@ -104,6 +104,19 @@ jobs:
           ]
           yaml.safe_dump(svc, open(path, 'w'), sort_keys=False)
           PY
+          python3 - <<'PY'
+          # Print non-secret runtime settings (no env values) for review.
+          import yaml
+          svc = yaml.safe_load(open('/tmp/service.yaml'))
+          t = svc['spec']['template']; ann = (t.get('metadata') or {}).get('annotations') or {}
+          c = t['spec']['containers'][0]
+          print('runtime settings:', {
+              'resources': c.get('resources'), 'concurrency': t['spec'].get('containerConcurrency'),
+              'timeoutSeconds': t['spec'].get('timeoutSeconds'),
+              'annotations': {k: v for k, v in ann.items() if 'autoscaling' in k or 'cpu' in k or 'startup' in k or 'execution' in k},
+              'envNames': sorted(e['name'] for e in c.get('env', [])),
+          })
+          PY
           echo "current revision: $CURRENT -> candidate: $NEW_REV"
           gcloud run services replace /tmp/service.yaml --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --quiet > /dev/null
           rm -f /tmp/service.yaml

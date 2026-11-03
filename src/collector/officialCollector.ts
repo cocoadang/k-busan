@@ -743,29 +743,58 @@ export class GwacheonCityNoticeCollector {
     const targets=projects.filter(p=>p.city==='과천시'&&p.isActiveMonitoring);
     const items:RawCollectedItem[]=[],errors:string[]=[],now=this.clock();let pagesRead=0;
     if(!targets.length)return {items,pagesRead,error:undefined};
+    let accessStopped=false;
     const read=async(url:string)=>{
+      const started=Date.now(), timeoutMs=options.timeoutMs||15000;
+      // One deadline covers redirects, body consumption and the single delayed retry.
+      const signal=AbortSignal.timeout(timeoutMs);
       for(let attempt=0;attempt<2;attempt++){
+      let phase='headers';
       try {
-      const signal=AbortSignal.timeout(options.timeoutMs||15000);let target=url;
+      signal.throwIfAborted();
+      if(accessStopped)throw new Error('GWACHEON_ACCESS_STOPPED');
+      let target=url;
       for(let hop=0;hop<4;hop++){
         const u=new URL(target);if(u.protocol!=='https:'||!['www.gccity.go.kr','new.gccity.go.kr'].includes(u.hostname)||!/^\/portal\/saeol\/gosi\/(list|view)\.do$/.test(u.pathname))throw new Error('GWACHEON_REDIRECT_REJECTED');
         const r=await this.fetcher(u.toString(),{signal,redirect:'manual'});
         if([301,302,303,307,308].includes(r.status)){const next=r.headers.get('location');if(!next)throw new Error('GWACHEON_REDIRECT_MISSING');await r.body?.cancel();target=new URL(next,target).toString();continue;}
-        if(!r.ok)throw new Error(`GWACHEON_HTTP_${r.status}`);return r.text();
+        if(!r.ok){
+          if(r.status===403||r.status===429)accessStopped=true;
+          await r.body?.cancel();
+          throw new Error(`GWACHEON_HTTP_${r.status}`);
+        }
+        phase='body';
+        // Await inside try: stream failures must retain their code and bounded retry.
+        return await r.text();
       }throw new Error('GWACHEON_REDIRECT_LIMIT');
-      }catch(e:any){const code=e?.cause?.code||e?.name||'UNKNOWN';const transient=/TIMEOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|UND_ERR/i.test(code)|| (e?.message==='fetch failed'&&!/CERT|SIGNATURE|ISSUER/i.test(code));if(attempt===0&&transient)continue;throw new Error(`${e?.message||'GWACHEON_FETCH_FAILED'} [${code}]`);}
+      }catch(e:any){
+        const rawCode=e?.cause?.code||(typeof e?.code==='string'?e.code:undefined)||e?.name||'UNKNOWN';
+        const code=/^[A-Za-z0-9_]+$/.test(String(rawCode))?String(rawCode):'UNKNOWN';
+        const transient=['UND_ERR_SOCKET','UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT','ECONNRESET','ECONNREFUSED','EAI_AGAIN','ETIMEDOUT'].includes(code);
+        if(attempt===0&&transient&&!signal.aborted&&Date.now()-started+500<timeoutMs){
+          await new Promise(resolve=>setTimeout(resolve,500));continue;
+        }
+        const u=new URL(url);
+        // Only allowlisted public identifiers; never include arbitrary errors/headers.
+        const page=['page','seCode','notAncmtMgtNo'].map(k=>`${k}=${/^\d+$/.test(u.searchParams.get(k)||'')?u.searchParams.get(k):'-'}`).join(' ');
+        const reason=/^GWACHEON_[A-Z0-9_]+$/.test(e?.message||'')?e.message:'GWACHEON_FETCH_FAILED';
+        throw new Error(`${reason} [${code}] phase=${phase} attempts=${attempt+1} ${page} elapsedMs=${Date.now()-started}`);
+      }
       }throw new Error('GWACHEON_FETCH_FAILED');
     };
     const matches=(text:string,p:RedevelopmentProject)=>p.aliases.filter(a=>text.replace(/[\sㆍ∙‧,]/g,'').includes(a.replace(/[\sㆍ∙‧,]/g,'')));
     const seen=new Set<string>(), cutoff=72*3600000;
     for(const seCode of ['01','02']){
+      if(accessStopped)break;
       let complete=false;
       try{
         for(let page=1;page<=(options.maxPages||10);page++){
+          if(accessStopped)break;
           const u=new URL(GWACHEON_NOTICE_LIST);u.searchParams.set('page',String(page));u.searchParams.set('seCode',seCode);
           const parsed=parseGwacheonNoticeList(await read(u.toString()));pagesRead++;
           if(parsed.current!==page)throw new Error('GWACHEON_PAGINATION_UNVERIFIED');
           for(const entry of parsed.entries){
+            if(accessStopped)break;
             const age=now.getTime()-Date.parse(entry.publishedAt);if(age<0||age>cutoff||seen.has(entry.url))continue;
             const matched=targets.filter(p=>matches(entry.title,p).length);if(!matched.length)continue;seen.add(entry.url);
             let detail;try{detail=parseGwacheonNoticeDetail(await read(entry.url),entry.url);}catch(e){errors.push(`과천 고시 상세 확인 실패: ${(e as Error).message}`);continue;}

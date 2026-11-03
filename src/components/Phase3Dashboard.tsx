@@ -5,16 +5,33 @@ import { ExtractedEvent, RedevelopmentProject } from '../types/redevelopment.ts'
 import { REDEVELOPMENT_SEED_PROJECTS } from '../registry/redevelopmentRegistry.ts';
 import { FirestoreAreaDevelopmentDoc } from '../schema/firestoreSchema.ts';
 import { AREA_DEVELOPMENTS_DATA } from '../data/areaDevelopmentsData.ts';
-import { ProjectStatusView } from './ProjectStatusView.tsx';
-import { ProjectTimelineView } from './ProjectTimelineView.tsx';
-import { AreaDevelopmentsView } from './AreaDevelopmentsView.tsx';
-import { ProjectNewsView } from './ProjectNewsView.tsx';
 import { UnitPlanView } from './UnitPlanView.tsx';
 
-// The subscription strategy tab (calculator + benchmark data) is the largest part of the
-// bundle and is not on the first screen, so it is loaded on demand.
+// Only the default tab ([단지계획]) is in the initial bundle. The other tabs are loaded on
+// demand; the subscription strategy tab (calculator + benchmark data) is the largest of them,
+// and the status/timeline tabs carry the verified history data.
+const loadProjectStatusView = () => import('./ProjectStatusView.tsx');
+const loadProjectTimelineView = () => import('./ProjectTimelineView.tsx');
+const loadAreaDevelopmentsView = () => import('./AreaDevelopmentsView.tsx');
+const loadProjectNewsView = () => import('./ProjectNewsView.tsx');
+const ProjectStatusView = lazy(() => loadProjectStatusView().then((m) => ({ default: m.ProjectStatusView })));
+const ProjectTimelineView = lazy(() => loadProjectTimelineView().then((m) => ({ default: m.ProjectTimelineView })));
+const AreaDevelopmentsView = lazy(() => loadAreaDevelopmentsView().then((m) => ({ default: m.AreaDevelopmentsView })));
+const ProjectNewsView = lazy(() => loadProjectNewsView().then((m) => ({ default: m.ProjectNewsView })));
 const SubscriptionStrategyView = lazy(() =>
   import('./SubscriptionStrategyView.tsx').then((m) => ({ default: m.SubscriptionStrategyView })));
+
+// Warm the small tab chunks once the first screen is idle so switching tabs normally does not
+// show the loading fallback. Failures are ignored here; lazy() retries when the tab is opened.
+function prefetchTabViews() {
+  for (const load of [loadProjectStatusView, loadProjectTimelineView, loadAreaDevelopmentsView, loadProjectNewsView]) {
+    load().catch(() => {});
+  }
+}
+
+const TabLoading: React.FC<{ label: string }> = ({ label }) => (
+  <div role="status" className="p-6 text-sm text-slate-500">{label} 화면을 불러오는 중입니다…</div>
+);
 
 export type MainTabType = 'plans' | 'status' | 'timeline' | 'developments' | 'news' | 'strategy';
 
@@ -70,6 +87,19 @@ export const Phase3Dashboard: React.FC = () => {
   useEffect(() => {
     fetchOverview();
     return () => overviewRequest.current?.abort();
+  }, []);
+
+  useEffect(() => {
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(prefetchTabViews, { timeout: 3000 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(prefetchTabViews, 1500);
+    return () => window.clearTimeout(id);
   }, []);
 
   const projects: RedevelopmentProject[] =
@@ -157,19 +187,23 @@ export const Phase3Dashboard: React.FC = () => {
           </div>
         )}
         {activeTab === 'status' && (
-          <ProjectStatusView
-            projects={projects}
-            events={events}
-            onSelectProjectTimeline={handleSelectProjectTimeline}
-          />
+          <Suspense fallback={<TabLoading label="사업현황" />}>
+            <ProjectStatusView
+              projects={projects}
+              events={events}
+              onSelectProjectTimeline={handleSelectProjectTimeline}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'timeline' && (
-          <ProjectTimelineView
-            selectedProjectId={selectedTimelineProject}
-            onSelectProject={(id) => setSelectedTimelineProject(id)}
-            events={events}
-          />
+          <Suspense fallback={<TabLoading label="진행이력" />}>
+            <ProjectTimelineView
+              selectedProjectId={selectedTimelineProject}
+              onSelectProject={(id) => setSelectedTimelineProject(id)}
+              events={events}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'plans' && (
@@ -183,22 +217,28 @@ export const Phase3Dashboard: React.FC = () => {
         )}
 
         {activeTab === 'developments' && (
-          <AreaDevelopmentsView
-            areaDevelopments={areaDevelopments}
-            selectedProjectId={selectedTimelineProject}
-            onSelectProject={(id) => setSelectedTimelineProject(id)}
-          />
+          <Suspense fallback={<TabLoading label="지역변화" />}>
+            <AreaDevelopmentsView
+              areaDevelopments={areaDevelopments}
+              selectedProjectId={selectedTimelineProject}
+              onSelectProject={(id) => setSelectedTimelineProject(id)}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'news' && (
           <>
             {loadError && <div role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">{loadError}</div>}
-            {loading && !overviewData ? <div role="status" className="p-6 text-sm text-slate-500">뉴스를 불러오는 중입니다…</div> : (!loadError || overviewData) && <ProjectNewsView documents={documents} />}
+            {loading && !overviewData ? <div role="status" className="p-6 text-sm text-slate-500">뉴스를 불러오는 중입니다…</div> : (!loadError || overviewData) && (
+              <Suspense fallback={<TabLoading label="뉴스" />}>
+                <ProjectNewsView documents={documents} />
+              </Suspense>
+            )}
           </>
         )}
 
         {activeTab === 'strategy' && (
-          <Suspense fallback={<div role="status" className="p-6 text-sm text-slate-500">청약전략 화면을 불러오는 중입니다…</div>}>
+          <Suspense fallback={<TabLoading label="청약전략" />}>
             <SubscriptionStrategyView />
           </Suspense>
         )}

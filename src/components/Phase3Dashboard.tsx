@@ -44,6 +44,26 @@ const MAIN_TABS: ReadonlyArray<{ id: MainTabType; label: string; Icon: React.Com
   { id: 'strategy', label: '청약전략', Icon: Calculator },
 ];
 
+const TAB_IDS = new Set<MainTabType>(['plans', 'status', 'timeline', 'developments', 'news', 'strategy']);
+const DEFAULT_PROJECT_ID = 'chokjin-3';
+const KNOWN_PROJECT_IDS = new Set(REDEVELOPMENT_SEED_PROJECTS.map((p) => p.id));
+
+/** Reads "#/<tab>/<projectId>" so tabs survive refresh, sharing and the back button. */
+export function parseDashboardHash(hash: string): { tab: MainTabType; projectId: string } {
+  const [rawTab, rawProject] = hash.replace(/^#\/?/, '').split('/');
+  const tab = TAB_IDS.has(rawTab as MainTabType) ? (rawTab as MainTabType) : 'plans';
+  const projectId = rawProject && KNOWN_PROJECT_IDS.has(decodeURIComponent(rawProject))
+    ? decodeURIComponent(rawProject) : DEFAULT_PROJECT_ID;
+  return { tab, projectId };
+}
+
+export function formatDashboardHash(tab: MainTabType, projectId: string): string {
+  return `#/${tab}/${encodeURIComponent(projectId)}`;
+}
+
+const initialRoute = () =>
+  typeof window === 'undefined' ? { tab: 'plans' as MainTabType, projectId: DEFAULT_PROJECT_ID } : parseDashboardHash(window.location.hash);
+
 export const Phase3Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -51,10 +71,36 @@ export const Phase3Dashboard: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Main Tabs: [단지계획] [사업현황] [진행이력] [지역변화] [뉴스] (기본 탭: 단지계획)
-  const [activeTab, setActiveTab] = useState<MainTabType>('plans');
+  const [activeTab, setActiveTabState] = useState<MainTabType>(() => initialRoute().tab);
 
   // Selected project for [단지계획], [진행이력], and [지역변화] tabs
-  const [selectedTimelineProject, setSelectedTimelineProject] = useState<string>('chokjin-3');
+  const [selectedTimelineProject, setSelectedTimelineProjectState] = useState<string>(() => initialRoute().projectId);
+
+  // Tab changes add a history entry (back button returns to the previous tab);
+  // switching the project inside a tab only replaces the current entry.
+  const setActiveTab = (tab: MainTabType) => {
+    setActiveTabState(tab);
+    const next = formatDashboardHash(tab, selectedTimelineProject);
+    if (window.location.hash !== next) window.history.pushState(null, '', next);
+  };
+  const setSelectedTimelineProject = (projectId: string) => {
+    setSelectedTimelineProjectState(projectId);
+    window.history.replaceState(null, '', formatDashboardHash(activeTab, projectId));
+  };
+
+  useEffect(() => {
+    const sync = () => {
+      const route = parseDashboardHash(window.location.hash);
+      setActiveTabState(route.tab);
+      setSelectedTimelineProjectState(route.projectId);
+    };
+    window.addEventListener('popstate', sync);
+    window.addEventListener('hashchange', sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('hashchange', sync);
+    };
+  }, []);
 
   const overviewRequest = useRef<AbortController | null>(null);
 
@@ -116,8 +162,9 @@ export const Phase3Dashboard: React.FC = () => {
 
   // Handler for "[진행이력 보기]" button on ProjectStatusView cards
   const handleSelectProjectTimeline = (projectId: string) => {
-    setSelectedTimelineProject(projectId);
-    setActiveTab('timeline');
+    setSelectedTimelineProjectState(projectId);
+    setActiveTabState('timeline');
+    window.history.pushState(null, '', formatDashboardHash('timeline', projectId));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

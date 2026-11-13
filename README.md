@@ -26,20 +26,21 @@ GitHub authenticates to Google Cloud through Workload Identity Federation limite
 
 ## Editing with Claude
 
-Use the official GitHub integration and grant access only to this private repository after reviewing its permission request. Make changes on a branch, run checks, and submit a pull request. Do not share cloud credentials, logs, private data or database exports. No automatic deployment workflow or cloud authentication is included here.
+Use the official GitHub integration and grant access only to this private repository after reviewing its permission request. Make changes on a branch, run checks, and submit a pull request. Do not share cloud credentials, logs, private data or database exports. Production deploys only through the manual **Run workflow** described above; no cloud key is stored in the repository.
 
 ## Operational safeguards
 
 - **Single collection run at a time.** `/api/jobs/poll` and `/api/pipeline/run` take a Firestore lock (`locks/poll`, expires after `POLL_LOCK_TTL_MS`, default 15 min). An overlapping call gets HTTP 409 `POLL_ALREADY_RUNNING`.
 - **Fail-closed everywhere in production.** With `NODE_ENV=production`, manual runs follow the same rules as the scheduler: no memory fallback, no Telegram without durable delivery records.
 - **Telegram at-most-once.** Sends time out after 10 s. A timeout or dropped connection leaves the delivery `pending`; after 2 minutes it becomes `STALE_PENDING_NEEDS_REVIEW` and is never re-sent automatically. Plain failures retry on later cycles up to 3 attempts. Messages are capped at 4,000 characters.
-- **Public APIs.** Read endpoints are cached in memory for `PUBLIC_CACHE_TTL_MS` (default 60 s) and cleared after each run and seed. `/api/storage/overview` returns a public view without Telegram chat IDs, message bodies, raw collector errors or per-item audits. 5xx responses carry fixed error codes; details stay in server logs.
+- **Public APIs.** Read endpoints are cached in memory for `PUBLIC_CACHE_TTL_MS` (default 30 min) and cleared after each run and seed. Public data endpoints send `Cache-Control: public, max-age=60, s-maxage=300`; health/status/admin routes and all errors are `no-store`. Responses are gzip-compressed.
+- **Rate limits.** Public reads: 120/min per client (first `X-Forwarded-For` hop) and 1,200/min per instance; admin calls 20/min per instance.
+- **Plan images.** Each `public/assets/plans` JPG/JFIF/PNG has a pre-built `<file>.webp` sibling (about half the size). Browsers that accept WebP get it automatically (`Vary: Accept`). When adding a plan image, also add its `.webp` (e.g. `cwebp -q 82`); without one the original is served.
+- **Shareable tabs.** The dashboard keeps the tab and project in the URL hash (`#/news/udong-3`), so refresh, links and the back button keep the view. `/api/storage/overview` returns a public view without Telegram chat IDs, message bodies, raw collector errors or per-item audits. 5xx responses carry fixed error codes; details stay in server logs.
 - **AI analysis.** Model comes from `GEMINI_ANALYSIS_MODEL` (default `gemini-3.8-flash`; the old `GEMINI_MODEL` variable is ignored on purpose). Collected text is fenced as untrusted data in the prompt, 429/5xx responses retry with backoff, and at most `AI_MAX_ITEMS_PER_CYCLE` (default 80) items are analysed per cycle, newest first.
 - **Collection cycle documents** are trimmed below 700 KB (Firestore limit 1 MiB) and record what was dropped in `truncated`.
 - **Preview proxy** is opt-in: `PREVIEW_MODE=true` plus `PREVIEW_UPSTREAM_ORIGIN` (https). It is never active when `NODE_ENV=production`.
 - **TLS for the association board.** The `start` script appends the RapidSSL TLS RSA CA G1 intermediate (expires 2027-11-02) for `dynamice.busan.go.kr`, which serves an incomplete chain. Replace it before expiry or when the site changes certificates.
-
-Recommended Firestore TTL policies: `analysisCache.expiresAt`. Collections `documents`, `collectionCycles` and `telegramDeliveries` grow without cleanup.
 
 ## 데이터 보관 기간
 
@@ -47,7 +48,7 @@ Stored documents carry an `expiresAt` timestamp: collection cycles 30 days, news
 
 ## 운영 알림
 
-Collection runs once a day at 08:00 KST (Cloud Scheduler job `busan-redevelopment-poll-30m`). Failed scheduled runs are tracked in `opsState/pollHealth` and logged as `[PollHealth] Scheduled run failed` in Cloud Logging. Telegram failure/recovery messages are **off by default**; set `OPS_TELEGRAM_ALERTS=true` on the Cloud Run service to turn them on (sent on the first failure, repeated at most every 6 hours, plus one recovery message). Event alerts (importance ≥ 4) are unaffected.
+Collection runs once a day at 08:00 KST (Cloud Scheduler job `busan-redevelopment-poll-30m`; the name is historical, the schedule is daily). Failed scheduled runs are tracked in `opsState/pollHealth` and logged as `[PollHealth] Scheduled run failed` in Cloud Logging. Telegram failure/recovery messages are **off by default**; set `OPS_TELEGRAM_ALERTS=true` on the Cloud Run service to turn them on (sent on the first failure, repeated at most every 6 hours, plus one recovery message). Event alerts (importance ≥ 4) are unaffected.
 
 ## Collector behavior
 

@@ -1,3 +1,4 @@
+import { getHousingLink } from '../utils/housingLinks';
 import { REDEVELOPMENT_SEED_PROJECTS } from '../registry/redevelopmentRegistry.ts';
 import React from 'react';
 import { Building2, ArrowRight, Calendar, AlertCircle } from 'lucide-react';
@@ -22,6 +23,7 @@ export const ProjectStatusView: React.FC<ProjectStatusViewProps> = ({
     <div id="project-status-view" className="space-y-4 sm:space-y-6 min-w-0">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 min-w-0">
         {displayProjects.map((project) => {
+          const housingLink = getHousingLink(project.id);
           const projectEvents = events.filter((e) => e.projectId === project.id);
           // Sort by eventDate descending to get the most recent verified event
           const sortedEvents = [...projectEvents].sort((a, b) => {
@@ -179,7 +181,8 @@ export const ProjectStatusView: React.FC<ProjectStatusViewProps> = ({
               </div>
 
               {/* Action: View Timeline */}
-              <div className="pt-4 sm:pt-5 mt-4 sm:mt-5 border-t border-slate-100 flex items-center justify-end">
+              <div className="pt-4 sm:pt-5 mt-4 sm:mt-5 border-t border-slate-100 flex flex-wrap items-center justify-end gap-2">
+                {housingLink && <a href={housingLink.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-blue-200 text-blue-800 text-xs font-semibold min-h-[44px]">{housingLink.label}</a>}
                 <button
                   id={`btn-view-timeline-${project.id}`}
                   onClick={() => onSelectProjectTimeline(project.id)}

@@ -14,7 +14,10 @@ permissions:
 env:
   GCP_PROJECT_ID: busan-redevelopment
   GCP_PROJECT_NUMBER: '432348267432'
-  GCP_REGION: asia-south1
+  # Preferred region (Seoul). Until ops/migrate-to-seoul.sh has created the service there,
+  # deploys keep going to the original region (FALLBACK_REGION).
+  GCP_REGION: asia-northeast3
+  FALLBACK_REGION: asia-south1
   CLOUD_RUN_SERVICE: busan-redevelopment-news-monitor
   AR_REPO: kbusan-images
 
@@ -55,19 +58,30 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Build image (clean Linux build, no local node_modules)
-        run: |
-          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO}/k-busan:${GITHUB_SHA}"
-          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
-          docker build -t "$IMAGE" .
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           workload_identity_provider: projects/${{ env.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/kbusan-github/providers/github-main
           service_account: kbusan-github-deploy@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+      - name: Resolve deploy region
+        run: |
+          if gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+               --format='value(metadata.name)' >/dev/null 2>&1; then
+            REGION="$GCP_REGION"
+          else
+            REGION="$FALLBACK_REGION"
+            echo "::notice::Service not found in $GCP_REGION yet; deploying to $FALLBACK_REGION."
+          fi
+          echo "DEPLOY_REGION=$REGION" >> "$GITHUB_ENV"
+          echo "deploy region: $REGION"
+      - name: Build image (clean Linux build, no local node_modules)
+        run: |
+          IMAGE="${DEPLOY_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO}/k-busan:${GITHUB_SHA}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          docker build -t "$IMAGE" .
       - name: Push image
         run: |
-          gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+          gcloud auth configure-docker "${DEPLOY_REGION}-docker.pkg.dev" --quiet
           docker push "$IMAGE"
       - name: Deploy candidate without traffic
         # The service was first created from source (AI Studio), which left
@@ -77,9 +91,9 @@ jobs:
         # Env vars, secrets, service account, scaling and timeout are carried over as-is.
         # The exported spec may contain env values, so it is never printed.
         run: |
-          gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+          gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
             --format=export > /tmp/service.yaml
-          CURRENT="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+          CURRENT="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
             --format='value(status.latestReadyRevisionName)')"
           NEW_REV="${CLOUD_RUN_SERVICE}-${GITHUB_SHA::7}-${GITHUB_RUN_ATTEMPT}"
           CURRENT="$CURRENT" NEW_REV="$NEW_REV" python3 - <<'PY'
@@ -118,11 +132,11 @@ jobs:
           })
           PY
           echo "current revision: $CURRENT -> candidate: $NEW_REV"
-          gcloud run services replace /tmp/service.yaml --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --quiet > /dev/null
+          gcloud run services replace /tmp/service.yaml --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" --quiet > /dev/null
           rm -f /tmp/service.yaml
       - name: Verify candidate (read-only)
         run: |
-          URL="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+          URL="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
             --format=json | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(t['url'] for t in d['status']['traffic'] if t.get('tag')=='candidate'))")"
           echo "candidate: $URL"
           for i in 1 2 3 4 5 6; do
@@ -141,7 +155,7 @@ jobs:
           curl -sf "$URL/" | grep -q '<div id="root">'
       - name: Promote candidate to 100% traffic
         run: |
-          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" \
+          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" \
             --project "$GCP_PROJECT_ID" --to-tags candidate=100 --quiet
-          gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+          gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
             --format='value(status.latestReadyRevisionName,status.url)'

@@ -42,6 +42,10 @@ Use the official GitHub integration and grant access only to this private reposi
 - **Preview proxy** is opt-in: `PREVIEW_MODE=true` plus `PREVIEW_UPSTREAM_ORIGIN` (https). It is never active when `NODE_ENV=production`.
 - **TLS for the association board.** The `start` script appends the RapidSSL TLS RSA CA G1 intermediate (expires 2027-11-02) for `dynamice.busan.go.kr`, which serves an incomplete chain. Replace it before expiry or when the site changes certificates.
 
+## 서울 리전 이전
+
+`ops/migrate-to-seoul.sh` moves the service from asia-south1 (Mumbai) to asia-northeast3 (Seoul). Run it once in Cloud Shell as the project owner. It creates the Seoul service from the live spec, checks it read-only, then switches the Firebase Hosting rewrite for apt.dsoom.com and any Cloud Scheduler job that calls the Mumbai URL. The Mumbai service keeps running; `ROLLBACK=1 bash ops/migrate-to-seoul.sh` switches back. The deploy workflow deploys to Seoul as soon as the service exists there, otherwise to Mumbai. Delete the Mumbai service only after a few days of normal operation.
+
 ## 데이터 보관 기간
 
 Stored documents carry an `expiresAt` timestamp: collection cycles 30 days, news documents 365 days after they were last seen, AI analysis cache 30 days. Events and Telegram delivery records are kept (project history and duplicate-alert guard). Firestore deletes expired documents only after TTL policies are enabled; run `ops/setup-retention.sh` once in Cloud Shell. It also keeps only the 10 newest deploy images (images older than 30 days are removed).

@@ -638,6 +638,34 @@ export class FirestoreService {
     return { isNew: !isExistingInMemory };
   }
 
+  private projectDocumentsIndexWarned = false;
+
+  /**
+   * Newest documents per project, so a quiet project's news is not pushed out of the dashboard
+   * by busier ones. Needs the composite index documents(matchedProjectIds ARRAY_CONTAINS,
+   * publishedAt DESC) (created by ops/migrate-to-seoul.sh); without it this returns [] and
+   * the dashboard keeps using the global newest list.
+   */
+  public async getRecentDocumentsByProject(projectIds: string[], perProject = 20): Promise<FirestoreDocumentDoc[]> {
+    const client = await this.getClient();
+    if (!client || projectIds.length === 0) return [];
+    try {
+      const snapshots = await Promise.all(projectIds.map((id) => client
+        .collection(FIRESTORE_COLLECTIONS.DOCUMENTS)
+        .where('matchedProjectIds', 'array-contains', id)
+        .orderBy('publishedAt', 'desc')
+        .limit(perProject)
+        .get()));
+      return snapshots.flatMap((snap) => snap.docs.map((d) => d.data() as FirestoreDocumentDoc));
+    } catch (err: any) {
+      if (!this.projectDocumentsIndexWarned) {
+        this.projectDocumentsIndexWarned = true;
+        console.warn('[FirestoreService] Per-project news query unavailable (index missing?):', err?.code ?? err?.name);
+      }
+      return [];
+    }
+  }
+
   public async getRecentDocuments(limit = 30): Promise<FirestoreDocumentDoc[]> {
     const client = await this.getClient();
     if (client) {
@@ -1806,7 +1834,7 @@ export class FirestoreService {
   // ==========================================
 
   public async getDashboardData() {
-    const [projects, recentEvents, documents, deliveries, cycles, areaDevelopments, planVersions, unitTypes] = await Promise.all([
+    const [projects, recentEvents, latestDocuments, deliveries, cycles, areaDevelopments, planVersions, unitTypes] = await Promise.all([
       this.getAllProjects(),
       this.getRecentEvents(100),
       this.getRecentDocuments(100),
@@ -1818,6 +1846,8 @@ export class FirestoreService {
       this.getUnitTypes(),
     ]);
 
+    const perProjectDocuments = await this.getRecentDocumentsByProject(projects.map((p) => p.id));
+    const documents = mergeDocumentsNewestFirst(latestDocuments, perProjectDocuments);
     const events = mergeGwacheonHistory(recentEvents);
     const now = Date.now();
     const past24h = now - 24 * 60 * 60 * 1000;
@@ -1873,3 +1903,9 @@ export class FirestoreService {
 
 }
 
+/** Union of document lists by id, newest first. */
+export function mergeDocumentsNewestFirst(...lists: FirestoreDocumentDoc[][]): FirestoreDocumentDoc[] {
+  const byId = new Map<string, FirestoreDocumentDoc>();
+  for (const list of lists) for (const doc of list) if (doc?.id && !byId.has(doc.id)) byId.set(doc.id, doc);
+  return [...byId.values()].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+}

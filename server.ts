@@ -6,12 +6,14 @@ import { ANALYSIS_VERSION, GEMINI_ANALYSIS_SETTINGS, resolveGeminiModel } from '
 import { TtlCache, toPublicOverview, publicErrorBody } from './src/utils/publicApi.ts';
 import { capCollectionCycleDoc } from './src/storage/cycleDocLimits.ts';
 import { recordPollOutcome } from './src/notifier/pollHealthMonitor.ts';
+import { resolveWebpSibling } from './src/utils/planAssets.ts';
+import compression from 'compression';
 /**
  * Busan Redevelopment News Monitor - Server Entrypoint
  * Express + Vite Full-stack architecture
  * 
  * 시스템 구조:
- * Cloud Scheduler (30분 주기) -> Cloud Run (/api/jobs/poll) -> 수집 -> 판별 -> Gemini -> 이벤트 병합 -> Firestore -> Telegram
+ * Cloud Scheduler (매일 08:00 KST 1회) -> Cloud Run (/api/jobs/poll) -> 수집 -> 판별 -> Gemini -> 이벤트 병합 -> Firestore -> Telegram
  * 
  * 중요 원칙:
  * - ENABLE_INTERNAL_SCHEDULER=false (내부 setInterval 사용 금지)
@@ -39,6 +41,8 @@ const PORT = Number(process.env.PORT) || 3000;
 
 const apiSecurity = createApiSecurity({ production: process.env.NODE_ENV === 'production', secret: () => process.env.POLL_JOB_SECRET || process.env.CRON_SECRET });
 app.disable('x-powered-by');
+// JSON and HTML compress 5-10x; images are already compressed and skipped by the filter.
+app.use(compression());
 // This guard must precede EVERY API route, including live upstream diagnostics.
 app.use((req, res, next) => req.path.toLowerCase().startsWith('/api/') ? apiSecurity(req, res, next) : next());
 
@@ -52,6 +56,7 @@ app.get('/api/official/diagnostics', async (req, res) => {
     res.status(400).json({ error: 'INVALID_DATE_OR_PROJECT' }); return;
   }
   res.setHeader('Cache-Control', 'no-store');
+  try {
   if(req.query.source==='gwacheon-city') {
     const result=await new GwacheonCityNoticeCollector().fetchForProjects(REDEVELOPMENT_SEED_PROJECTS);
     res.json({revision:'gwacheon-city-20261014-v2',readOnly:true,savedToDatabase:false,success:!result.error,error:result.error,pagesRead:result.pagesRead,returnedCount:result.items.length,matchedItems:result.items.map(i=>({projectId:i.projectId,title:i.title,date:i.publishedAt,url:i.sourceUrl,detailVerified:i.detailVerified,attachmentUrls:i.attachmentUrls}))});return;
@@ -83,6 +88,10 @@ app.get('/api/official/diagnostics', async (req, res) => {
     })),
     matchedItems: collector.filterNoticesForProject(result.items, project)
   });
+  } catch (err) {
+    console.error('[Diagnostics] failed:', (err as any)?.name, (err as any)?.message);
+    if (!res.headersSent) res.status(502).json({ error: 'DIAGNOSTICS_FAILED' });
+  }
 });
 
 // Optional development preview: proxies public reads to PREVIEW_UPSTREAM_ORIGIN, blocks writes.
@@ -92,12 +101,22 @@ app.use('/api', createPreviewReadOnlyMiddleware(previewConfig.enabled, previewCo
 console.log('[PREVIEW] Read-only production proxy:', previewConfig.enabled ? previewConfig.upstreamOrigin || 'NOT CONFIGURED' : 'off');
 
 // Phase 4D-4C: Serve plan assets with JFIF MIME support
+const PLAN_ASSET_ROOT = path.join(process.cwd(), 'public/assets/plans');
 app.use('/assets/plans', (req, res, next) => {
-  if (req.path.toLowerCase().endsWith('.jfif')) {
+  const lower = req.path.toLowerCase();
+  if (/\.(jpe?g|jfif|png)$/.test(lower)) {
+    res.setHeader('Vary', 'Accept');
+    // Pre-built WebP sibling (<name>.<ext>.webp), about half the size, for browsers that accept it.
+    if (/\bimage\/webp\b/.test(String(req.headers.accept || ''))) {
+      const webp = resolveWebpSibling(PLAN_ASSET_ROOT, req.path);
+      if (webp) { req.url = webp; next(); return; }
+    }
+  }
+  if (lower.endsWith('.jfif')) {
     res.setHeader('Content-Type', 'image/jpeg');
   }
   next();
-}, express.static(path.join(process.cwd(), 'public/assets/plans'), {
+}, express.static(PLAN_ASSET_ROOT, {
   // Plan images change rarely; one day of browser/CDN caching, revalidated after that.
   maxAge: '1d',
 }));
@@ -117,9 +136,9 @@ console.log('====================================================');
 
 const pipeline = new CollectionPipeline();
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-// Public read endpoints change only when a collection cycle runs (every 30 min), so a short
-// shared cache removes most Firestore reads without making data noticeably stale.
-const publicReadCache = new TtlCache(Number(process.env.PUBLIC_CACHE_TTL_MS) || 60_000);
+// Public read endpoints change only when a collection cycle runs (once a day) or data is seeded;
+// both clear this cache, so a long TTL removes most Firestore reads without serving stale data.
+const publicReadCache = new TtlCache(Number(process.env.PUBLIC_CACHE_TTL_MS) || 30 * 60_000);
 const aiAnalysisInfo = () => ({ version: ANALYSIS_VERSION, model: resolveGeminiModel(), ...GEMINI_ANALYSIS_SETTINGS });
 // Upper bound for one polling cycle; the lock expires after this even if the instance dies.
 const POLL_LOCK_TTL_MS = Number(process.env.POLL_LOCK_TTL_MS) || 15 * 60_000;
@@ -131,6 +150,7 @@ class PollInProgressError extends Error {
 /** Logs the real error server-side and answers public clients with a fixed code only. */
 function sendPublicError(res: express.Response, code: string, err: unknown) {
   console.error(`[PublicAPI] ${code}:`, (err as any)?.name, (err as any)?.message);
+  res.setHeader('Cache-Control', 'no-store');
   res.status(500).json(publicErrorBody(code));
 }
 const officialCollector = new OfficialNoticeCollector();
@@ -690,7 +710,7 @@ async function trackPollHealth(outcome: { ok: true } | { ok: false; reason: stri
  * Cloud Scheduler Target Endpoint: /api/jobs/poll
  *
  * Requirements (Phase 3B Production Deployment Readiness):
- * - Target: POST /api/jobs/poll (Cloud Scheduler cron every 30 mins: star/30 * * * *)
+ * - Target: POST /api/jobs/poll (Cloud Scheduler, once a day at 08:00 KST)
  * - Validates POLL_JOB_SECRET via Bearer token or x-cron-secret header only
  * - Preflight Checks:
  *   1. Firestore ready == true (Fail-Closed: 503, 0 Telegrams)
@@ -866,6 +886,7 @@ app.all('/api/*', (req, res) => {
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (req.path.toLowerCase().startsWith('/api/')) {
     console.error(`[API Uncaught Error] ${req.method} ${req.path}:`, err);
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(500).json({
       success: false,
       statusCode: 500,

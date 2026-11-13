@@ -5,7 +5,7 @@
 # - Artifact Registry: keep the 10 newest images, delete images older than 30 days.
 set -euo pipefail
 PROJECT_ID="${PROJECT_ID:-busan-redevelopment}"
-REGION="${REGION:-asia-south1}"
+REGION="${REGION:-asia-northeast3}"
 DATABASE="${DATABASE:-(default)}"
 
 for COLLECTION in collectionCycles documents analysisCache; do

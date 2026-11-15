@@ -1,0 +1,194 @@
+{
+  "checkedAt": "2026-11-15T11:45:41.766Z",
+  "commit": "e2313b1de256e41ba3fc38958afc8227d4fce95e",
+  "passed": true,
+  "note": "Two successful production runs verify current operation, not permanent upstream availability. One newly discovered news article remains needs_review for NEWS_BODY_UNAVAILABLE; pending/retry/ready are zero.",
+  "runs": [
+    {
+      "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-e2313b1-1",
+      "cycle": "cycle_1794743022406",
+      "startedAt": "2026-11-15T11:43:21.007Z",
+      "finishedAt": "2026-11-15T11:43:42.406Z",
+      "durationSeconds": 21.399,
+      "httpStatus": 200,
+      "errors": [],
+      "telegramSent": 0,
+      "telegramFailed": 0,
+      "sourceDetails": [
+        {
+          "sourceName": "부산광역시 공식 고시공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "과천시 공식 고시·공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 10단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (부산시민공원주변(촉진3구역) 재정비촉진구역)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (삼익비치타운(남천2구역))",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "Google News RSS (해운대구 우동3구역 주택재개발정비사업)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 5단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 27
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산광역시 수영구 남천동)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (해운대구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "촉진3 조합 입찰 게시판",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산진구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 8·9단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 45
+        }
+      ],
+      "queueStats": {
+        "pending": 0,
+        "retry": 0,
+        "ready": 0,
+        "completed": 81,
+        "needs_review": 1,
+        "closed": 7
+      }
+    },
+    {
+      "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-e2313b1-1",
+      "cycle": "cycle_1794743099350",
+      "startedAt": "2026-11-15T11:44:42.175Z",
+      "finishedAt": "2026-11-15T11:44:59.350Z",
+      "durationSeconds": 17.175,
+      "httpStatus": 200,
+      "errors": [],
+      "telegramSent": 0,
+      "telegramFailed": 0,
+      "sourceDetails": [
+        {
+          "sourceName": "부산광역시 공식 고시공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "과천시 공식 고시·공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (부산시민공원주변(촉진3구역) 재정비촉진구역)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (삼익비치타운(남천2구역))",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 10단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 5단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 27
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산광역시 수영구 남천동)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 8·9단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 45
+        },
+        {
+          "sourceName": "촉진3 조합 입찰 게시판",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산진구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (해운대구 우동3구역 주택재개발정비사업)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (해운대구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        }
+      ],
+      "queueStats": {
+        "pending": 0,
+        "retry": 0,
+        "ready": 0,
+        "completed": 81,
+        "needs_review": 1,
+        "closed": 7
+      }
+    }
+  ]
+}

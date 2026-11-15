@@ -15,8 +15,9 @@ export type AttachmentResult={url:string;sha256?:string;format?:string;status:'v
 export interface AttachmentCache {get(url:string):Promise<AttachmentResult|null>;set(url:string,result:AttachmentResult):Promise<void>;}
 const hosts=new Set(['dynamice.busan.go.kr','www.busan.go.kr','eminwon.gccity.go.kr']);
 export function safeAttachmentUrl(value:string){const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||u.port||!hosts.has(u.hostname))throw Error('ATTACHMENT_HOST_REJECTED');return u.toString();}
-export async function downloadAttachment(url:string,fetcher:typeof fetch=fetch){let current=safeAttachmentUrl(url);for(let i=0;i<4;i++){
- const r=await fetcher(current,{redirect:'manual',signal:AbortSignal.timeout(15000)});
+export async function downloadAttachment(url:string,fetcher:typeof fetch=fetch,deadline=Infinity){let current=safeAttachmentUrl(url);for(let i=0;i<4;i++){
+ const remaining=Math.min(15000,deadline-Date.now());if(remaining<500)throw Error('ATTACHMENT_CYCLE_BUDGET_EXHAUSTED');
+ const r=await fetcher(current,{redirect:'manual',signal:AbortSignal.timeout(remaining)});
  if(r.status>=300&&r.status<400){current=safeAttachmentUrl(new URL(r.headers.get('location')||'',current).toString());continue;}
  if(!r.ok||!r.body)throw Error(`ATTACHMENT_HTTP_${r.status}`);if(Number(r.headers.get('content-length')||0)>10*1024*1024)throw Error('ATTACHMENT_TOO_LARGE');
  const chunks:Uint8Array[]=[];let size=0;for await(const chunk of r.body as any){size+=chunk.length;if(size>10*1024*1024){await r.body.cancel().catch(()=>{});throw Error('ATTACHMENT_TOO_LARGE');}chunks.push(chunk);}return Buffer.concat(chunks);
@@ -54,7 +55,7 @@ export async function extractAttachment(bytes:Buffer,url:string,previous?:Attach
 export class AttachmentReader {
  constructor(private cache?:AttachmentCache,private fetcher:typeof fetch=fetch){}
  async read(url:string,deadline=Infinity){safeAttachmentUrl(url);const previous=await this.cache?.get(url);if(previous?.status==='verified' && Date.now()-previous.checkedAt<6*3600000)return previous;
-  let result:AttachmentResult;try{result=await extractAttachment(await downloadAttachment(url,this.fetcher),url,previous,deadline);}catch(e:any){result={url,status:'failed',pages:[],error:/^ATTACHMENT_/.test(e.message)?e.message:'ATTACHMENT_DOWNLOAD_FAILED',checkedAt:Date.now()};}
+  let result:AttachmentResult;try{result=await extractAttachment(await downloadAttachment(url,this.fetcher,deadline),url,previous,deadline);}catch(e:any){result={url,status:'failed',pages:[],error:/^ATTACHMENT_/.test(e.message)?e.message:'ATTACHMENT_DOWNLOAD_FAILED',checkedAt:Date.now()};}
   await this.cache?.set(url,result);return result;
  }
  async enrich(item:RawCollectedItem,deadline=Infinity):Promise<RawCollectedItem>{const urls=[...new Set(item.attachmentUrls||[])];if(!urls.length)return {...item,attachmentContentStatus:'not_applicable'};

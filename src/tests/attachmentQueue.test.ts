@@ -18,3 +18,5 @@ test('oversized HWPX section and image dimensions are rejected before expensive 
 test('expired worker budget leaves persisted work pending without calling the provider',async()=>{const q=new Queue();let calls=0;const r=await runQueuedAnalysis({queue:q,items:[item(1)],analyzer:{validateRelatedness:async()=>{calls++;}} as any,attachments:new AttachmentReader(),projects:[project],existingEvents:[],maxItems:80,deadline:Date.now()-1});assert.equal(calls,0);assert.equal(r.stats.pending,1);});
 
 test('image placeholders from HWP converters are not treated as read document text',()=>{assert.equal(readableHwpText('<그림>\n\n'.repeat(20)),false);assert.equal(readableHwpText('촉진3구역 조합 총회는 2026년 11월 20일 오후 2시에 개최합니다.'),true);});
+
+test('expired attachment deadline prevents even a download request',async()=>{let calls=0;await assert.rejects(downloadAttachment('https://www.busan.go.kr/file.pdf',(async()=>{calls++;return new Response('');}) as typeof fetch,Date.now()-1),/CYCLE_BUDGET/);assert.equal(calls,0);});

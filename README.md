@@ -94,3 +94,5 @@ All suites pass: `node --import tsx --test src/tests/*.test.ts`. Plan-data tests
 Active text analysis uses OpenAI Responses, `gpt-6-luna`, reasoning none, no tools or automatic retries. `OPENAI_API_KEY` must be bound server-side; `OPENAI_MODEL` optionally overrides the model. Legacy Gemini-named internal fields remain for stored-data/API compatibility; public `aiProvider` and `aiModel` report the actual provider. Existing collection, fact validation, dispatch rules and budget ceilings are preserved. Input reservations include a conservative local UTF-8 bound; output usage includes reasoning once. Gemini keys are retained only for rollback and inactive legacy paths.
 
 GPT-6 Luna의 실제 문서·운영 경로 검증 및 Gemini 재비교(2026-11-15): [검증 보고서](docs/validation/LUNA_COMPARISON.md). 공고 표본 정확도와 운영 뉴스의 확인·재시도 상태를 구분해 기록했습니다.
+
+뉴스 확인·재시도 16건의 원문 검토·운영 정리 결과: [건별 처리와 검증 기록](docs/validation/NEWS_REVIEW16.md).

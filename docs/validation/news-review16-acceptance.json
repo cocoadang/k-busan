@@ -1,0 +1,230 @@
+{
+  "checkedAt": "2026-11-15T11:19:58.431Z",
+  "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-38dfe1d-1",
+  "commit": "38dfe1d2599d9b2dca64f91a6ed671d0ab392c3d",
+  "workflow": "https://github.com/cocoadang/k-busan/actions/runs/43706729294",
+  "testsPassedBeforeMerge": 183,
+  "cycleId": "review_sources_1794741445956",
+  "verificationMode": "reviewed_results_persisted_without_external_collection_or_AI",
+  "historyLayerNote": "Curated verified history and news-event records may both reference one source; every linked record must retain the same verified event date and source digest. Curated official history is preserved.",
+  "precedingFullCollection": {
+    "cycleId": "cycle_1794740860845",
+    "httpStatus": 200,
+    "errors": [
+      "부산시 고시 목록 수집 실패: fetch failed [UND_ERR_CONNECT_TIMEOUT]; 부산시 고시 원문 확인 실패 https://www.busan.go.kr/nbgosi/view?sno=79798&gosiGbn=N: fetch failed [UND_ERR_CONNECT_TIMEOUT]",
+      "조합 게시판 수집 실패: fetch failed [UND_ERR_CONNECT_TIMEOUT]",
+      "[20261115] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261114] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261113] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261112] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261111] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261110] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261109] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]",
+      "[20261115] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261114] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261113] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261112] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261111] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261110] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261109] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]",
+      "[20261115] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261114] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261113] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261112] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261111] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261110] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]; [20261109] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]"
+    ],
+    "telegramSent": 0
+  },
+  "counts": {
+    "completed": 81,
+    "closed": 7
+  },
+  "originalCases": 16,
+  "approvedCases": 9,
+  "closedWithoutEvent": 7,
+  "additionalFollowup": 1,
+  "telegramSent": 0,
+  "telegramFailed": 0,
+  "errors": [],
+  "modelCallsInPersistenceCycle": 0,
+  "correctedEventBackups": 42,
+  "sourceReplayBackups": 10,
+  "queueBackups": 16,
+  "cases": [
+    {
+      "id": "120f59eb26fe4bfd0f5ef24fe654a4700c27ef9ee3606c0ccfce254be21228d3",
+      "title": "부산 재건축 최대어 삼익비치 … 한미글로벌, 건설사업관리 수주 - 매일경제",
+      "state": "completed",
+      "eventDate": "2026-04-04",
+      "eventIds": [
+        "evt_samik-beach_14988e0ac054ee4f5c2c9e36"
+      ]
+    },
+    {
+      "id": "3e76dbfe27edeb9a881962f03467d8528057d3a00bb58fa0712f91577d2f86e6",
+      "title": "인터뷰-이형진 과천주공 8·9단지 재건축 조합장 - 하우징헤럴드",
+      "state": "completed",
+      "eventDate": "2024-10-04",
+      "eventIds": [
+        "evt_gwacheon-89_3fe2c57f676367bfc04937fa"
+      ]
+    },
+    {
+      "id": "57ed83281e2687f716a774536ee37e8a5fcd10264868579f0156e8d54e2f75e8",
+      "title": "7억 환급에 새 아파트까지 받는다…과천 주공10단지 재건축 비결 - 땅집고",
+      "state": "closed",
+      "eventIds": [],
+      "resolution": {
+        "reviewedAt": 1794739102827,
+        "kind": "not_event",
+        "reason": "시공사 협상 전략과 환급 가능성을 설명한 과거 인터뷰·분석 기사입니다. 신규 확정 사건과 발생일을 확인할 수 없어 사건을 추가하지 않습니다.",
+        "evidenceUrls": [
+          "https://realty.chosun.com/site/data/html_dir/2024/03/25/2024032501138.html"
+        ]
+      }
+    },
+    {
+      "id": "5a71d0028714787e8e5b8c807c05c20811cff0ad09d60981c5314ab8d581f0e7",
+      "title": "과천 8·9단지 재건축에 막힌 생활도로…부림동 주민 통행 불편 장기화 - 안전신문",
+      "state": "closed",
+      "eventIds": [],
+      "resolution": {
+        "reason": "생활도로 통행 불편과 진행 중인 민원을 다룬 현황 기사입니다. 원문을 읽었으나 단일 사건 발생일은 특정할 수 없어 발행일을 사건일로 대체하지 않고 종결합니다.",
+        "evidenceUrls": [
+          "https://www.safetynews.co.kr/news/articleView.html?idxno=247079"
+        ],
+        "reviewedAt": 1794739102827,
+        "kind": "date_unconfirmed"
+      }
+    },
+    {
+      "id": "82877951e9444e643a4e1e973ee0d62416132a7d486bc5984c99d3beb5601629",
+      "title": "[시사진단] 부산 남천삼익비치 재건축, 수영구의 미래를 다시 그리다 - 국토일보",
+      "state": "closed",
+      "eventIds": [],
+      "resolution": {
+        "evidenceUrls": [
+          "https://www.ikld.kr/news/articleView.html?idxno=335536"
+        ],
+        "reason": "원문은 오피니언·기고/논단의 시사진단으로 과거 경과와 미래 전망을 논합니다. 신규 확정 사건으로 등록하지 않습니다.",
+        "kind": "not_event",
+        "reviewedAt": 1794739102827
+      }
+    },
+    {
+      "id": "8a3c3e312c0d65557f3724d2e7d7bcd829465c7c668436e5cd49d7f92319e002",
+      "title": "삼익비치 재건축 탄력…'이기대 공원' 아파트도 사업 승인 - 네이트",
+      "state": "completed",
+      "eventDate": "2026-06-24",
+      "eventIds": [
+        "evt_samik-beach_53f7071e8a975a8e5adb0b35"
+      ]
+    },
+    {
+      "id": "8d77f7f79c36c9577482060c17f47990bc9c2fd3f4dbe06d7c96687152b215cf",
+      "title": "과천5단지재건축, 과천고·청계초 추가요구로 착공 지연 우려 - 이슈게이트",
+      "state": "closed",
+      "eventIds": [],
+      "resolution": {
+        "reviewedAt": 1794739102827,
+        "reason": "10월 31일 착공지연 우려 기사에는 후속 보도가 있습니다. 11월 6일 두 학교의 안전성평가 날인 완료를 확인해 후속 사건을 별도 반영하며 과거 우려를 현재 확정 지연으로 재등록하지 않습니다.",
+        "evidenceUrls": [
+          "https://issuegate.com/m/view.php?idx=18438",
+          "https://www.issuegate.com/m/view.php?idx=18478"
+        ],
+        "kind": "superseded"
+      }
+    },
+    {
+      "id": "90830b535bbf3dde676bb764e2a77511813a2eb79b959d1670ad64700293df48",
+      "title": "'과천 마지막 재건축' 과천주공8·9단지 9부 능선 넘었다 - 머니투데이 - 머니투데이",
+      "state": "completed",
+      "eventDate": "2025-01-08",
+      "eventIds": [
+        "evt_gwacheon-89_ee1fb6a91959b42eea39f705",
+        "evt_hist_gwacheon_89_20250108"
+      ]
+    },
+    {
+      "id": "a38db1ec9ccead54d5048ea80fc262d58e5605763a21f5db82c050e677e72229",
+      "title": "촉진3구역 DL이앤씨 시공사 해지, 삼호가든 재건축 시공사 선정 무효 총회 계획, 부산 아크로 하이엔드 가능한가? 공사비 사업비 갈등, 표준약정서 날인 거부 - Naver Blog",
+      "state": "closed",
+      "eventIds": [],
+      "resolution": {
+        "reviewedAt": 1794739102827,
+        "evidenceUrls": [
+          "https://blog.naver.com/yak-bang/223652189010?viewType=pc"
+        ],
+        "kind": "unverified_claim",
+        "reason": "여러 현장을 섞은 비공식 블로그 제목이며 원문 열람 제한으로 촉진3 시공사 해지 확정을 검증할 수 없습니다. 해지 확정 사건을 만들지 않고 근거 미확인 사유로 검토 종결합니다."
+      }
+    },
+    {
+      "id": "ab57dc5f970eca191e5d2ebd2141618742e1242c944cc938be3c743a52b69f0d",
+      "title": "인터뷰-이형진 과천주공 8·9단지 재건축조합장 - 하우징헤럴드",
+      "state": "closed",
+      "eventIds": [],
+      "resolution": {
+        "kind": "date_unconfirmed",
+        "reviewedAt": 1794739102827,
+        "evidenceUrls": [
+          "https://www.housingherald.co.kr/news/articleView.html?idxno=50567"
+        ],
+        "reason": "조합장 인터뷰의 이주 완료 및 월 단위 후속 일정은 확인했지만 정확한 완료일은 없습니다. 8월 7일 발행일이나 임의의 1일을 사건일로 넣지 않고 종결합니다."
+      }
+    },
+    {
+      "id": "b97d907ad1ad3eb349514c8f4d0323a629ac1ba1c29146405d4e4da057ad123a",
+      "title": "해운대 우동3구역 재개발 놓고 해운정사측 크게 반발 - 네이트",
+      "state": "completed",
+      "eventDate": "2026-07-14",
+      "eventIds": [
+        "evt_udong-3_8040104b95a82e5cc61325bb"
+      ]
+    },
+    {
+      "id": "c7d1b679326ab29b23592f776160f5648437794c9b30089cffafb5c3d8971924",
+      "title": "남천 삼익비치 재건축 사업 시행계획변경 인가 완료 - Daum",
+      "state": "completed",
+      "eventDate": "2026-06-24",
+      "eventIds": [
+        "evt_samik-beach_53f7071e8a975a8e5adb0b35"
+      ]
+    },
+    {
+      "id": "e63c9fc2b1f04181102d808a040b8e497236bb106ffb17ff21cf8c1985a811e8",
+      "title": "[현장in] 부산 해운대 우동3구역 재개발 공공도로 변경 논란 - 연합뉴스",
+      "state": "completed",
+      "eventDate": "2026-01-06",
+      "eventIds": [
+        "evt_udong-3_60890bad87c97fdedc992988"
+      ]
+    },
+    {
+      "id": "e6b274a172caada808d45c360e05624e357dac0a1f5aa76738281b56cdae35cb",
+      "title": "[단독]'과천주공 8·9단지' 재건축 관리처분계획 인가 - 뉴시스",
+      "state": "completed",
+      "eventDate": "2025-01-08",
+      "eventIds": [
+        "evt_gwacheon-89_ee1fb6a91959b42eea39f705",
+        "evt_hist_gwacheon_89_20250108"
+      ]
+    },
+    {
+      "id": "edfad0d2051468a23f4e8ccecccb683c3730147067c4e7010e6886f88728ad08",
+      "title": "과천주공8·9단지 재건축 빨라진다...관리처분계획 인가 - 리얼캐스트",
+      "state": "closed",
+      "eventIds": [],
+      "resolution": {
+        "kind": "duplicate",
+        "reviewedAt": 1794739102827,
+        "reason": "원문은 관리처분계획 인가를 최근이라고만 설명한 재인용 기사입니다. 2025년 1월 8일을 명시하는 뉴시스·머니투데이 원문에 근거한 같은 사건에 통합하고, 1월 14일 발행일로 만든 별도 사건은 정정합니다.",
+        "evidenceUrls": [
+          "https://www.rcast.co.kr/news/articleView.html?idxno=26679",
+          "https://www.newsis.com/view/NISX20250108_0003025452"
+        ]
+      }
+    },
+    {
+      "id": "fe46d37e0c7d9979459fff25993b971f0185531441b16643e4108b0e94134058",
+      "title": "부산 해운정사 \"우동3구역 재개발, 공공도로 사라질 위기\" - 뉴시스",
+      "state": "completed",
+      "eventDate": "2026-01-06",
+      "eventIds": [
+        "evt_udong-3_60890bad87c97fdedc992988"
+      ]
+    }
+  ],
+  "uiVerified": {
+    "pending": 0,
+    "retry": 0,
+    "needs_review": 0,
+    "closed": 7
+  },
+  "temporaryJobsRemoved": true,
+  "newsBodyCacheTTL": "ACTIVE"
+}

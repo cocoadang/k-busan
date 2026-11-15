@@ -149,7 +149,7 @@ export class CollectionPipeline {
         if (isOfficialEnabled) {
           sourcesChecked++;
           const officialResult = await this.officialCollector.fetchForProject(project, {
-            timeoutMs: options.timeoutMs || 8000,
+            timeoutMs: options.timeoutMs || 15000,
           });
           sourceDetails.push({
             sourceName: `${officialResult.sourceName} (${project.district})`,

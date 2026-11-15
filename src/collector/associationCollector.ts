@@ -165,12 +165,18 @@ export async function readAssociationHtml(fetcher: typeof fetch, url: string, ti
 }
 export class AssociationNoticeCollector {
   constructor(private fetcher: typeof fetch = fetch, private clock: () => Date = () => new Date()) {}
-  async fetchForProject(project: RedevelopmentProject, options: { timeoutMs?: number; maxPages?: number } = {}) {
+  async fetchForProject(project: RedevelopmentProject, options: { timeoutMs?: number; maxPages?: number; budgetMs?: number } = {}) {
     const items: RawCollectedItem[] = [], errors: string[] = [];
     const board = project.associationBoard;
     if (!board) return { items, error: undefined, configured: false };
     const now = this.clock();
-    const read = (url: string) => readAssociationHtml(this.fetcher,url,options.timeoutMs || 15000);
+    // Share a deadline across pages, details, redirects and transport retries.
+    const budget = AbortSignal.timeout(Math.min(60000, Math.max(1, options.budgetMs || 60000)));
+    const boundedFetch: typeof fetch = async (input, init) => {
+      if (budget.aborted) throw new Error('BOARD_BUDGET_EXHAUSTED');
+      return this.fetcher(input, {...init, signal: AbortSignal.any([budget, ...(init?.signal ? [init.signal] : [])])});
+    };
+    const read = (url: string) => readAssociationHtml(boundedFetch,url,options.timeoutMs || 15000);
     let pagesRead=0;
     let next: string | undefined = board.listUrl;
     const visited = new Set<string>(), seen = new Set<string>();

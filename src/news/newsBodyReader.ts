@@ -237,12 +237,13 @@ export function extractNewsBody(
     $("title").text();
   if (!newsTitlesMatch(title, expectedTitle))
     throw Error("NEWS_TITLE_MISMATCH");
+  const kookje = new URL(newsUrl(url)).hostname === "www.kookje.co.kr";
   let publishedAt =
     $('meta[property="article:published_time"]').attr("content") ||
     $('meta[name="date"]').attr("content") ||
     $("time[datetime]").first().attr("datetime") ||
     $('meta[property="og:regDate"]').attr("content") ||
-    $(".dateWriter,.articleInfo")
+    $(kookje ? ".f_news_date,.dateWriter,.articleInfo" : ".dateWriter,.articleInfo")
       .first()
       .text()
       .match(/\d{4}[-.]\d{2}[-.]\d{2}\s+\d{2}:\d{2}(?::\d{2})?/)?.[0];
@@ -269,6 +270,7 @@ export function extractNewsBody(
   let text = jsonBody,
     selector = "jsonld:articleBody";
   for (const sel of [
+    ...(kookje ? [".news_article"] : []),
     '[itemprop="articleBody"]',
     "#realArtcContents",
     ".story-news.article",

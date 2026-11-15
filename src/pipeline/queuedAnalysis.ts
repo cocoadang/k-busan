@@ -14,7 +14,7 @@ export async function runQueuedAnalysis(options:{queue:AnalysisQueue;attachments
   let item=entry.item,result=entry.result;
   if(entry.state!=='ready'){
    attempted++;
-   try{item=await attachments.enrich(item);const validation=await analyzer.validateRelatedness(item,project);result={validation};if(validation.status==='relevant')result.payload=await analyzer.extractEvent(item,project);await queue.stage(entry,item,result);}
+   try{item=await attachments.enrich(item,options.deadline);const validation=await analyzer.validateRelatedness(item,project);result={validation};if(validation.status==='relevant')result.payload=await analyzer.extractEvent(item,project);await queue.stage(entry,item,result);}
    catch(e:any){const error=/^ATTACHMENT_/.test(e.message)?e.message:'QUEUE_ANALYSIS_FAILED';await queue.stage(entry,item,undefined,error);results.set(entry.id,{item,error});continue;}
   }
   results.set(entry.id,{item,result});

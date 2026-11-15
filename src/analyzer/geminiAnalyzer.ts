@@ -95,9 +95,11 @@ export class GeminiAnalyzer {
   private modelName = resolveGeminiModel();
   private dryRunMode: boolean;
   private cache?: AnalysisCache;
+  private deadlineAt=Infinity;
   private pending = new Map<string, Promise<AnalysisResult>>();
   public usage = { requests: 0, cacheHits: 0, failures: 0, cacheErrors: 0, inputTokens: 0, outputTokens: 0, thinkingTokens: 0, totalTokens: 0, responsesWithUsage: 0, failureReasons: {} as Record<string, number> };
-  public beginRun(cache?: AnalysisCache) {
+  public beginRun(cache?: AnalysisCache, deadlineAt=Infinity) {
+    this.deadlineAt=deadlineAt;
     this.cache = cache; this.pending.clear();
     this.usage = { requests: 0, cacheHits: 0, failures: 0, cacheErrors: 0, inputTokens: 0, outputTokens: 0, thinkingTokens: 0, totalTokens: 0, responsesWithUsage: 0, failureReasons: {} };
   }
@@ -222,6 +224,7 @@ JSON 응답 포맷:
           model: this.modelName,
           contents: prompt,
           config: {
+            httpOptions:{timeout:Math.max(1000,Math.min(GEMINI_ANALYSIS_SETTINGS.timeoutMs,this.deadlineAt-Date.now()))},
             responseMimeType: 'application/json',
             maxOutputTokens: GEMINI_ANALYSIS_SETTINGS.maxOutputTokens,
             thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -250,17 +253,19 @@ JSON 응답 포맷:
             },
           },
         }),
-        GEMINI_ANALYSIS_SETTINGS.timeoutMs,
+        Math.max(1000,Math.min(GEMINI_ANALYSIS_SETTINGS.timeoutMs,this.deadlineAt-Date.now())),
         'Event extraction'
       );
       let response: Awaited<ReturnType<typeof requestOnce>>;
       for (let attempt = 0; ; attempt++) {
+        if(Date.now()+1000>=this.deadlineAt)throw new Error('AI_CYCLE_BUDGET_EXHAUSTED');
         this.usage.requests++;
         try {
           response = await requestOnce();
           break;
         } catch (err) {
           if (attempt >= GEMINI_RETRY_DELAYS_MS.length || !isTransientGeminiError(err)) throw err;
+          if(Date.now()+GEMINI_RETRY_DELAYS_MS[attempt]+1000>=this.deadlineAt)throw new Error('AI_CYCLE_BUDGET_EXHAUSTED');
           await sleep(GEMINI_RETRY_DELAYS_MS[attempt]);
         }
       }

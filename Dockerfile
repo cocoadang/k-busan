@@ -14,7 +14,7 @@ FROM node:22-bookworm-slim
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates poppler-utils tesseract-ocr tesseract-ocr-kor tesseract-ocr-eng python3 python3-venv \
   && rm -rf /var/lib/apt/lists/*
-RUN python3 -m venv /opt/hwp && /opt/hwp/bin/pip install --no-cache-dir pyhwp==0.1b15
+RUN python3 -m venv /opt/hwp && /opt/hwp/bin/pip install --no-cache-dir pyhwp==0.1b15 six==1.17.0 lxml==6.0.2
 ENV PATH="/opt/hwp/bin:${PATH}"
 WORKDIR /app
 ENV NODE_ENV=production
@@ -23,6 +23,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
 COPY --from=build /app/src/tests/fixtures/documents ./src/tests/fixtures/documents
+RUN hwp5txt src/tests/fixtures/documents/compat-aligns.hwp > /tmp/hwp-selftest.txt && test -s /tmp/hwp-selftest.txt && pdftotext src/tests/fixtures/documents/association-1.pdf /tmp/pdf-selftest.txt && test -s /tmp/pdf-selftest.txt && tesseract --list-langs 2>&1 | grep -q kor
 USER node
 EXPOSE 8080
 CMD ["npm", "start"]

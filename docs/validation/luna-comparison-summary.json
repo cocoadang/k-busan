@@ -1,0 +1,99 @@
+{
+  "checkedAt": "2026-11-15T09:44:04.248Z",
+  "models": {
+    "gemini": {
+      "model": "gemini-3.8-flash",
+      "calls": 6,
+      "correct": 54,
+      "total": 54,
+      "supportedQuotes": 30,
+      "quotes": 30,
+      "meanMs": 4228.833333333333,
+      "medianMs": 4253,
+      "minMs": 3666,
+      "maxMs": 4674,
+      "inputTokens": 8726,
+      "cachedInputTokens": 0,
+      "outputTokens": 2281,
+      "costUSD": 0.01509825,
+      "per1000USD": 2.516375,
+      "uncachedPer1000USD": 2.516375,
+      "cacheWritePer1000USD": 2.516375,
+      "fieldFailures": [],
+      "whitespaceNormalizedSupportedQuotes": 30
+    },
+    "openai": {
+      "model": "gpt-6-luna",
+      "calls": 6,
+      "correct": 54,
+      "total": 54,
+      "supportedQuotes": 28,
+      "quotes": 30,
+      "meanMs": 2577,
+      "medianMs": 2535.5,
+      "minMs": 2264,
+      "maxMs": 3108,
+      "inputTokens": 9102,
+      "cachedInputTokens": 4542,
+      "outputTokens": 1382,
+      "costUSD": 0.00130597,
+      "per1000USD": 0.21766166666666667,
+      "uncachedPer1000USD": 0.26686666666666664,
+      "cacheWritePer1000USD": 0.3047916666666666,
+      "fieldFailures": [],
+      "whitespaceNormalizedSupportedQuotes": 30
+    }
+  },
+  "independentDocuments": 2,
+  "settings": {
+    "openaiModel": "gpt-6-luna",
+    "openaiReasoning": "none",
+    "geminiReasoning": "low",
+    "telegramEnabled": false
+  },
+  "productionChecks": [
+    {
+      "file": "association-1.pdf",
+      "passed": true,
+      "eventType": "협력업체/용역 입찰공고",
+      "importance": 3,
+      "eventDate": "2026-10-08",
+      "elapsedMs": 4926
+    },
+    {
+      "file": "association-2.pdf",
+      "passed": true,
+      "eventType": "협력업체/용역 입찰공고",
+      "importance": 3,
+      "eventDate": "2026-10-08",
+      "elapsedMs": 3582
+    },
+    {
+      "file": "association-1-ocr.png",
+      "passed": true,
+      "eventType": "협력업체/용역 입찰공고",
+      "importance": 3,
+      "eventDate": "2026-10-08",
+      "elapsedMs": 4082
+    }
+  ],
+  "telegramSent": 0,
+  "notes": [
+    "2 independent original notices, plus 1 rasterized OCR variant; 2 repeats per variant/provider",
+    "Same input hash for each Gemini/OpenAI pair; provider-specific production reasoning modes (Gemini low, Luna none)",
+    "Cost is measured tokens x official Standard rates, not an invoice; excludes preprocessing, infrastructure and the 3 separate production integration calls"
+  ],
+  "pricesPerMillion": {
+    "gemini": {
+      "input": 0.75,
+      "cached": 0.075,
+      "output": 3.75
+    },
+    "openai": {
+      "input": 0.1,
+      "cached": 0.01,
+      "write": 0.125,
+      "output": 0.5
+    }
+  }
+}

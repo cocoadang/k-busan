@@ -1,0 +1,1660 @@
+{
+  "checkedAt": "2026-11-15T09:44:04.248Z",
+  "sourcePage": "https://dynamice.busan.go.kr/home/BARA_0000000000151/view.do?no=329&ntt_id=20680&pgMode=view",
+  "independentOriginalDocuments": 2,
+  "note": "OCR case is a rasterized rendering of original document 1, not a third independent notice; small paired diagnostic, not a general model ranking.",
+  "rows": [
+    {
+      "file": "association-1.pdf",
+      "provider": "gemini",
+      "repeat": 1,
+      "inputSha256": "44f385c74f637fc8fff4ff52ac64ab3ff62296c2f189bc2fc4e956c98940bffb",
+      "model": "gemini-3.8-flash",
+      "elapsedMs": 4616,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 2,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T11:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "p.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "현장설명회 : 2026년 10월 16일 금요일 오전11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대",
+            "locator": "p.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634㎡",
+            "locator": "p.1"
+          }
+        ]
+      },
+      "usage": {
+        "promptTokenCount": 1478,
+        "candidatesTokenCount": 397,
+        "totalTokenCount": 1875,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1478
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T11:00",
+            "actual": "2026-10-16T11:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 2,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-1.pdf",
+      "provider": "openai",
+      "repeat": 1,
+      "inputSha256": "44f385c74f637fc8fff4ff52ac64ab3ff62296c2f189bc2fc4e956c98940bffb",
+      "model": "gpt-6-luna",
+      "elapsedMs": 3108,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 3,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T11:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "p.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "현장설명회 : 2026년 10월 16일 금요일 오전11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대",
+            "locator": "p.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634㎡",
+            "locator": "p.1"
+          }
+        ]
+      },
+      "usage": {
+        "input_tokens": 1539,
+        "input_tokens_details": {
+          "cache_write_tokens": 1536,
+          "cache_write_tokens_details": {
+            "ttl_12h_tokens": 0,
+            "ttl_30m_tokens": 1536
+          },
+          "cached_tokens": 0
+        },
+        "output_tokens": 235,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 1774
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T11:00",
+            "actual": "2026-10-16T11:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 3,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-1.pdf",
+      "provider": "gemini",
+      "repeat": 2,
+      "inputSha256": "44f385c74f637fc8fff4ff52ac64ab3ff62296c2f189bc2fc4e956c98940bffb",
+      "model": "gemini-3.8-flash",
+      "elapsedMs": 4474,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 2,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T11:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "p.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "현장설명회 : 2026년 10월 16일 금요일 오전11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대 및 부대복리시설",
+            "locator": "p.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634㎡",
+            "locator": "p.1"
+          }
+        ]
+      },
+      "usage": {
+        "promptTokenCount": 1478,
+        "candidatesTokenCount": 401,
+        "totalTokenCount": 1879,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1478
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T11:00",
+            "actual": "2026-10-16T11:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 2,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-1.pdf",
+      "provider": "openai",
+      "repeat": 2,
+      "inputSha256": "44f385c74f637fc8fff4ff52ac64ab3ff62296c2f189bc2fc4e956c98940bffb",
+      "model": "gpt-6-luna",
+      "elapsedMs": 2706,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 3,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T11:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "p.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "2026년 10월 22일(목요일) 11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "2026년 10월 16일 금요일 오전11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대",
+            "locator": "p.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634㎡",
+            "locator": "p.1"
+          }
+        ]
+      },
+      "usage": {
+        "input_tokens": 1539,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cache_write_tokens_details": {
+            "ttl_12h_tokens": 0,
+            "ttl_30m_tokens": 0
+          },
+          "cached_tokens": 1536
+        },
+        "output_tokens": 222,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 1761
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T11:00",
+            "actual": "2026-10-16T11:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 3,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-2.pdf",
+      "provider": "gemini",
+      "repeat": 1,
+      "inputSha256": "5250938e47d935baba93ddefab5a31a9e8e7b8e4628691735b9948c5719c88ae",
+      "model": "gemini-3.8-flash",
+      "elapsedMs": 4032,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 2,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T14:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "p.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "입찰마감     : 2026년 10월 22일(목요일) 11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "현장설명회 : 2026년 10월 16일 금요일 오후2시",
+            "locator": "p.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대",
+            "locator": "p.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634㎡",
+            "locator": "p.1"
+          }
+        ]
+      },
+      "usage": {
+        "promptTokenCount": 1481,
+        "candidatesTokenCount": 397,
+        "totalTokenCount": 1878,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1481
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T14:00",
+            "actual": "2026-10-16T14:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 2,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-2.pdf",
+      "provider": "openai",
+      "repeat": 1,
+      "inputSha256": "5250938e47d935baba93ddefab5a31a9e8e7b8e4628691735b9948c5719c88ae",
+      "model": "gpt-6-luna",
+      "elapsedMs": 2721,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 2,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T14:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "p.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "현장설명회 : 2026년 10월 16일 금요일 오후2시",
+            "locator": "p.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대",
+            "locator": "p.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634㎡",
+            "locator": "p.1"
+          }
+        ]
+      },
+      "usage": {
+        "input_tokens": 1534,
+        "input_tokens_details": {
+          "cache_write_tokens": 1531,
+          "cache_write_tokens_details": {
+            "ttl_12h_tokens": 0,
+            "ttl_30m_tokens": 1531
+          },
+          "cached_tokens": 0
+        },
+        "output_tokens": 235,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 1769
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T14:00",
+            "actual": "2026-10-16T14:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 2,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 4,
+        "groundedFields": 4,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-2.pdf",
+      "provider": "gemini",
+      "repeat": 2,
+      "inputSha256": "5250938e47d935baba93ddefab5a31a9e8e7b8e4628691735b9948c5719c88ae",
+      "model": "gemini-3.8-flash",
+      "elapsedMs": 3911,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 2,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T14:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "p.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "2026년 10월 22일(목요일) 11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "2026년 10월 16일 금요일 오후2시",
+            "locator": "p.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대",
+            "locator": "p.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "178,634㎡",
+            "locator": "p.1"
+          }
+        ]
+      },
+      "usage": {
+        "promptTokenCount": 1481,
+        "candidatesTokenCount": 375,
+        "totalTokenCount": 1856,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1481
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T14:00",
+            "actual": "2026-10-16T14:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 2,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-2.pdf",
+      "provider": "openai",
+      "repeat": 2,
+      "inputSha256": "5250938e47d935baba93ddefab5a31a9e8e7b8e4628691735b9948c5719c88ae",
+      "model": "gpt-6-luna",
+      "elapsedMs": 2264,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 3,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T14:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "p.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+            "locator": "p.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "현장설명회 : 2026년 10월 16일 금요일 오후2시",
+            "locator": "p.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대",
+            "locator": "p.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634㎡",
+            "locator": "p.1"
+          }
+        ]
+      },
+      "usage": {
+        "input_tokens": 1534,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cache_write_tokens_details": {
+            "ttl_12h_tokens": 0,
+            "ttl_30m_tokens": 0
+          },
+          "cached_tokens": 1531
+        },
+        "output_tokens": 235,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 1769
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T14:00",
+            "actual": "2026-10-16T14:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 3,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 4,
+        "groundedFields": 4,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-1-ocr.png",
+      "provider": "gemini",
+      "repeat": 1,
+      "inputSha256": "d531127f06d760458baab11f690f3a198a37e01e6d74b67dd4a1960d77deddbc",
+      "model": "gemini-3.8-flash",
+      "elapsedMs": 3666,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 2,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T11:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일\n시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합 조합장",
+            "locator": "image.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "나. 입찰마감 : 2026년 10월 22일(목요일) 11시",
+            "locator": "image.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "현장설명회 : 2026년 10월 16일 금요일 오전11시",
+            "locator": "image.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대 및 부대복리시설",
+            "locator": "image.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634",
+            "locator": "image.1"
+          }
+        ]
+      },
+      "usage": {
+        "promptTokenCount": 1404,
+        "candidatesTokenCount": 303,
+        "totalTokenCount": 1707,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1404
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T11:00",
+            "actual": "2026-10-16T11:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 2,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-1-ocr.png",
+      "provider": "openai",
+      "repeat": 1,
+      "inputSha256": "d531127f06d760458baab11f690f3a198a37e01e6d74b67dd4a1960d77deddbc",
+      "model": "gpt-6-luna",
+      "elapsedMs": 2298,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 2,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T11:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "image.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+            "locator": "image.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "현장설명회 : 2026년 10월 16일 금요일 오전11시",
+            "locator": "image.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대",
+            "locator": "image.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634",
+            "locator": "image.1"
+          }
+        ]
+      },
+      "usage": {
+        "input_tokens": 1478,
+        "input_tokens_details": {
+          "cache_write_tokens": 1475,
+          "cache_write_tokens_details": {
+            "ttl_12h_tokens": 0,
+            "ttl_30m_tokens": 1475
+          },
+          "cached_tokens": 0
+        },
+        "output_tokens": 234,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 1712
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T11:00",
+            "actual": "2026-10-16T11:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 2,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-1-ocr.png",
+      "provider": "gemini",
+      "repeat": 2,
+      "inputSha256": "d531127f06d760458baab11f690f3a198a37e01e6d74b67dd4a1960d77deddbc",
+      "model": "gemini-3.8-flash",
+      "elapsedMs": 4674,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 2,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T11:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "image.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "나. 입찰마감 : 2026년 10월 22일(목요일) 11시",
+            "locator": "image.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "OF, 현장설명회 : 2026년 10월 16일 금요일 오전11시",
+            "locator": "image.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대 및 부대복리시설",
+            "locator": "image.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "ct. 구역면적 : 178,634",
+            "locator": "image.1"
+          }
+        ]
+      },
+      "usage": {
+        "promptTokenCount": 1404,
+        "candidatesTokenCount": 408,
+        "totalTokenCount": 1812,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1404
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T11:00",
+            "actual": "2026-10-16T11:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 2,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    },
+    {
+      "file": "association-1-ocr.png",
+      "provider": "openai",
+      "repeat": 2,
+      "inputSha256": "d531127f06d760458baab11f690f3a198a37e01e6d74b67dd4a1960d77deddbc",
+      "model": "gpt-6-luna",
+      "elapsedMs": 2365,
+      "result": {
+        "eventType": "vendor_bid",
+        "importance": 2,
+        "publicationDate": "2026-10-08",
+        "bidDeadline": "2026-10-22T11:00",
+        "briefingDateTime": "2026-10-16T11:00",
+        "totalUnits": 3545,
+        "zoneAreaSqm": 178634,
+        "amountWon": null,
+        "selectionConfirmed": false,
+        "evidence": [
+          {
+            "field": "publicationDate",
+            "quote": "2026년 10월 08일",
+            "locator": "image.1"
+          },
+          {
+            "field": "bidDeadline",
+            "quote": "2026년 10월 22일(목요일) 11시",
+            "locator": "image.1"
+          },
+          {
+            "field": "briefingDateTime",
+            "quote": "2026년 10월 16일 금요일 오전11시",
+            "locator": "image.1"
+          },
+          {
+            "field": "totalUnits",
+            "quote": "공동주택 3,545세대",
+            "locator": "image.1"
+          },
+          {
+            "field": "zoneAreaSqm",
+            "quote": "구역면적 : 178,634",
+            "locator": "image.1"
+          }
+        ]
+      },
+      "usage": {
+        "input_tokens": 1478,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cache_write_tokens_details": {
+            "ttl_12h_tokens": 0,
+            "ttl_30m_tokens": 0
+          },
+          "cached_tokens": 1475
+        },
+        "output_tokens": 221,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 1699
+      },
+      "score": {
+        "fields": [
+          {
+            "field": "eventType",
+            "expected": "vendor_bid",
+            "actual": "vendor_bid",
+            "passed": true
+          },
+          {
+            "field": "publicationDate",
+            "expected": "2026-10-08",
+            "actual": "2026-10-08",
+            "passed": true
+          },
+          {
+            "field": "bidDeadline",
+            "expected": "2026-10-22T11:00",
+            "actual": "2026-10-22T11:00",
+            "passed": true
+          },
+          {
+            "field": "briefingDateTime",
+            "expected": "2026-10-16T11:00",
+            "actual": "2026-10-16T11:00",
+            "passed": true
+          },
+          {
+            "field": "totalUnits",
+            "expected": 3545,
+            "actual": 3545,
+            "passed": true
+          },
+          {
+            "field": "zoneAreaSqm",
+            "expected": 178634,
+            "actual": 178634,
+            "passed": true
+          },
+          {
+            "field": "amountWon",
+            "expected": null,
+            "actual": null,
+            "passed": true
+          },
+          {
+            "field": "selectionConfirmed",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "field": "importance",
+            "expected": "2 or 3",
+            "actual": 2,
+            "passed": true
+          }
+        ],
+        "correctFields": 9,
+        "totalFields": 9,
+        "evidenceCount": 5,
+        "exactSupportedQuotes": 5,
+        "groundedFields": 5,
+        "requiredGroundedFields": 5
+      }
+    }
+  ],
+  "extractions": [
+    {
+      "file": "compat-sample-5017.hwp",
+      "status": "verified",
+      "sha256": "ff3faae938610fcfbedc21c27c507ca0cc038b44872b65d10fcad0b55af67ba2",
+      "pages": 1,
+      "methods": [
+        "native"
+      ],
+      "elapsedMs": 1252,
+      "excerpt": "한글 2005 예제 파일입니다.\n\n머리말입니다\n\n본문 내용입니다. 본 문서는 글 워드 프로세서의 파일 저장 형식 중, 글 2002 이후 제품에서 사용되는 글 문서 파일 형식 5.0 및 글 97 문서 파일 형식, HWPML에 관하여 설명한다.\n표\n<표>\n표끝\n<표>\n\n\n<표>\n\n다음 문단\n\n본 문서는 먼저 글 문서 파일 형식 5.0에 관하여 설명한 "
+    },
+    {
+      "file": "association-1.pdf",
+      "status": "verified",
+      "sha256": "2b2c625fcabd7d02e47de2a0b3904b869d52448f76de836a594bc40b99d8e630",
+      "pages": 1,
+      "methods": [
+        "native"
+      ],
+      "elapsedMs": 133,
+      "excerpt": "시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합 공고 제2026- 12호\n\n\n\n    협력업체【기반시설공사 건설사업관리】선정 입찰 공고\n시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합에서는 국토교통부 고시 제2025-448호(정비사업\n계약업무 처리기준)에 의거 하여 아래와 같이 용역 수행할 협력업체를 선정하고자 입찰공고 하오니 해당 업"
+    },
+    {
+      "file": "association-2.pdf",
+      "status": "verified",
+      "sha256": "7394fd50c18557e94c94986b3622f6910694c540a56cb674f3ebd908a850089e",
+      "pages": 1,
+      "methods": [
+        "native"
+      ],
+      "elapsedMs": 39,
+      "excerpt": "시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합 공고 제2026-11호\n\n\n         협력업체 【부지정지공사 용역】선정 입찰 공고\n시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합에서는 아래와 같이 협력업체를 선정하고자 「도시\n및 주거환경정비법」 제29조 및 국토교통부 고시 제2025-448호(정비사업 계약업무 처리기준)에 의거 아"
+    },
+    {
+      "file": "association-1-ocr.png",
+      "status": "verified",
+      "sha256": "08f2a54cad1e310addd1b2ca0d43404880c381f7c6832749baad50388d33073b",
+      "pages": 1,
+      "methods": [
+        "ocr"
+      ],
+      "elapsedMs": 14101,
+      "excerpt": "시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합 공고 제2026- 12호\n언         A    섬)|언과       x   차 고\n협력업체 [기반시설공사 건설사업관리] 선정 입찰 공고\n시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합에서는 국토교통부 고시 제2025-448호(정비사업\n계약업무 처리기준)에 의거 하여 아래와 같이 용역"
+    }
+  ],
+  "productionChecks": [
+    {
+      "file": "association-1.pdf",
+      "passed": true,
+      "validation": {
+        "status": "relevant",
+        "confidence": 1,
+        "explanation": "공식 조합 공고로 촉진3구역의 기반시설공사 건설사업관리 용역 입찰을 안내하고 있습니다."
+      },
+      "payload": {
+        "projectId": "chokjin-3",
+        "eventType": "협력업체/용역 입찰공고",
+        "category": "사업단계",
+        "title": "촉진3구역 기반시설공사 건설사업관리 용역 입찰 공고",
+        "summary": "조합이 기반시설공사 건설사업관리 용역을 수행할 업체를 일반경쟁입찰·적격심사 방식으로 선정하기 위한 공고를 냈습니다. 입찰 마감은 2026년 10월 22일이며, 업체 선정은 조합 대의원회에서 최고 득표자를 정하는 방식으로 안내됐습니다.",
+        "importance": 3,
+        "confidence": 0.99,
+        "eventDate": "2026-10-08",
+        "clusterKey": "chokjin-3_vendor_bid",
+        "sourceUrl": "https://dynamice.busan.go.kr/home/BARA_0000000000151/view.do?no=329&ntt_id=20680&pgMode=view",
+        "sourceTier": "official",
+        "reasoningSummary": "기반시설공사 건설사업관리 업체 입찰은 시공사 선정이 아닌 일반 용역업체 선정 공고이므로 eventType을 협력업체/용역 입찰공고로 분류하고 중요도 3을 부여했습니다. 사업 일정이나 조합원 부담에 중대한 변화를 명시한 근거는 없습니다."
+      },
+      "elapsedMs": 4926,
+      "usage": {
+        "requests": 1,
+        "cacheHits": 0,
+        "failures": 0,
+        "cacheErrors": 0,
+        "inputTokens": 2733,
+        "outputTokens": 313,
+        "thinkingTokens": 0,
+        "totalTokens": 3046,
+        "responsesWithUsage": 1,
+        "failureReasons": {}
+      }
+    },
+    {
+      "file": "association-2.pdf",
+      "passed": true,
+      "validation": {
+        "status": "relevant",
+        "confidence": 0.99,
+        "explanation": "문서는 촉진3구역 조합이 부지정지공사 용역 업체를 선정하기 위해 게시한 입찰 공고입니다."
+      },
+      "payload": {
+        "projectId": "chokjin-3",
+        "eventType": "협력업체/용역 입찰공고",
+        "category": "사업단계",
+        "title": "촉진3구역 부지정지공사 용역 입찰 공고",
+        "summary": "촉진3구역 조합이 부지정지공사 용역 업체 선정을 위한 일반경쟁입찰을 공고했습니다. 입찰 마감은 2026년 10월 22일이며, 조합 대의원회 적격심사를 통해 업체를 선정할 예정입니다.",
+        "importance": 3,
+        "confidence": 0.99,
+        "eventDate": "2026-10-08",
+        "clusterKey": "chokjin-3_vendor_bid",
+        "sourceUrl": "https://dynamice.busan.go.kr/home/BARA_0000000000151/view.do?no=329&ntt_id=20680&pgMode=view",
+        "sourceTier": "official",
+        "reasoningSummary": "부지정지공사 관련 일반 용역업체 입찰 공고로, 시공사 선정이나 사업 향방을 가르는 결정은 아니므로 일반 협력업체 입찰 기준에 따라 중요도 3으로 분류했습니다."
+      },
+      "elapsedMs": 3582,
+      "usage": {
+        "requests": 1,
+        "cacheHits": 0,
+        "failures": 0,
+        "cacheErrors": 0,
+        "inputTokens": 2708,
+        "outputTokens": 273,
+        "thinkingTokens": 0,
+        "totalTokens": 2981,
+        "responsesWithUsage": 1,
+        "failureReasons": {}
+      }
+    },
+    {
+      "file": "association-1-ocr.png",
+      "passed": true,
+      "validation": {
+        "status": "relevant",
+        "confidence": 0.99,
+        "explanation": "공식 조합 공고가 촉진3구역의 기반시설공사 건설사업관리 용역 입찰을 직접 안내합니다."
+      },
+      "payload": {
+        "projectId": "chokjin-3",
+        "eventType": "협력업체/용역 입찰공고",
+        "category": "사업단계",
+        "title": "촉진3구역 기반시설공사 건설사업관리 용역 입찰 공고",
+        "summary": "조합이 기반시설공사 건설사업관리 업체 선정을 위한 일반경쟁입찰을 공고했습니다. 현장설명회는 2026-10-16, 입찰마감은 2026-10-22로 예정되어 있으며, 조합 대의원회에서 적격심사 방식으로 업체를 선정할 예정입니다.",
+        "importance": 3,
+        "confidence": 0.98,
+        "eventDate": "2026-10-08",
+        "clusterKey": "chokjin-3_vendor_bid",
+        "sourceUrl": "https://dynamice.busan.go.kr/home/BARA_0000000000151/view.do?no=329&ntt_id=20680&pgMode=view",
+        "sourceTier": "official",
+        "reasoningSummary": "기반시설공사 건설사업관리 용역은 시공사 선정이 아닌 일반 협력업체 입찰이므로 eventType을 협력업체/용역 입찰공고로 분류하고 기본 중요도 3을 적용했습니다. 기반시설공사나 조합원 부담의 중대한 일정·비용 변화 근거는 없어 별도의 materialImpactEvidence는 없습니다."
+      },
+      "elapsedMs": 4082,
+      "usage": {
+        "requests": 1,
+        "cacheHits": 0,
+        "failures": 0,
+        "cacheErrors": 0,
+        "inputTokens": 2698,
+        "outputTokens": 316,
+        "thinkingTokens": 0,
+        "totalTokens": 3014,
+        "responsesWithUsage": 1,
+        "failureReasons": {}
+      }
+    }
+  ],
+  "settings": {
+    "openaiModel": "gpt-6-luna",
+    "openaiReasoning": "none",
+    "geminiReasoning": "low",
+    "telegramEnabled": false
+  },
+  "execution": "projects/busan-redevelopment/locations/asia-northeast3/jobs/apt-luna-document-validation/executions/apt-luna-document-validation-w9pcq",
+  "productionRevision": "busan-redevelopment-news-monitor-c3478ec-1"
+}

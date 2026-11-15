@@ -12,7 +12,7 @@
   "subnet": {
     "name": "kbusan-official-seoul",
     "network": "https://www.googleapis.com/compute/v1/projects/busan-redevelopment/global/networks/kbusan-official-egress",
-    "ipCidrRange": "10.42.0.0/26",
+    "ipCidrRange": "10.42.0.0/24",
     "privateIpGoogleAccess": true
   },
   "address": {

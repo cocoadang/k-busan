@@ -25,3 +25,15 @@ Public NAT list pricing: one reserved address used by NAT is $0.005/hour ($3.60 
 ## Rollback
 
 Revert the service's VPC egress using a reviewed Cloud Run exported service specification, preserving public access, IAM, secrets and traffic. Returning to shared egress can reproduce the official-source failures. Remove NAT/router/address/subnet/network only after no service/job revisions still use them; do not release the reserved address while production depends on it. Original service settings are privately retained, without secrets in this repository.
+
+## Final production acceptance
+
+The dedicated subnet was expanded to `10.42.0.0/24` to retain headroom for the service's maximum 13 instances, revision replacement and temporary diagnostic address retention. Cloud Run retains addresses for scaled-down revisions for up to 20 minutes: https://docs.cloud.google.com/run/docs/configuring/vpc-direct-vpc . This is private address capacity, not an added public address or VM.
+
+PR 19 merged; GitHub production deployment 43713614605 succeeded. Final image commit `516c44c4d503a3f01cea226d6230abdbdf8bd81c`, revision `busan-redevelopment-news-monitor-516c44c-1`, receives 100% of traffic and retains the dedicated egress annotations. Both Python deployment-guard tests and all 187 Node tests passed; type check/build and hosted checks passed.
+
+Three real no-alert collection cycles all succeeded for all 12 sources: candidate `cycle_1794745121885` (24.404 seconds), promoted production `cycle_1794745245439` (16.675 seconds), and post-image-deployment production `cycle_1794745640268` (17.587 seconds). All collection errors and Telegram sent/failed counts were zero.
+
+Independent acceptance reads verified public health, Firestore and gpt-6-luna configuration, unchanged credentials/service account/request timeout, correct VPC/subnet, new image/100% traffic and preservation of the repaired U-dong article date/checksum. Final queue: completed 82, closed 7, pending/retry/ready/needs_review all zero. Temporary TLS and egress diagnostic jobs were deleted; only the intentional production network resources remain.
+
+Detailed results: [official-static-egress-acceptance.json](./official-static-egress-acceptance.json). These repeated tests establish successful operation on the dedicated path, not a guarantee against future upstream outages. The specific upstream dropping device or policy was not identified.

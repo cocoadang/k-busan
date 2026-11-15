@@ -1,0 +1,406 @@
+{
+  "checkedAt": "2026-11-15T12:27:41.860Z",
+  "passed": true,
+  "checks": {
+    "controlFailed36": true,
+    "dedicatedPassed18": true,
+    "allFullCollectionsPassed": true,
+    "newImage": true,
+    "traffic": true,
+    "fixedEgress": true,
+    "publicAccess": true,
+    "storageAndModel": true,
+    "credentialsPreserved": true,
+    "serviceAccount": true,
+    "timeout": true,
+    "queueEmpty": true,
+    "udongDatePreserved": true
+  },
+  "commit": "516c44c4d503a3f01cea226d6230abdbdf8bd81c",
+  "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-516c44c-1",
+  "egress": {
+    "egress": "ALL_TRAFFIC",
+    "networkInterfaces": [
+      {
+        "network": "projects/busan-redevelopment/global/networks/kbusan-official-egress",
+        "subnetwork": "projects/busan-redevelopment/regions/asia-northeast3/subnetworks/kbusan-official-seoul"
+      }
+    ]
+  },
+  "staticIp": "34.64.198.132",
+  "controlRequests": 36,
+  "controlFailures": 36,
+  "dedicatedSourceChecks": 18,
+  "dedicatedRounds": [
+    {
+      "round": 2,
+      "ms": 7159,
+      "city": {
+        "error": null,
+        "items": 0
+      },
+      "association": {
+        "error": null,
+        "items": 0
+      },
+      "saeol": {
+        "success": true,
+        "resultCode": "03",
+        "totalCount": 0,
+        "error": null
+      }
+    },
+    {
+      "round": 1,
+      "ms": 7040,
+      "city": {
+        "error": null,
+        "items": 0
+      },
+      "association": {
+        "error": null,
+        "items": 0
+      },
+      "saeol": {
+        "success": true,
+        "resultCode": "03",
+        "totalCount": 0,
+        "error": null
+      }
+    },
+    {
+      "round": 0,
+      "ms": 7204,
+      "city": {
+        "error": null,
+        "items": 0
+      },
+      "association": {
+        "error": null,
+        "items": 0
+      },
+      "saeol": {
+        "success": true,
+        "resultCode": "03",
+        "totalCount": 0,
+        "error": null
+      }
+    },
+    {
+      "round": 2,
+      "ms": 7352,
+      "city": {
+        "error": null,
+        "items": 0
+      },
+      "association": {
+        "error": null,
+        "items": 0
+      },
+      "saeol": {
+        "success": true,
+        "resultCode": "03",
+        "totalCount": 0,
+        "error": null
+      }
+    },
+    {
+      "round": 1,
+      "ms": 7472,
+      "city": {
+        "error": null,
+        "items": 0
+      },
+      "association": {
+        "error": null,
+        "items": 0
+      },
+      "saeol": {
+        "success": true,
+        "resultCode": "03",
+        "totalCount": 0,
+        "error": null
+      }
+    },
+    {
+      "round": 0,
+      "ms": 8825,
+      "city": {
+        "error": null,
+        "items": 0
+      },
+      "association": {
+        "error": null,
+        "items": 0
+      },
+      "saeol": {
+        "success": true,
+        "resultCode": "03",
+        "totalCount": 0,
+        "error": null
+      }
+    }
+  ],
+  "cycles": [
+    {
+      "revision": "busan-redevelopment-news-monitor-egress-20261115-1",
+      "cycle": "cycle_1794745121885",
+      "seconds": 24.404,
+      "sourceCount": 12,
+      "sourceDetails": [
+        {
+          "sourceName": "부산광역시 공식 고시공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "과천시 공식 고시·공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 10단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (해운대구 우동3구역 주택재개발정비사업)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "Google News RSS (부산시민공원주변(촉진3구역) 재정비촉진구역)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (삼익비치타운(남천2구역))",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 5단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 27
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (해운대구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산광역시 수영구 남천동)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "촉진3 조합 입찰 게시판",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산진구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 8·9단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 45
+        }
+      ],
+      "errors": [],
+      "telegramSent": 0,
+      "telegramFailed": 0
+    },
+    {
+      "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-egress-20261115-1",
+      "cycle": "cycle_1794745245439",
+      "seconds": 16.675,
+      "sourceCount": 12,
+      "sourceDetails": [
+        {
+          "sourceName": "부산광역시 공식 고시공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "과천시 공식 고시·공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 10단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (부산시민공원주변(촉진3구역) 재정비촉진구역)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 5단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 27
+        },
+        {
+          "sourceName": "Google News RSS (해운대구 우동3구역 주택재개발정비사업)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "Google News RSS (삼익비치타운(남천2구역))",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (해운대구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산광역시 수영구 남천동)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "촉진3 조합 입찰 게시판",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산진구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 8·9단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 45
+        }
+      ],
+      "errors": [],
+      "telegramSent": 0,
+      "telegramFailed": 0
+    },
+    {
+      "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-516c44c-1",
+      "cycle": "cycle_1794745640268",
+      "seconds": 17.587,
+      "sourceCount": 12,
+      "sourceDetails": [
+        {
+          "sourceName": "부산광역시 공식 고시공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "과천시 공식 고시·공고",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 10단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 5단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 27
+        },
+        {
+          "sourceName": "Google News RSS (부산시민공원주변(촉진3구역) 재정비촉진구역)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 20
+        },
+        {
+          "sourceName": "Google News RSS (해운대구 우동3구역 주택재개발정비사업)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "Google News RSS (삼익비치타운(남천2구역))",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 19
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (해운대구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산광역시 수영구 남천동)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "촉진3 조합 입찰 게시판",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "부산광역시 새올고시정보 (부산진구)",
+          "sourceTier": "official",
+          "status": "success",
+          "itemsCount": 0
+        },
+        {
+          "sourceName": "Google News RSS (과천주공 8·9단지 재건축)",
+          "sourceTier": "news",
+          "status": "success",
+          "itemsCount": 45
+        }
+      ],
+      "errors": [],
+      "telegramSent": 0,
+      "telegramFailed": 0
+    }
+  ],
+  "queueStats": {
+    "pending": 0,
+    "retry": 0,
+    "ready": 0,
+    "completed": 82,
+    "needs_review": 0,
+    "closed": 7
+  },
+  "telegramSent": 0,
+  "upstreamPolicy": "Specific upstream filtering device/reason unconfirmed; measured failure condition is default shared outbound path.",
+  "diagnosticJobsRemoved": true
+}

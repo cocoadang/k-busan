@@ -467,7 +467,7 @@ export class OfficialNoticeCollector {
    */
   public async fetchForProject(
     project: RedevelopmentProject,
-    options: { timeoutMs?: number; targetDates?: string[] } = {}
+    options: { timeoutMs?: number; targetDates?: string[]; budgetMs?: number } = {}
   ): Promise<{
     items: RawCollectedItem[];
     error?: string;
@@ -483,8 +483,22 @@ export class OfficialNoticeCollector {
     const errors: string[] = [];
     let lastHttpStatus: number | undefined;
 
-    for (const ymd of targetDates) {
-      const result = await this.fetchDateShared(ymd, { timeoutMs: options.timeoutMs });
+    // Bound gateway pressure to three dates at a time. A failed date must not
+    // serialize seven retry windows and starve the durable analysis queue.
+    const results = new Array<Awaited<ReturnType<OfficialNoticeCollector['fetchDateShared']>>>(targetDates.length);
+    let nextDate = 0;
+    const deadline = Date.now() + Math.min(60000, Math.max(1, options.budgetMs || 45000));
+    await Promise.all(Array.from({ length: Math.min(3, targetDates.length) }, async () => {
+      while (nextDate < targetDates.length) {
+        const index = nextDate++;
+        const remaining = deadline - Date.now();
+        results[index] = remaining <= 0
+          ? {success:false,httpStatus:0,resultCode:'COLLECTION_BUDGET_EXHAUSTED',totalCount:0,items:[],rawFieldNames:[],error:'SAEOL_BUDGET_EXHAUSTED: 해당 날짜 확인 미완료'}
+          : await this.fetchDateShared(targetDates[index], { timeoutMs: Math.min(options.timeoutMs || 15000, Math.max(1, Math.floor(remaining / 2))) });
+      }
+    }));
+    for (const [index, ymd] of targetDates.entries()) {
+      const result = results[index];
       if (!result.success) {
         errors.push(`[${ymd}] ${result.error}`);
         lastHttpStatus = result.httpStatus;

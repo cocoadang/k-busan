@@ -1,0 +1,341 @@
+{
+  "checkedAt": "2026-11-15T09:47:20.271735Z",
+  "rows": [
+    {
+      "provider": "gemini",
+      "file": "association-1.pdf",
+      "repeat": 1,
+      "evidence": [
+        {
+          "field": "publicationDate",
+          "quote": "2026년 10월 08일",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "bidDeadline",
+          "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "briefingDateTime",
+          "quote": "현장설명회 : 2026년 10월 16일 금요일 오전11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "totalUnits",
+          "quote": "공동주택 3,545세대",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "zoneAreaSqm",
+          "quote": "구역면적 : 178,634㎡",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        }
+      ]
+    },
+    {
+      "provider": "openai",
+      "file": "association-1.pdf",
+      "repeat": 1,
+      "evidence": [
+        {
+          "field": "publicationDate",
+          "quote": "2026년 10월 08일",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "bidDeadline",
+          "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "briefingDateTime",
+          "quote": "현장설명회 : 2026년 10월 16일 금요일 오전11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "totalUnits",
+          "quote": "공동주택 3,545세대",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "zoneAreaSqm",
+          "quote": "구역면적 : 178,634㎡",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        }
+      ]
+    },
+    {
+      "provider": "gemini",
+      "file": "association-1.pdf",
+      "repeat": 2,
+      "evidence": [
+        {
+          "field": "publicationDate",
+          "quote": "2026년 10월 08일",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "bidDeadline",
+          "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "briefingDateTime",
+          "quote": "현장설명회 : 2026년 10월 16일 금요일 오전11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "totalUnits",
+          "quote": "공동주택 3,545세대 및 부대복리시설",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "zoneAreaSqm",
+          "quote": "구역면적 : 178,634㎡",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        }
+      ]
+    },
+    {
+      "provider": "openai",
+      "file": "association-1.pdf",
+      "repeat": 2,
+      "evidence": [
+        {
+          "field": "publicationDate",
+          "quote": "2026년 10월 08일",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "bidDeadline",
+          "quote": "2026년 10월 22일(목요일) 11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "briefingDateTime",
+          "quote": "2026년 10월 16일 금요일 오전11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "totalUnits",
+          "quote": "공동주택 3,545세대",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "zoneAreaSqm",
+          "quote": "구역면적 : 178,634㎡",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        }
+      ]
+    },
+    {
+      "provider": "gemini",
+      "file": "association-2.pdf",
+      "repeat": 1,
+      "evidence": [
+        {
+          "field": "publicationDate",
+          "quote": "2026년 10월 08일",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "bidDeadline",
+          "quote": "입찰마감     : 2026년 10월 22일(목요일) 11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "briefingDateTime",
+          "quote": "현장설명회 : 2026년 10월 16일 금요일 오후2시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "totalUnits",
+          "quote": "공동주택 3,545세대",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "zoneAreaSqm",
+          "quote": "구역면적 : 178,634㎡",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        }
+      ]
+    },
+    {
+      "provider": "openai",
+      "file": "association-2.pdf",
+      "repeat": 1,
+      "evidence": [
+        {
+          "field": "publicationDate",
+          "quote": "2026년 10월 08일",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "bidDeadline",
+          "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+          "locator": "p.1",
+          "exact": false,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "briefingDateTime",
+          "quote": "현장설명회 : 2026년 10월 16일 금요일 오후2시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "totalUnits",
+          "quote": "공동주택 3,545세대",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "zoneAreaSqm",
+          "quote": "구역면적 : 178,634㎡",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        }
+      ]
+    },
+    {
+      "provider": "gemini",
+      "file": "association-2.pdf",
+      "repeat": 2,
+      "evidence": [
+        {
+          "field": "publicationDate",
+          "quote": "2026년 10월 08일",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "bidDeadline",
+          "quote": "2026년 10월 22일(목요일) 11시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "briefingDateTime",
+          "quote": "2026년 10월 16일 금요일 오후2시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "totalUnits",
+          "quote": "공동주택 3,545세대",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "zoneAreaSqm",
+          "quote": "178,634㎡",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        }
+      ]
+    },
+    {
+      "provider": "openai",
+      "file": "association-2.pdf",
+      "repeat": 2,
+      "evidence": [
+        {
+          "field": "publicationDate",
+          "quote": "2026년 10월 08일",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "bidDeadline",
+          "quote": "입찰마감 : 2026년 10월 22일(목요일) 11시",
+          "locator": "p.1",
+          "exact": false,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "briefingDateTime",
+          "quote": "현장설명회 : 2026년 10월 16일 금요일 오후2시",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "totalUnits",
+          "quote": "공동주택 3,545세대",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        },
+        {
+          "field": "zoneAreaSqm",
+          "quote": "구역면적 : 178,634㎡",
+          "locator": "p.1",
+          "exact": true,
+          "whitespaceNormalized": true
+        }
+      ]
+    }
+  ]
+}

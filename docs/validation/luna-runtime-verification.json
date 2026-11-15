@@ -1,0 +1,133 @@
+{
+  "checkedAt": "2026-11-15T09:48:13.165Z",
+  "productionRevision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-c3478ec-1",
+  "model": "gpt-6-luna",
+  "cycleId": "cycle_1794736066996",
+  "startedAt": "2026-11-15T09:47:15.387Z",
+  "finishedAt": "2026-11-15T09:47:46.996Z",
+  "httpStatus": 200,
+  "queueAttempted": 13,
+  "telegramSent": 0,
+  "telegramFailed": 0,
+  "cycleErrors": [],
+  "queueCountsAtInspection": {
+    "completed": 71,
+    "needs_review": 12,
+    "retry": 4
+  },
+  "itemsNeedingAttention": [
+    {
+      "id": "120f59eb26fe4bfd0f5ef24fe654a4700c27ef9ee3606c0ccfce254be21228d3",
+      "title": "부산 재건축 최대어 삼익비치 … 한미글로벌, 건설사업관리 수주 - 매일경제",
+      "state": "needs_review",
+      "lastError": "제목은 삼익비치와 건설사업관리 수주를 언급하지만 본문 요약에 사업관리 수주 내용만 있고 대상 구역과의 직접적인 연관성이나 사건의 세부 근거를 확인할 수 없습니다.",
+      "attempts": 1
+    },
+    {
+      "id": "3e76dbfe27edeb9a881962f03467d8528057d3a00bb58fa0712f91577d2f86e6",
+      "title": "인터뷰-이형진 과천주공 8·9단지 재건축 조합장 - 하우징헤럴드",
+      "state": "retry",
+      "lastError": "AI 분석 실패 (AI_EVENT_INVALID): 재확인 필요",
+      "attempts": 2
+    },
+    {
+      "id": "57ed83281e2687f716a774536ee37e8a5fcd10264868579f0156e8d54e2f75e8",
+      "title": "7억 환급에 새 아파트까지 받는다…과천 주공10단지 재건축 비결 - 땅집고",
+      "state": "needs_review",
+      "lastError": "제목은 대상인 과천주공10단지 재건축을 직접 언급하지만, 본문 내용이 제목 반복에 그쳐 구체적인 사업 이벤트를 확인할 수 없습니다.",
+      "attempts": 1
+    },
+    {
+      "id": "5a71d0028714787e8e5b8c807c05c20811cff0ad09d60981c5314ab8d581f0e7",
+      "title": "과천 8·9단지 재건축에 막힌 생활도로…부림동 주민 통행 불편 장기화 - 안전신문",
+      "state": "needs_review",
+      "lastError": "제목에서 과천 8·9단지 재건축과 생활도로 통행 불편의 연관성은 확인되지만, 본문이 제공되지 않아 구체적인 사업상 사건이나 변화는 판단하기 어렵습니다.",
+      "attempts": 1
+    },
+    {
+      "id": "82877951e9444e643a4e1e973ee0d62416132a7d486bc5984c99d3beb5601629",
+      "title": "[시사진단] 부산 남천삼익비치 재건축, 수영구의 미래를 다시 그리다 - 국토일보",
+      "state": "needs_review",
+      "lastError": "제목은 대상 구역의 재건축을 직접 언급하지만 본문은 제목만 제공되어 구체적인 정비사업 이벤트를 확인할 수 없습니다.",
+      "attempts": 1
+    },
+    {
+      "id": "8a3c3e312c0d65557f3724d2e7d7bcd829465c7c668436e5cd49d7f92319e002",
+      "title": "삼익비치 재건축 탄력…'이기대 공원' 아파트도 사업 승인 - 네이트",
+      "state": "needs_review",
+      "lastError": "제목은 삼익비치 재건축을 언급하지만 제공된 본문은 제목만 반복하며, 사업 관련 사건의 구체적인 사실이나 승인 대상이 삼익비치인지 확인할 수 없습니다.",
+      "attempts": 2
+    },
+    {
+      "id": "8d77f7f79c36c9577482060c17f47990bc9c2fd3f4dbe06d7c96687152b215cf",
+      "title": "과천5단지재건축, 과천고·청계초 추가요구로 착공 지연 우려 - 이슈게이트",
+      "state": "needs_review",
+      "lastError": "제목상 과천5단지 재건축을 직접 다루지만, 본문은 제목만 반복하며 추가 요구나 착공 지연 우려를 뒷받침하는 구체적 사실을 제공하지 않습니다.",
+      "attempts": 1
+    },
+    {
+      "id": "90830b535bbf3dde676bb764e2a77511813a2eb79b959d1670ad64700293df48",
+      "title": "'과천 마지막 재건축' 과천주공8·9단지 9부 능선 넘었다 - 머니투데이 - 머니투데이",
+      "state": "needs_review",
+      "lastError": "제목은 대상 단지의 재건축 관련임을 나타내지만, 제공된 본문에는 제목과 발행일 외에 구체적인 사건 내용이 없어 실제 진척 사항을 확인할 수 없습니다.",
+      "attempts": 2
+    },
+    {
+      "id": "a38db1ec9ccead54d5048ea80fc262d58e5605763a21f5db82c050e677e72229",
+      "title": "촉진3구역 DL이앤씨 시공사 해지, 삼호가든 재건축 시공사 선정 무효 총회 계획, 부산 아크로 하이엔드 가능한가? 공사비 사업비 갈등, 표준약정서 날인 거부 - Naver Blog",
+      "state": "needs_review",
+      "lastError": "제목에서 촉진3구역을 직접 언급하지만, 자료는 블로그 제목만 제공하며 시공사 해지가 확정됐는지 확인할 본문 근거가 없습니다.",
+      "attempts": 1
+    },
+    {
+      "id": "ab57dc5f970eca191e5d2ebd2141618742e1242c944cc938be3c743a52b69f0d",
+      "title": "인터뷰-이형진 과천주공 8·9단지 재건축조합장 - 하우징헤럴드",
+      "state": "needs_review",
+      "lastError": "제목은 대상 단지 조합장 인터뷰임을 나타내지만, 본문 요약에 인터뷰 내용이나 구체적인 정비사업 사건이 없어 이벤트를 확인할 수 없습니다.",
+      "attempts": 2
+    },
+    {
+      "id": "b97d907ad1ad3eb349514c8f4d0323a629ac1ba1c29146405d4e4da057ad123a",
+      "title": "해운대 우동3구역 재개발 놓고 해운정사측 크게 반발 - 네이트",
+      "state": "needs_review",
+      "lastError": "제목은 우동3구역 재개발과 해운정사 측 반발을 언급하지만, 본문이 제목 외 내용을 제공하지 않아 구체적인 분쟁 사건을 확인할 수 없습니다.",
+      "attempts": 1
+    },
+    {
+      "id": "c7d1b679326ab29b23592f776160f5648437794c9b30089cffafb5c3d8971924",
+      "title": "남천 삼익비치 재건축 사업 시행계획변경 인가 완료 - Daum",
+      "state": "retry",
+      "lastError": "AI 분석 실패 (AI_EVENT_INVALID): 재확인 필요",
+      "attempts": 2
+    },
+    {
+      "id": "e63c9fc2b1f04181102d808a040b8e497236bb106ffb17ff21cf8c1985a811e8",
+      "title": "[현장in] 부산 해운대 우동3구역 재개발 공공도로 변경 논란 - 연합뉴스",
+      "state": "needs_review",
+      "lastError": "제목은 우동3구역 재개발의 공공도로 변경 논란을 가리키지만, 제공된 본문에는 제목 외 내용이 없어 구체적 사건과 변경 사항을 확인할 수 없습니다.",
+      "attempts": 1
+    },
+    {
+      "id": "e6b274a172caada808d45c360e05624e357dac0a1f5aa76738281b56cdae35cb",
+      "title": "[단독]'과천주공 8·9단지' 재건축 관리처분계획 인가 - 뉴시스",
+      "state": "retry",
+      "lastError": "AI 분석 실패 (AI_EVENT_INVALID): 재확인 필요",
+      "attempts": 1
+    },
+    {
+      "id": "edfad0d2051468a23f4e8ccecccb683c3730147067c4e7010e6886f88728ad08",
+      "title": "과천주공8·9단지 재건축 빨라진다...관리처분계획 인가 - 리얼캐스트",
+      "state": "retry",
+      "lastError": "AI 분석 실패 (AI_EVENT_INVALID): 재확인 필요",
+      "attempts": 1
+    },
+    {
+      "id": "fe46d37e0c7d9979459fff25993b971f0185531441b16643e4108b0e94134058",
+      "title": "부산 해운정사 \"우동3구역 재개발, 공공도로 사라질 위기\" - 뉴시스",
+      "state": "needs_review",
+      "lastError": "제목에 우동3구역 재개발이 명시되어 대상 사업과 관련된 것으로 보이지만, 본문이 제목 요약에 그쳐 공공도로 관련 사건의 구체적 내용과 발생 여부를 확인할 수 없습니다.",
+      "attempts": 1
+    }
+  ],
+  "note": "Full queue snapshot includes prior work; these counts are not the denominator of the controlled two-document accuracy benchmark. Test job has no Telegram credentials; this live manual cycle explicitly used notify=false. No production provider setting was changed."
+}

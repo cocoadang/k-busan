@@ -7,4 +7,4 @@ Original download parameters: atchFileId `cx/kwSBivSgCWAb6LQl1VsZfC66U6UI68b9jjw
 
 `association-1-ocr.png` is a rasterized 144dpi rendering of the first original PDF, used as an OCR regression case. It is not a third independent notice or an originally scanned public document.
 
-`compat-aligns.hwp` is an unchanged format-compatibility fixture from https://github.com/mete0r/pyhwp/blob/master/tests/hwp5_tests/fixtures/aligns.hwp (pyhwp, AGPL-3.0). It is not a K-busan project document and is excluded from model-quality scores. The unmodified pyhwp executable is separately installed from PyPI; upstream source and license: https://github.com/mete0r/pyhwp .
+`compat-charstyle.hwp` is an unchanged format-compatibility fixture from https://github.com/mete0r/pyhwp/blob/master/tests/hwp5_tests/fixtures/charstyle.hwp (pyhwp, AGPL-3.0). It is not a K-busan project document and is excluded from model-quality scores. The unmodified pyhwp executable is separately installed from PyPI; upstream source and license: https://github.com/mete0r/pyhwp .

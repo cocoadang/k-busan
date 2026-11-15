@@ -880,7 +880,8 @@ app.all('/api/pipeline/run', async (req, res) => {
   try {
     const pollResult = await executeProductionPollingCycle({
       source: 'manual',
-      enableTelegram: true,
+      // Authenticated operator verification can persist results without sending alerts.
+      enableTelegram: req.query.notify !== 'false',
     });
 
     res.json({

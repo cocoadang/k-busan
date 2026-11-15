@@ -21,6 +21,7 @@ export async function downloadAttachment(url:string,fetcher:typeof fetch=fetch){
  if(!r.ok||!r.body)throw Error(`ATTACHMENT_HTTP_${r.status}`);if(Number(r.headers.get('content-length')||0)>10*1024*1024)throw Error('ATTACHMENT_TOO_LARGE');
  const chunks:Uint8Array[]=[];let size=0;for await(const chunk of r.body as any){size+=chunk.length;if(size>10*1024*1024){await r.body.cancel().catch(()=>{});throw Error('ATTACHMENT_TOO_LARGE');}chunks.push(chunk);}return Buffer.concat(chunks);
  }throw Error('ATTACHMENT_REDIRECT_LIMIT');}
+export function readableHwpText(text:string){return text.replace(/<(?:그림|표|개체)>/g,'').replace(/\s/g,'').length>=25;}
 export async function extractAttachment(bytes:Buffer,url:string,previous?:AttachmentResult|null,deadline=Infinity):Promise<AttachmentResult>{
  const sha256=createHash('sha256').update(bytes).digest('hex'),result:AttachmentResult={url,sha256,status:'failed',pages:[],checkedAt:Date.now()};
  const dir=await mkdtemp(path.join(tmpdir(),'apt-attachment-'));
@@ -43,7 +44,7 @@ export async function extractAttachment(bytes:Buffer,url:string,previous?:Attach
    if(!entries.length||entries.length>40)throw Error('ATTACHMENT_UNSUPPORTED_ZIP');let total=0;
    for(const e of entries){total+=e.header.size;if(total>3*1024*1024)throw Error('ATTACHMENT_ZIP_TOO_LARGE');const compressed=e.getCompressedData();if(![0,8].includes(e.header.method))throw Error('ATTACHMENT_ZIP_METHOD');const xml=e.header.method===0?compressed:inflateRawSync(compressed,{maxOutputLength:3*1024*1024});if(xml.length>e.header.size || xml.length>3*1024*1024)throw Error('ATTACHMENT_ZIP_TOO_LARGE');const $=load(xml.toString('utf8'),{xml:true});const text=$('*').filter((_,el)=>/^(?:\w+:)?t$/.test((el as any).tagName || '')).map((_,el)=>$(el).text()).get().join(' ');if(text.trim())result.pages.push({locator:e.entryName,text,method:'native'});}result.pageCount=entries.length;
   }else if(bytes.subarray(0,8).equals(Buffer.from('d0cf11e0a1b11ae1','hex'))){
-   result.format='hwp';const file=path.join(dir,'source.hwp');await writeFile(file,bytes);const text=(await run('hwp5txt',[file])).trim();if(text)result.pages=[{locator:'본문 (쪽번호 미제공)',text,method:'native'}];result.pageCount=1;
+   result.format='hwp';const file=path.join(dir,'source.hwp');await writeFile(file,bytes);const text=(await run('hwp5txt',[file])).trim();if(!readableHwpText(text))throw Error('ATTACHMENT_HWP_IMAGE_ONLY_OR_EMPTY');result.pages=[{locator:'본문 (쪽번호 미제공)',text,method:'native'}];result.pageCount=1;
   }else throw Error('ATTACHMENT_UNSUPPORTED_FORMAT');
   if(result.pages.reduce((s,p)=>s+p.text.length,0)>60000)throw Error('ATTACHMENT_TEXT_LIMIT');
   result.status=result.pages.length===result.pageCount?'verified':'partial';if(result.status==='partial')result.error='ATTACHMENT_MORE_PAGES_REQUIRED';

@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import AdmZip from 'adm-zip';
 import {enqueueEntry,stageEntry,queueId,type AnalysisQueue,type QueueEntry} from '../queue/analysisQueue';
-import {runQueuedAnalysis} from '../pipeline/queuedAnalysis';import {AttachmentReader,extractAttachment,safeAttachmentUrl,downloadAttachment} from '../attachments/attachmentReader';
+import {runQueuedAnalysis} from '../pipeline/queuedAnalysis';import {AttachmentReader,readableHwpText,extractAttachment,safeAttachmentUrl,downloadAttachment} from '../attachments/attachmentReader';
 import {REDEVELOPMENT_SEED_PROJECTS} from '../registry/redevelopmentRegistry';import type {RawCollectedItem} from '../types/redevelopment';
 const project=REDEVELOPMENT_SEED_PROJECTS.find(p=>p.id==='chokjin-3')!;
 const item=(n:number):RawCollectedItem=>({id:`i${n}`,projectId:project.id,title:`촉진3구역 재개발 조합 총회 개최 안내 ${n}`,content:'촉진3구역 주택재개발 정비사업조합 총회를 개최하고 사업계획을 심의합니다.',sourceUrl:`https://www.busan.go.kr/test?id=${n}`,sourceTier:'official',sourceType:'official-web',sourceName:'부산시',publishedAt:'2026-10-01T00:00:00+09:00',collectedAt:'2026-10-01T00:00:00+09:00',rawFingerprint:`f${n}`,matchedKeywords:['촉진3구역'],detailVerified:true});
@@ -16,3 +16,5 @@ test('unread attachments never become events; malformed attachments fail visibly
 
 test('oversized HWPX section and image dimensions are rejected before expensive parsing',async()=>{const z=new AdmZip();z.addFile('Contents/section0.xml',Buffer.alloc(3*1024*1024+1,65));assert.equal((await extractAttachment(z.toBuffer(),'https://www.busan.go.kr/bomb.hwpx')).status,'failed');const image=Buffer.alloc(32);Buffer.from('89504e470d0a1a0a','hex').copy(image);image.write('IHDR',12);image.writeUInt32BE(100000,16);image.writeUInt32BE(100000,20);const r=await extractAttachment(image,'https://www.busan.go.kr/bomb.png');assert.equal(r.status,'failed');});
 test('expired worker budget leaves persisted work pending without calling the provider',async()=>{const q=new Queue();let calls=0;const r=await runQueuedAnalysis({queue:q,items:[item(1)],analyzer:{validateRelatedness:async()=>{calls++;}} as any,attachments:new AttachmentReader(),projects:[project],existingEvents:[],maxItems:80,deadline:Date.now()-1});assert.equal(calls,0);assert.equal(r.stats.pending,1);});
+
+test('image placeholders from HWP converters are not treated as read document text',()=>{assert.equal(readableHwpText('<그림>\n\n'.repeat(20)),false);assert.equal(readableHwpText('촉진3구역 조합 총회는 2026년 11월 20일 오후 2시에 개최합니다.'),true);});

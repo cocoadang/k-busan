@@ -23,7 +23,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
 COPY --from=build /app/src/tests/fixtures/documents ./src/tests/fixtures/documents
-RUN hwp5txt src/tests/fixtures/documents/compat-aligns.hwp > /tmp/hwp-selftest.txt && test -s /tmp/hwp-selftest.txt && pdftotext src/tests/fixtures/documents/association-1.pdf /tmp/pdf-selftest.txt && test -s /tmp/pdf-selftest.txt && tesseract --list-langs 2>&1 | grep -q kor
+RUN hwp5txt src/tests/fixtures/documents/compat-charstyle.hwp > /tmp/hwp-selftest.txt && test -s /tmp/hwp-selftest.txt && pdftotext src/tests/fixtures/documents/association-1.pdf /tmp/pdf-selftest.txt && test -s /tmp/pdf-selftest.txt && tesseract --list-langs 2>&1 | grep -q kor
 USER node
 EXPOSE 8080
 CMD ["npm", "start"]

@@ -116,6 +116,7 @@ export function sanitizeForFirestore<T>(data: T, seen = new WeakSet()): T {
         cleanedArray.push(cleaned);
       }
     }
+    seen.delete(data as object);
     return cleanedArray as any;
   }
 
@@ -130,6 +131,7 @@ export function sanitizeForFirestore<T>(data: T, seen = new WeakSet()): T {
     }
   }
 
+  seen.delete(data as object);
   return cleanedObj as T;
 }
 
@@ -190,7 +192,12 @@ export function mergeEventSources<T extends { url?: string }>(existing: T[] | un
   for (const src of [...(existing || []), ...(incoming || [])]) {
     if (!src) continue;
     const key = src.url || JSON.stringify(src);
-    if (!merged.has(key)) merged.set(key, src);
+    const previous=merged.get(key) as any;
+    const incoming=src as any;
+    const newerNews=!!incoming.newsEvidence&&(!previous?.newsEvidence||Number(incoming.newsEvidence.checkedAt)>=Number(previous.newsEvidence.checkedAt));
+    const newerAttachment=incoming.attachmentContentStatus==='verified'&&previous?.attachmentContentStatus!=='verified';
+    if (!previous) merged.set(key,src);
+    else if(newerNews||newerAttachment)merged.set(key,{...previous,...src});
   }
   return Array.from(merged.values()).slice(0, 30);
 }

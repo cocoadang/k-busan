@@ -1,3 +1,4 @@
+import { pacedOfficialFetch } from './officialRequestGovernor';
 import { createHash } from 'node:crypto';
 import { load } from 'cheerio';
 import type { AssociationBoardConfig, RawCollectedItem, RedevelopmentProject } from '../types/redevelopment';
@@ -164,7 +165,7 @@ export async function readAssociationHtml(fetcher: typeof fetch, url: string, ti
   throw new Error('BOARD_FETCH_FAILED');
 }
 export class AssociationNoticeCollector {
-  constructor(private fetcher: typeof fetch = fetch, private clock: () => Date = () => new Date()) {}
+  constructor(private fetcher: typeof fetch = pacedOfficialFetch, private clock: () => Date = () => new Date()) {}
   async fetchForProject(project: RedevelopmentProject, options: { timeoutMs?: number; maxPages?: number; budgetMs?: number } = {}) {
     const items: RawCollectedItem[] = [], errors: string[] = [];
     const board = project.associationBoard;

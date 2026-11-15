@@ -3,7 +3,8 @@ import {createOfficialRequestGovernor} from '../src/collector/officialRequestGov
 async function main(){
  if(Object.keys(process.env).some(k=>/TELEGRAM|OPENAI|GEMINI/.test(k)))throw Error('NOTIFICATION_AND_AI_CREDENTIALS_FORBIDDEN');
  const day=new Date(Date.now()+9*3600000).toISOString().slice(0,10).replaceAll('-','');
- const targets=[['city','https://www.busan.go.kr/nbgosi'],['association','https://dynamice.busan.go.kr/view.do?no=287'],['saeol','https://apis.data.go.kr/6260000/SaeolAncmntInfoService/getSaeolAncmntInfo?serviceKey='+encodeURIComponent(process.env.DATA_GO_KR_API_KEY||'')+'&pageNo=1&numOfRows=1&resultType=json&pbltnYmd='+day]];
+ let key=process.env.DATA_GO_KR_API_KEY?.trim()||'';try{if(/%[0-9a-f]{2}/i.test(key))key=decodeURIComponent(key);}catch{}
+ const targets=[['city','https://www.busan.go.kr/nbgosi'],['association','https://dynamice.busan.go.kr/view.do?no=287'],['saeol','https://apis.data.go.kr/6260000/SaeolAncmntInfoService/getSaeolAncmntInfo?serviceKey='+encodeURIComponent(key)+'&pageNo=1&numOfRows=1&resultType=json&pbltnYmd='+day]];
  const blocked=new Set<string>(),headers={'User-Agent':'BusanRedevelopmentNewsMonitor/1.0',Accept:'text/html,application/json'};
  const paced=createOfficialRequestGovernor({intervalMs:3000,cooldownMs:60000});
  for(const[host,url]of targets){const start=Date.now();try{const r=await paced(url,{headers,redirect:'manual',signal:AbortSignal.timeout(20000)});const text=await r.text();if([403,429,503].includes(r.status))blocked.add(host);console.log('LOWRATE '+JSON.stringify({phase:'A_3s_serial_fetch',host,status:r.status,bytes:Buffer.byteLength(text),ms:Date.now()-start}));}catch(e:any){console.log('LOWRATE '+JSON.stringify({phase:'A_3s_serial_fetch',host,error:e.cause?.code||e.name,ms:Date.now()-start}));}}

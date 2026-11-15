@@ -70,12 +70,12 @@ export function analysisCacheKey(item: RawCollectedItem, project: RedevelopmentP
     item.publishedAt, item.sourceUrl, item.sourceTier, item.sourceType, item.sourceName,
     item.actorType, item.detailVerified, item.noticeNumber,item.attachmentEvidence?.map(e=>[e.url,e.sha256])])).digest('hex');
 }
-export function compactAnalysisContent(content: string): string {
+export function compactAnalysisContent(content: string, preserveAttachmentText = false): string {
   const clean = content.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ')
     .replace(/\r/g, '').split('\n').filter(line => !/^(목록|TOP|이전글|다음글|로그인|개인정보처리방침)\s*$/i.test(line.trim()))
     .join('\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-  return clean.length <= 12000 ? clean : clean.slice(0, 8000) + '\n[중간 생략: 생략 부분을 추정하지 마세요]\n' + clean.slice(-3900);
+  return preserveAttachmentText || clean.length <= 12000 ? clean : clean.slice(0, 8000) + '\n[중간 생략: 생략 부분을 추정하지 마세요]\n' + clean.slice(-3900);
 }
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, fallbackMsg: string): Promise<T> {
@@ -177,7 +177,7 @@ status, relatednessConfidence, explanation을 반드시 포함하세요. 모든 
 - 제목: ${fenceUntrusted(item.title)}
 - 출처: ${fenceUntrusted(item.sourceName)} (${item.sourceTier})
 - URL: ${fenceUntrusted(item.sourceUrl)}
-- 본문/요약: ${fenceUntrusted(compactAnalysisContent(item.content))}
+- 본문/요약: ${fenceUntrusted(compactAnalysisContent(item.content, item.attachmentContentStatus === 'verified'))}
 - 발행일시: ${fenceUntrusted(item.publishedAt)}
 </collected_document>
 

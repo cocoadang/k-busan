@@ -594,9 +594,10 @@ export async function readCityNoticeHtml(fetcher: typeof fetch, url: string, tim
     u.protocol = 'https:'; u.port = ''; return u.toString();
   };
   for (let attempt=0; attempt<2; attempt++) {
+    const requestTimeout=AbortSignal.timeout(timeoutMs);
     try {
       let target=safeUrl(url);
-      const signal=AbortSignal.any([AbortSignal.timeout(timeoutMs),...(options.signal?[options.signal]:[])]);
+      const signal=AbortSignal.any([requestTimeout,...(options.signal?[options.signal]:[])]);
       for(let hop=0; hop<4; hop++) {
         const r=await fetcher(target,{signal,redirect:'manual',headers:{Accept:'text/html,application/xhtml+xml'}});
         if([301,302,303,307,308].includes(r.status)) {
@@ -612,7 +613,7 @@ export async function readCityNoticeHtml(fetcher: typeof fetch, url: string, tim
       if(options.signal?.aborted)throw Error('CITY_BUDGET_EXHAUSTED');
       const nestedCodes=e?.cause?.errors?.map((cause:any)=>cause.code).filter(Boolean).join(',');
       const code=e?.cause?.code || nestedCodes || e?.name || 'UNKNOWN';
-      const transient=/TIMEOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN/i.test(String(code)) || e?.message==='fetch failed';
+      const transient=requestTimeout.aborted || /TIMEOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN/i.test(String(code)) || e?.message==='fetch failed';
       if(attempt===0 && transient && (options.canRetry?.()??true)) {
         await new Promise<void>((resolve,reject)=>{
           const abort=()=>{clearTimeout(timer);reject(Error('CITY_BUDGET_EXHAUSTED'))};

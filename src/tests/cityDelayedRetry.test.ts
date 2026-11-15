@@ -21,3 +21,8 @@ test('other collection proceeds while city waits, with city results still first 
  p.cityBoardCollector={fetchForProjects:()=>new Promise(r=>{release=r})};p.newsCollector={fetchForProject:async()=>{newsBeforeCity=!cityDone;cityDone=true;release({items:[]});return{items:[]}}};const watchdog=setTimeout(()=>{cityDone=true;release({items:[]})},100);
  try{const project={...REDEVELOPMENT_SEED_PROJECTS.find(p=>p.id==='udong-3')!,associationBoard:undefined};const result=await p.run({projects:[project],enableOfficialApi:false});assert.equal(newsBeforeCity,true);assert.equal(result.audit.sourceDetails[0].sourceName,'부산광역시 공식 고시공고');}finally{clearTimeout(watchdog);}
 });
+
+test('per-request native abort after timeout permits one delayed recovery',async()=>{
+ let calls=0;const fetcher=(async(_input,init)=>{if(++calls===2)return new Response(empty);return new Promise((_resolve,reject)=>{init?.signal?.addEventListener('abort',()=>reject(new Error('native abort',{cause:{code:'ABORT_ERR'}})),{once:true});});})as typeof fetch;
+ const keepAlive=setTimeout(()=>{},200);try{assert.equal(await readCityNoticeHtml(fetcher,'https://www.busan.go.kr/nbgosi',5,{retryDelayMs:5}),empty);assert.equal(calls,2);}finally{clearTimeout(keepAlive);}
+});

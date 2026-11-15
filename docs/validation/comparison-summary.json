@@ -1,0 +1,66 @@
+{
+  "checkedAt": "2026-11-15T06:36:49.253Z",
+  "independentOriginalDocuments": 2,
+  "inputVariants": 3,
+  "repeatsPerVariant": 2,
+  "models": {
+    "gemini": {
+      "model": "gemini-3.8-flash",
+      "calls": 6,
+      "correctFields": 54,
+      "totalFields": 54,
+      "supportedQuotes": 30,
+      "totalQuotes": 30,
+      "meanLatencyMs": 3902,
+      "estimatedActualUsageUSD": 0.014449499999999999,
+      "estimatedUSDPer1000Calls": 2.40825,
+      "estimatedColdUSDPer1000Calls": 2.40825,
+      "failures": []
+    },
+    "openai": {
+      "model": "gpt-6.1-sol",
+      "calls": 6,
+      "correctFields": 51,
+      "totalFields": 54,
+      "supportedQuotes": 30,
+      "totalQuotes": 30,
+      "meanLatencyMs": 3502.6666666666665,
+      "estimatedActualUsageUSD": 0.015864399999999997,
+      "estimatedUSDPer1000Calls": 2.6440666666666663,
+      "estimatedColdUSDPer1000Calls": 6.279166666666667,
+      "failures": [
+        {
+          "file": "association-1.pdf",
+          "repeat": 1,
+          "field": "bidDeadline",
+          "expected": "2026-10-22T11:00",
+          "actual": "2026-10-22",
+          "passed": false
+        },
+        {
+          "file": "association-1.pdf",
+          "repeat": 2,
+          "field": "bidDeadline",
+          "expected": "2026-10-22T11:00",
+          "actual": "2026-10-22",
+          "passed": false
+        },
+        {
+          "file": "association-2.pdf",
+          "repeat": 1,
+          "field": "bidDeadline",
+          "expected": "2026-10-22T11:00",
+          "actual": "2026-10-22",
+          "passed": false
+        }
+      ]
+    }
+  },
+  "pricingDate": "2026-11-15",
+  "currency": "USD",
+  "scope": "successful paired benchmark inference only; excludes failed preliminary runs, probes, extraction and infrastructure",
+  "pricingSources": [
+    "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+    "https://aistudio.google.com/docs/pricing#gemini-3.8-flash"
+  ]
+}

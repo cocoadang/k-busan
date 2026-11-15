@@ -1,0 +1,150 @@
+{
+  "checkedAt": "2026-11-15T14:21:05.145Z",
+  "passed": true,
+  "checks": {
+    "sameClientFirstReset": true,
+    "sameClientRecovered": true,
+    "quietInterval": true,
+    "expectedImage": true,
+    "promoted": true,
+    "sharedEgress": true,
+    "noFixedIpOrNat": true,
+    "health": true,
+    "cityComplete": true,
+    "allSourcesComplete": true,
+    "noTelegram": true,
+    "schedulerNoRepeat": true,
+    "schedulerWait": true,
+    "dailySchedule": true
+  },
+  "commit": "3d92e9ce44f850675f2c6a573161c46a2895fffc",
+  "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-3d92e9c-1",
+  "comparison": [
+    {
+      "timestamp": "2026-11-15T13:57:53.143705Z",
+      "attempt": 1,
+      "implementation": "same-node-client",
+      "status": 200,
+      "bytes": 63989,
+      "ms": 687
+    },
+    {
+      "timestamp": "2026-11-15T13:56:47.410737Z",
+      "attempt": 0,
+      "error": {
+        "code": "ECONNRESET",
+        "phase": "tls"
+      },
+      "ms": 235
+    }
+  ],
+  "finding": "A 250-ms retry conflicted with a 60-second governor cooldown; the same Node client recovered after a 65-second quiet interval. The external reason for the initial TLS reset remains unconfirmed.",
+  "cityTransport": "Existing fresh Node HTTPS / TLS 1.2 profile; no Python production adapter, proxy, fixed address or NAT",
+  "production": {
+    "cycle": "cycle_1794752448390",
+    "startedAt": "2026-11-15T14:18:07.196Z",
+    "finishedAt": "2026-11-15T14:20:48.390Z",
+    "seconds": 161.194,
+    "sources": [
+      {
+        "sourceName": "부산광역시 공식 고시공고",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "과천시 공식 고시·공고",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 10단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 20
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 5단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 27
+      },
+      {
+        "sourceName": "Google News RSS (부산시민공원주변(촉진3구역) 재정비촉진구역)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 20
+      },
+      {
+        "sourceName": "Google News RSS (해운대구 우동3구역 주택재개발정비사업)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 19
+      },
+      {
+        "sourceName": "Google News RSS (삼익비치타운(남천2구역))",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 19
+      },
+      {
+        "sourceName": "촉진3 조합 입찰 게시판",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 8·9단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 45
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (해운대구)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (부산광역시 수영구 남천동)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (부산진구)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      }
+    ],
+    "errors": [],
+    "telegramSent": 0,
+    "queue": {
+      "pending": 0,
+      "retry": 0,
+      "ready": 0,
+      "completed": 82,
+      "needs_review": 1,
+      "closed": 7
+    },
+    "transportLogs": [
+      {
+        "timestamp": "2026-11-15T14:20:41.860631Z",
+        "text": "[CITY_COLLECTION] {\"requestAttempts\":12,\"transportRetriesUsed\":1,\"pages\":11,\"items\":0,\"complete\":true,\"errorCount\":0}"
+      },
+      {
+        "timestamp": "2026-11-15T14:18:07.360400Z",
+        "text": "[CITY_TRANSPORT] {\"phase\":\"tls\",\"code\":\"ECONNRESET\",\"bodyBytes\":0,\"elapsedMs\":77}"
+      }
+    ]
+  },
+  "scheduler": {
+    "schedule": "0 8 * * *",
+    "timeZone": "Asia/Seoul",
+    "attemptDeadline": "320s",
+    "retryCount": 0
+  },
+  "diagnosticJobsRemoved": true
+}

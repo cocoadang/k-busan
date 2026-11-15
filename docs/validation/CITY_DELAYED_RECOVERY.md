@@ -19,3 +19,11 @@ The daily 08:00 Asia/Seoul scheduler now waits up to 320 seconds for the existin
 Regression tests reproduce the cooldown conflict with scaled offline timings, verify a real recovery request after cooldown, enforce one transport retry for the whole source, cancel waiting without another request, and prove other collection proceeds during the quiet interval while preserving final audit order. No official requests are made by these tests. Historical 17-page coverage remains tested.
 
 Fixed IP/NAT are absent. Diagnostic jobs have no Telegram/AI credentials and are removed after completion. All manual production validation uses `notify=false`.
+
+The first e4ffcff production validation hit a 15-second TCP timeout instead of a TLS reset. Native HTTPS wraps signal timeouts as ABORT_ERR; the earlier timeout-name matcher missed this case. The follow-up tracks the per-request timeout signal independently and retries it once, while an aborted total budget still stops immediately. A regression test covers the native abort shape. Failed production evidence remains in city-delayed-first-timeout.json.
+
+## Final production acceptance
+
+Deployment 3d92e9ce44f850675f2c6a573161c46a2895fffc passed all CI checks and was promoted to 100% traffic (workflow 43723270886). Cycle cycle_1794752448390 completed in 161.194 seconds with all 12 sources successful, no errors and Telegram sent/failed both zero. City logs prove the first TLS reset was recovered: exactly one transport retry, 12 total request attempts, 11 list pages, complete=true, errorCount=0. Zero matching city items does not mean zero pages: all required list pages were read.
+
+Acceptance also checks public health/Firestore readiness, no active VPC egress, deleted fixed-address/NAT resources, and the daily scheduler timeout/retry limits. The pre-existing needs_review=1 item remains unchanged. A successful bounded recovery is confirmed; the upstream reason for the first TLS reset and long-term reliability without a fixed address remain unproven. See city-delayed-recovery-acceptance.json for exact evidence.

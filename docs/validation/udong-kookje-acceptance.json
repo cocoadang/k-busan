@@ -1,0 +1,53 @@
+{
+  "checkedAt": "2026-11-15T12:02:23.669Z",
+  "passed": true,
+  "checks": {
+    "queueCompleted": true,
+    "relevant": true,
+    "queueDate": true,
+    "eventDate": true,
+    "sourceChecksum": true,
+    "publication": true,
+    "sourceSelector": true,
+    "quote": true,
+    "legacyWithdrawn": true,
+    "backedUp": true,
+    "historical": true,
+    "noTelegram": true,
+    "finalQueueEmpty": true
+  },
+  "queueId": "9f5fd0518d8c2223473fa394bb2dc5460be7a7c2c721c94c6fff431d2eca8580",
+  "eventId": "evt_udong-3_8195dda40e4ed9f0b2d238ab",
+  "eventDate": "2025-02-14",
+  "sourceUrl": "https://www.kookje.co.kr/news2011/asp/newsbody.asp?code=0200&key=20250217.22002004618",
+  "publication": "2025-02-16T10:20:58.000Z",
+  "sha256": "d0f5ad88f12446743bf80a2a48daab793e3582c7bf1d1fbe3253b87040e2d6e0",
+  "queueState": "completed",
+  "cycleId": "cycle_1794744110192",
+  "telegramSent": 0,
+  "collectionErrors": [
+    "부산시 고시 목록 수집 실패: fetch failed [UND_ERR_CONNECT_TIMEOUT]; 부산시 고시 원문 확인 실패 https://www.busan.go.kr/nbgosi/view?sno=79798&gosiGbn=N: fetch failed [UND_ERR_CONNECT_TIMEOUT]",
+    "조합 게시판 수집 실패: fetch failed [UND_ERR_CONNECT_TIMEOUT]",
+    "[20261115] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261114] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261113] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261112] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261111] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261110] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261109] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]",
+    "[20261115] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261114] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261113] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261112] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261111] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261110] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261109] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]",
+    "[20261115] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261114] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261113] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261112] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261111] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261110] 부산 새올고시 API 연결/본문 수신 실패 [UND_ERR_CONNECT_TIMEOUT]; [20261109] 부산 새올고시 API 연결/본문 수신 실패 [TimeoutError]"
+  ],
+  "queueStats": {
+    "pending": 0,
+    "retry": 0,
+    "ready": 0,
+    "completed": 82,
+    "needs_review": 0,
+    "closed": 7
+  },
+  "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-1dc7fb3-1",
+  "cycleQueueStatsBeforeAck": {
+    "pending": 0,
+    "retry": 0,
+    "ready": 1,
+    "completed": 81,
+    "needs_review": 0,
+    "closed": 7
+  },
+  "durationSeconds": 104.896
+}

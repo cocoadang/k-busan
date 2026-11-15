@@ -10,7 +10,8 @@ test('captured 17-page date boundary completes within finite request budget',asy
  const calls:string[]=[];
  const fetcher=(async(u:any)=>{calls.push(String(u));const url=new URL(String(u));return new Response(url.pathname.endsWith('/view')?detail:pageHtml(capture.rows[Number(url.searchParams.get('curPage')||1)-1]));}) as typeof fetch;
  const result=await new BusanCityNoticeCollector(fetcher,clock).fetchForProjects([]);
- assert.equal(result.error,undefined);assert.equal(calls.length,18);
+ assert.equal(result.error,undefined);assert.equal(calls.length,17);
+ assert.deepEqual(calls.map(u=>Number(new URL(u).searchParams.get('curPage')||1)),Array.from({length:17},(_,i)=>i+1));
  const old=await new BusanCityNoticeCollector(fetcher,clock).fetchForProjects([],{maxPages:10});
  assert.match(old.error!,/CITY_BOARD_PAGE_LIMIT/);
 });

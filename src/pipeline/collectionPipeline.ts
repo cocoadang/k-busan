@@ -84,7 +84,8 @@ export class CollectionPipeline {
   }
 
   private async runInternal(options: PipelineRunOptions): Promise<PipelineRunResult> {
-    const processingDeadline=Date.now()+200000;
+    // Leave 40 seconds of the 300-second HTTP budget for persistence and response.
+    const processingDeadline=Date.now()+260000;
     this.geminiAnalyzer.beginRun(options.analysisCache,options.workQueue?processingDeadline:Infinity);
     const projects = options.projects || REDEVELOPMENT_SEED_PROJECTS;
     const isOfficialEnabled = (options.enableOfficialApi ?? true) && process.env.ENABLE_OFFICIAL_API !== 'false' && Boolean(process.env.DATA_GO_KR_API_KEY?.trim());

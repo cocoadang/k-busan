@@ -16,3 +16,6 @@ Only the city transport for `www.busan.go.kr` / `busan.go.kr` `/nbgosi` uses `mi
 Transport errors now record the failing phase (TCP, TLS, headers or body), code, bytes and elapsed time without URLs, credentials or query strings. Truncated bodies fail closed. These diagnostics identify later failures without issuing extra probes.
 
 Node's per-connection TLS controls: https://nodejs.org/download/release/latest-jod/docs/api/tls.html . `scripts/diagnose_city_tls.cjs` is the bounded two-request comparison with a 60-second quiet interval and no automated retry; use an isolated job without notification/AI credentials.
+
+
+The expired October 7 one-off recovery no longer adds an HTTP request after its 14-day window. Recent notice links found in a live list are still fetched normally. The captured 17-page regression now requires exactly pages 1–17, without the obsolete eighteenth recovery request. With the retained eight-second spacing, the city collection budget is 180 seconds; the overall analysis deadline is 260 seconds within the existing 300-second HTTP limit, leaving time to persist and respond instead of skipping later queued analysis solely because of intentionally slow source reads.

@@ -575,6 +575,8 @@ export class OfficialNoticeCollector {
 export const BUSAN_NOTICE_LIST = 'https://www.busan.go.kr/nbgosi';
 // Independently verified missing notice; fetch its real page, never seed its text.
 const RECOVERY_NOTICE = 'https://www.busan.go.kr/nbgosi/view?gosiGbn=N&sno=79798';
+// Publication date independently verified when this temporary recovery was added.
+const RECOVERY_PUBLISHED_AT = Date.parse('2026-10-07T00:00:00+09:00');
 export function canonicalCityNoticeUrl(value: string): string {
   const u = new URL(value, BUSAN_NOTICE_LIST);
   if (u.protocol !== 'https:' || u.hostname !== 'www.busan.go.kr' || u.pathname !== '/nbgosi/view' || !/^\d+$/.test(u.searchParams.get('sno') || '')) throw new Error('INVALID_CITY_NOTICE_URL');
@@ -672,7 +674,7 @@ export class BusanCityNoticeCollector {
     const now=this.clock(), items:RawCollectedItem[]=[],errors:string[]=[];
     const maxPages=Math.min(20,Math.max(1,options.maxPages||20));
     const maxRequests=Math.min(40,Math.max(1,options.maxRequests||40));
-    const budget=AbortSignal.timeout(Math.min(90000,Math.max(1,options.budgetMs||90000)));
+    const budget=AbortSignal.timeout(Math.min(180000,Math.max(1,options.budgetMs||180000)));
     let requests=0, stopped:string|undefined;
     const boundedFetch:typeof fetch=async(input,init)=>{
       if(stopped)throw new Error(stopped);
@@ -715,8 +717,9 @@ export class BusanCityNoticeCollector {
       }
       if(!complete)errors.push('CITY_BOARD_PAGE_LIMIT: 최근7일 전체 확인 미완료');
     }catch(e){errors.push(`부산시 고시 목록 수집 실패: ${(e as Error).message}`);}
-    // Recovery page is checked live even if list pagination fails.
-    candidates.set(canonicalCityNoticeUrl(RECOVERY_NOTICE),{});
+    // Do not keep fetching a one-off recovery after its 14-day collection window.
+    const recoveryAge=now.getTime()-RECOVERY_PUBLISHED_AT;
+    if(recoveryAge>=0 && recoveryAge<=14*86400000)candidates.set(canonicalCityNoticeUrl(RECOVERY_NOTICE),{});
     for(const [url] of candidates){
       if(stopped || budget.aborted || requests>=maxRequests){
         errors.push(stopped || (budget.aborted?'CITY_BUDGET_EXHAUSTED':'CITY_REQUEST_LIMIT'));break;

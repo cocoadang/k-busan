@@ -35,3 +35,9 @@ test('city incomplete response cannot be returned as valid HTML',async()=>{
  const requester=((_url:any,_opts:any,cb:any)=>{const req:any=new EventEmitter();req.end=()=>{const r:any=new PassThrough();r.statusCode=200;r.headers={};r.complete=false;cb(r);r.end('<html>truncated');};return req;}) as any;
  await assert.rejects(createFreshCityFetch(requester)('https://www.busan.go.kr/nbgosi'),(e:any)=>e.cause.phase==='body'&&e.cause.code==='CITY_INCOMPLETE_BODY');
 });
+
+test('expired one-off city recovery does not add an unnecessary request',async()=>{
+ const {BusanCityNoticeCollector}=await import('../collector/officialCollector');const{REDEVELOPMENT_SEED_PROJECTS}=await import('../registry/redevelopmentRegistry');let calls=0;
+ const collector=new BusanCityNoticeCollector((async()=>{calls++;return new Response('<table><tr><td>등록된 자료가 없습니다</td></tr></table>')}) as typeof fetch,()=>new Date('2026-11-15T00:00:00Z'));
+ const result=await collector.fetchForProjects(REDEVELOPMENT_SEED_PROJECTS.filter(p=>p.city==='부산광역시'));assert.equal(result.error,undefined);assert.equal(result.items.length,0);assert.equal(calls,1);
+});

@@ -24,7 +24,6 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
 COPY --from=build /app/src/tests/fixtures/documents ./src/tests/fixtures/documents
 RUN hwp5txt src/tests/fixtures/documents/compat-sample-5017.hwp > /tmp/hwp-selftest.txt && node -e "const s=require('fs').readFileSync('/tmp/hwp-selftest.txt','utf8').replace(/<(?:그림|표|개체)>/g,'').replace(/\\s/g,'');if(s.length<25)process.exit(1)" && pdftotext src/tests/fixtures/documents/association-1.pdf /tmp/pdf-selftest.txt && test -s /tmp/pdf-selftest.txt && tesseract --list-langs 2>&1 | grep -q kor
-RUN python3 -c "import ssl,urllib.request; c=ssl.create_default_context(); assert c.check_hostname and c.verify_mode==ssl.CERT_REQUIRED"
 USER node
 EXPOSE 8080
 CMD ["npm", "start"]

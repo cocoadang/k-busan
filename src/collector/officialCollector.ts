@@ -586,7 +586,7 @@ export function canonicalCityNoticeUrl(value: string): string {
   return canonical.toString();
 }
 const cityClean = (s: string) => s.replace(/\s+/g, ' ').trim();
-export async function readCityNoticeHtml(fetcher: typeof fetch, url: string, timeoutMs=15000): Promise<string> {
+export async function readCityNoticeHtml(fetcher: typeof fetch, url: string, timeoutMs=15000, options:{retryDelayMs?:number;signal?:AbortSignal;canRetry?:()=>boolean}={}): Promise<string> {
   const safeUrl = (value: string, base?: string) => {
     const u = new URL(value, base);
     if (!['www.busan.go.kr','busan.go.kr'].includes(u.hostname) || !u.pathname.startsWith('/nbgosi') || !['http:','https:'].includes(u.protocol)) throw new Error('CITY_REDIRECT_REJECTED');
@@ -596,7 +596,7 @@ export async function readCityNoticeHtml(fetcher: typeof fetch, url: string, tim
   for (let attempt=0; attempt<2; attempt++) {
     try {
       let target=safeUrl(url);
-      const signal=AbortSignal.timeout(timeoutMs);
+      const signal=AbortSignal.any([AbortSignal.timeout(timeoutMs),...(options.signal?[options.signal]:[])]);
       for(let hop=0; hop<4; hop++) {
         const r=await fetcher(target,{signal,redirect:'manual',headers:{Accept:'text/html,application/xhtml+xml'}});
         if([301,302,303,307,308].includes(r.status)) {
@@ -609,11 +609,16 @@ export async function readCityNoticeHtml(fetcher: typeof fetch, url: string, tim
       }
       throw new Error('CITY_REDIRECT_LIMIT');
     } catch(e:any) {
+      if(options.signal?.aborted)throw Error('CITY_BUDGET_EXHAUSTED');
       const nestedCodes=e?.cause?.errors?.map((cause:any)=>cause.code).filter(Boolean).join(',');
       const code=e?.cause?.code || nestedCodes || e?.name || 'UNKNOWN';
       const transient=/TIMEOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN/i.test(String(code)) || e?.message==='fetch failed';
-      if(attempt===0 && transient) {
-        await new Promise(resolve=>setTimeout(resolve,250));
+      if(attempt===0 && transient && (options.canRetry?.()??true)) {
+        await new Promise<void>((resolve,reject)=>{
+          const abort=()=>{clearTimeout(timer);reject(Error('CITY_BUDGET_EXHAUSTED'))};
+          const timer=setTimeout(()=>{options.signal?.removeEventListener('abort',abort);resolve()},options.retryDelayMs??250);
+          options.signal?.addEventListener('abort',abort,{once:true});
+        });
         continue;
       }
       // Codes only; no credentials, headers or environment values in diagnostics.
@@ -669,12 +674,12 @@ export function parseCityNoticeDetail(html:string, url:string) {
 }
 const CITY_TRANSIENT_RETRIES = 3;
 export class BusanCityNoticeCollector {
-  constructor(private fetcher:typeof fetch=pacedOfficialFetch, private clock:()=>Date=()=>new Date(), private retryDelayMs=1000) {}
+  constructor(private fetcher:typeof fetch=pacedOfficialFetch, private clock:()=>Date=()=>new Date(), private retryDelayMs=1000, private transportRetryDelayMs=process.env.NODE_ENV==='production'?65000:250) {}
   async fetchForProjects(projects:readonly RedevelopmentProject[], options:{timeoutMs?:number;maxPages?:number;maxRequests?:number;budgetMs?:number}={}) {
     const now=this.clock(), items:RawCollectedItem[]=[],errors:string[]=[];
     const maxPages=Math.min(20,Math.max(1,options.maxPages||20));
     const maxRequests=Math.min(40,Math.max(1,options.maxRequests||40));
-    const budget=AbortSignal.timeout(Math.min(180000,Math.max(1,options.budgetMs||180000)));
+    const budget=AbortSignal.timeout(Math.min(240000,Math.max(1,options.budgetMs||240000)));
     let requests=0, stopped:string|undefined;
     const boundedFetch:typeof fetch=async(input,init)=>{
       if(stopped)throw new Error(stopped);
@@ -685,7 +690,8 @@ export class BusanCityNoticeCollector {
       if(response.status===403 || response.status===429)stopped=`CITY_HTTP_${response.status}`;
       return response;
     };
-    const read=(url:string)=>readCityNoticeHtml(boundedFetch,url,options.timeoutMs||15000);
+    let transportRetries=1;
+    const read=(url:string)=>readCityNoticeHtml(boundedFetch,url,options.timeoutMs||15000,{signal:budget,retryDelayMs:this.transportRetryDelayMs,canRetry:()=>{if(budget.aborted||transportRetries===0)return false;transportRetries--;return true;}});
     const seenPages=new Set<string>();let previousDate=Infinity;
     const candidates=new Map<string,{title?:string}>();let complete=false;
     let nextPageUrl:string|undefined=BUSAN_NOTICE_LIST;
@@ -734,7 +740,7 @@ export class BusanCityNoticeCollector {
         }
       }catch(e){errors.push(`부산시 고시 원문 확인 실패 ${url}: ${(e as Error).message}`);}
     }
-    if(process.env.NODE_ENV==='production')console.log('[CITY_COLLECTION]',JSON.stringify({requestAttempts:requests,pages:seenPages.size,items:items.length,complete:complete&&!errors.length,errorCount:errors.length}));
+    if(process.env.NODE_ENV==='production')console.log('[CITY_COLLECTION]',JSON.stringify({requestAttempts:requests,transportRetriesUsed:1-transportRetries,pages:seenPages.size,items:items.length,complete:complete&&!errors.length,errorCount:errors.length}));
     return {items,error:errors.length?errors.join('; '):undefined};
   }
 }

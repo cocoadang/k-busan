@@ -1,0 +1,173 @@
+{
+  "checkedAt": "2026-11-15T13:52:21.684Z",
+  "passed": false,
+  "checks": {
+    "nodeTlsReset": true,
+    "systemClientVerified": true,
+    "controlFailedDuringTls": true,
+    "tls12CompleteVerified": true,
+    "expectedImage": true,
+    "latestPromoted": true,
+    "sharedEgress": true,
+    "noPaidEgressResources": true,
+    "health": true,
+    "cityComplete": false,
+    "allSourcesComplete": false,
+    "noTelegram": true
+  },
+  "commit": "e62cce2f1a47629a6e86ae321a52c3f5b411f676",
+  "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-e62cce2-1",
+  "cloudDiagnosticRequests": 4,
+  "cloudDiagnostic": [
+    {
+      "timestamp": "2026-11-15T13:10:30.591571Z",
+      "label": "tls12",
+      "phase": "body",
+      "bytes": 63989,
+      "tcpMs": 33,
+      "tlsMs": 66,
+      "protocol": "TLSv1.2",
+      "cipher": "ECDHE-RSA-AES256-GCM-SHA384",
+      "authorized": true,
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "complete": true,
+      "ms": 1322
+    },
+    {
+      "timestamp": "2026-11-15T13:09:29.228350Z",
+      "label": "default_tls",
+      "phase": "tls",
+      "bytes": 0,
+      "tcpMs": 249,
+      "error": "ECONNRESET",
+      "syscall": "read",
+      "ms": 260
+    }
+  ],
+  "implementationComparison": [
+    {
+      "timestamp": "2026-11-15T13:33:12.971492Z",
+      "implementation": "python",
+      "openssl": "OpenSSL 3.0.22 25 Aug 2026",
+      "verified": true,
+      "status": 200,
+      "bytes": 63989,
+      "startsHtml": true,
+      "sha256": "ac0561a52e72a3b3002dc215ac624ff18c8a5b39b80440473ffa52afafca9184",
+      "ms": 860
+    },
+    {
+      "timestamp": "2026-11-15T13:32:11.669275Z",
+      "implementation": "node",
+      "error": {
+        "code": "ECONNRESET",
+        "phase": "tls"
+      },
+      "ms": 577
+    }
+  ],
+  "otherDiagnostic": {
+    "operatorPcRequests": 1,
+    "result": "ECONNRESET under TLS 1.2; different runtime/network, not counted as production success"
+  },
+  "finding": "Node HTTPS continued to reset during TLS even with a version constraint; the existing Python/system OpenSSL client succeeded with certificate verification in the paired operating-image check. Specific upstream termination device and all contributing factors remain unconfirmed.",
+  "previousCityFailure": {
+    "cycle": "cycle_1794747897909",
+    "errors": [
+      "부산시 고시 목록 수집 실패: read ECONNRESET [Error]; 부산시 고시 원문 확인 실패 https://www.busan.go.kr/nbgosi/view?sno=79798&gosiGbn=N: OFFICIAL_HOST_COOLDOWN [Error]"
+    ]
+  },
+  "production": {
+    "cycle": "cycle_1794750668594",
+    "seconds": 32.651,
+    "sources": [
+      {
+        "sourceName": "부산광역시 공식 고시공고",
+        "sourceTier": "official",
+        "status": "failed",
+        "itemsCount": 0,
+        "error": "부산시 고시 목록 수집 실패: OFFICIAL_HOST_COOLDOWN [Error]"
+      },
+      {
+        "sourceName": "과천시 공식 고시·공고",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "Google News RSS (삼익비치타운(남천2구역))",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 19
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 10단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 20
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 5단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 27
+      },
+      {
+        "sourceName": "Google News RSS (부산시민공원주변(촉진3구역) 재정비촉진구역)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 20
+      },
+      {
+        "sourceName": "Google News RSS (해운대구 우동3구역 주택재개발정비사업)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 19
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 8·9단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 45
+      },
+      {
+        "sourceName": "촉진3 조합 입찰 게시판",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (부산광역시 수영구 남천동)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (해운대구)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (부산진구)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      }
+    ],
+    "errors": [
+      "부산시 고시 목록 수집 실패: OFFICIAL_HOST_COOLDOWN [Error]"
+    ],
+    "telegramSent": 0,
+    "queue": {
+      "pending": 0,
+      "retry": 0,
+      "ready": 0,
+      "completed": 82,
+      "needs_review": 1,
+      "closed": 7
+    }
+  },
+  "diagnosticJobRemoved": true
+}

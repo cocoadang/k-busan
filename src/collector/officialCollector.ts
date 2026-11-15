@@ -672,7 +672,7 @@ export class BusanCityNoticeCollector {
     const now=this.clock(), items:RawCollectedItem[]=[],errors:string[]=[];
     const maxPages=Math.min(20,Math.max(1,options.maxPages||20));
     const maxRequests=Math.min(40,Math.max(1,options.maxRequests||40));
-    const budget=AbortSignal.timeout(Math.min(60000,Math.max(1,options.budgetMs||60000)));
+    const budget=AbortSignal.timeout(Math.min(90000,Math.max(1,options.budgetMs||90000)));
     let requests=0, stopped:string|undefined;
     const boundedFetch:typeof fetch=async(input,init)=>{
       if(stopped)throw new Error(stopped);

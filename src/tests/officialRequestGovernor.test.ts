@@ -15,3 +15,12 @@ test('aborted queued official request never starts a network call',async()=>{
  const saved=globalThis.fetch;let calls=0;globalThis.fetch=(async()=>{calls++;await new Promise(r=>setTimeout(r,20));return new Response('ok')}) as typeof fetch;
  try{const paced=createOfficialRequestGovernor({intervalMs:0,cooldownMs:0});const controller=new AbortController();const first=paced('https://www.busan.go.kr/nbgosi');const second=paced('https://www.busan.go.kr/nbgosi',{signal:controller.signal});controller.abort();await first;await assert.rejects(second);assert.equal(calls,1);}finally{globalThis.fetch=saved;}
 });
+
+test('injected city transport uses its longer spacing while all hosts share one queue',async()=>{
+ const times:number[]=[];const paced=createOfficialRequestGovernor({intervalMs:0,cooldownMs:0,intervalForHost:h=>h==='www.busan.go.kr'?20:0,fetcher:(async()=>{times.push(Date.now());return new Response('ok')}) as typeof fetch});await paced('https://apis.data.go.kr/test');await paced('https://www.busan.go.kr/nbgosi');assert.ok(times[1]-times[0]>=18);
+});
+test('fresh city connections retain TLS verification, abort signal and manual redirects',async()=>{
+ const {createFreshCityFetch}=await import('../collector/freshCityFetch');const {EventEmitter}=await import('node:events');const{PassThrough}=await import('node:stream');let calls=0;const controller=new AbortController();
+ const requester=((url:any,opts:any,cb:any)=>{calls++;assert.equal(opts.agent,false);assert.equal(opts.rejectUnauthorized,true);assert.equal(opts.signal,controller.signal);assert.equal(url.hostname,'www.busan.go.kr');const req:any=new EventEmitter();req.end=()=>{const response:any=new PassThrough();response.statusCode=302;response.headers={location:'/nbgosi?next=1'};cb(response);response.end();};return req;}) as any;
+ const reader=createFreshCityFetch(requester);const r=await reader('https://www.busan.go.kr/nbgosi',{signal:controller.signal});assert.equal(r.status,302);assert.equal(r.headers.get('location'),'/nbgosi?next=1');assert.equal(calls,1);await assert.rejects(reader('https://example.com/nbgosi'),/URL_REJECTED/);assert.equal(calls,1);
+});

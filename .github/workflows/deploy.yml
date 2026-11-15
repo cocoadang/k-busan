@@ -35,6 +35,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run lint
+      - run: python3 -m unittest discover -s ops -p "test_official_egress.py"
       - run: node --import tsx --test src/tests/*.test.ts
       - run: node --import tsx --test src/analyzer/openaiClient.test.ts
       - run: npm run build
@@ -89,7 +90,7 @@ jobs:
         # "run.googleapis.com/sources" style annotations that block an image-only deploy.
         # Export the live spec, drop only those source/build annotations, swap the image,
         # and pin the current revision at 100% while the new one gets the "candidate" tag.
-        # Env vars, secrets, service account, scaling and timeout are carried over as-is.
+        # Env vars, secrets, service account, scaling, timeout and fixed egress are preserved.
         # The exported spec may contain env values, so it is never printed.
         run: |
           gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
@@ -98,7 +99,9 @@ jobs:
             --format='value(status.latestReadyRevisionName)')"
           NEW_REV="${CLOUD_RUN_SERVICE}-${GITHUB_SHA::7}-${GITHUB_RUN_ATTEMPT}"
           CURRENT="$CURRENT" NEW_REV="$NEW_REV" python3 - <<'PY'
-          import os, yaml
+          import os, sys, yaml
+          sys.path.insert(0, "ops")
+          from official_egress import validate_official_egress
           path = '/tmp/service.yaml'
           svc = yaml.safe_load(open(path))
           def strip(meta):
@@ -109,6 +112,7 @@ jobs:
           removed = strip(svc.get('metadata')) + strip(svc['spec']['template'].get('metadata'))
           print('removed annotations:', removed)
           tmpl = svc['spec']['template']
+          validate_official_egress(tmpl.get('metadata', {}).get('annotations', {}), os.environ['DEPLOY_REGION'])
           tmpl.setdefault('metadata', {})['name'] = os.environ['NEW_REV']
           containers = tmpl['spec']['containers']
           assert len(containers) == 1, 'expected a single container'

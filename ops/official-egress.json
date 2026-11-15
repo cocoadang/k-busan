@@ -1,0 +1,67 @@
+{
+  "project": "busan-redevelopment",
+  "region": "asia-northeast3",
+  "network": {
+    "name": "kbusan-official-egress",
+    "autoCreateSubnetworks": false,
+    "routingConfig": {
+      "routingMode": "REGIONAL",
+      "bgpBestPathSelectionMode": "LEGACY"
+    }
+  },
+  "subnet": {
+    "name": "kbusan-official-seoul",
+    "network": "https://www.googleapis.com/compute/v1/projects/busan-redevelopment/global/networks/kbusan-official-egress",
+    "ipCidrRange": "10.42.0.0/26",
+    "privateIpGoogleAccess": true
+  },
+  "address": {
+    "name": "kbusan-official-egress-ip",
+    "address": "34.64.198.132",
+    "networkTier": "PREMIUM"
+  },
+  "router": {
+    "name": "kbusan-official-router",
+    "network": "https://www.googleapis.com/compute/v1/projects/busan-redevelopment/global/networks/kbusan-official-egress",
+    "nats": [
+      {
+        "name": "kbusan-official-nat",
+        "type": "PUBLIC",
+        "endpointTypes": [
+          "ENDPOINT_TYPE_VM"
+        ],
+        "sourceSubnetworkIpRangesToNat": "LIST_OF_SUBNETWORKS",
+        "subnetworks": [
+          {
+            "name": "https://www.googleapis.com/compute/v1/projects/busan-redevelopment/regions/asia-northeast3/subnetworks/kbusan-official-seoul",
+            "sourceIpRangesToNat": [
+              "ALL_IP_RANGES"
+            ]
+          }
+        ],
+        "natIps": [
+          "https://www.googleapis.com/compute/v1/projects/busan-redevelopment/regions/asia-northeast3/addresses/kbusan-official-egress-ip"
+        ],
+        "natIpAllocateOption": "MANUAL_ONLY",
+        "minPortsPerVm": 128,
+        "maxPortsPerVm": 4096,
+        "enableDynamicPortAllocation": true,
+        "effectiveTcpTimeWaitTimeoutSec": 30,
+        "logConfig": {
+          "enable": true,
+          "filter": "ERRORS_ONLY"
+        },
+        "enableEndpointIndependentMapping": false
+      }
+    ]
+  },
+  "cloudRun": {
+    "egress": "ALL_TRAFFIC",
+    "network": "kbusan-official-egress",
+    "subnetwork": "kbusan-official-seoul"
+  },
+  "deploySubnetRole": {
+    "role": "roles/compute.networkUser",
+    "member": "serviceAccount:kbusan-github-deploy@busan-redevelopment.iam.gserviceaccount.com"
+  }
+}

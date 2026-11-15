@@ -12,3 +12,7 @@ evidence/
 *service-account*.json
 *credentials*.json
 .DS_Store
+
+# Python operational validation
+__pycache__/
+*.pyc

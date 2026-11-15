@@ -196,7 +196,7 @@ status, relatednessConfidence, explanation을 반드시 포함하세요. 모든 
 
 clusterKey: 동일 사건을 식별할 수 있는 정규화 키 (예: "chokjin-3_contractor_selection", "udong-3_cost_dispute", "chokjin-3_vendor_bid")
 
-발표일과 사건일은 구분하고 미래 일정은 확정이 아닌 예정으로 명시하십시오. 일반 업체 입찰에 특수한 중대한 일정 또는 조합원 부담 변화가 있으면 materialImpactEvidence를 추가하십시오. kind는 schedule 또는 member-cost, certainty는 confirmed 또는 scheduled, quote는 실제 본문에서 20자 이상 그대로 인용(날짜와 이주/철거/착공/분양 변화 또는 조합원 부담 금액 명시), change는 무엇이 바뀌었는지, practicalMeaning은 실질적 의미. 본문 근거가 없거나 제목뿐이면 필드 생략, 중요도2~3 유지. 단어 언급이나 전망만으로 예외 판정 금지.
+발표일과 사건일은 구분하고 미래 일정은 확정이 아닌 예정으로 명시하십시오. 사건일을 원문에서 확인할 수 없으면 발행일로 대체하거나 추정하지 말고 status=uncertain, eventDate=""로 출력하십시오. 일반 업체 입찰에 특수한 중대한 일정 또는 조합원 부담 변화가 있으면 materialImpactEvidence를 추가하십시오. kind는 schedule 또는 member-cost, certainty는 confirmed 또는 scheduled, quote는 실제 본문에서 20자 이상 그대로 인용(날짜와 이주/철거/착공/분양 변화 또는 조합원 부담 금액 명시), change는 무엇이 바뀌었는지, practicalMeaning은 실질적 의미. 본문 근거가 없거나 제목뿐이면 필드 생략, 중요도2~3 유지. 단어 언급이나 전망만으로 예외 판정 금지.
 JSON 응답 포맷:
 {
   "status": "relevant | irrelevant | uncertain",
@@ -282,6 +282,14 @@ JSON 응답 포맷:
       const validation: SemanticValidationResult = {status: parsed.status, confidence: parsed.relatednessConfidence, explanation: parsed.explanation};
       if (parsed.status !== 'relevant') {
         const result = {validation};
+        try { await this.cache?.set(key, result); } catch { this.usage.cacheErrors++; }
+        return result;
+      }
+      // Missing source dates are an evidence gap, not a transient provider failure.
+      // Hold for review and cache the decision instead of repeatedly paying to guess a date.
+      if (parsed.eventDate === '') {
+        const result: AnalysisResult = { validation: { status: 'uncertain', confidence: validation.confidence,
+          explanation: `사건일 원문 근거 미확인: ${validation.explanation}` } };
         try { await this.cache?.set(key, result); } catch { this.usage.cacheErrors++; }
         return result;
       }

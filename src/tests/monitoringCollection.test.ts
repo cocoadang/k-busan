@@ -313,6 +313,16 @@ test('AI 무관한 자료도 캐시하고 이벤트 추출하지 않음',async()
  a.beginRun(storage);await a.validateRelatedness(raw,project);assert.equal(calls,1);
 });
 
+test('사건일 없는 관련 기사는 발행일을 추정하지 않고 검토 대기·캐시 처리',async()=>{
+ const a=new GeminiAnalyzer({dryRunMode:true});const cache=new Map<string,any>();let calls=0;
+ (a as any).ai={models:{generateContent:async()=>{calls++;return {text:JSON.stringify({status:'relevant',relatednessConfidence:.95,explanation:'인가 기사지만 사건일 근거 없음',eventDate:''})};}}};
+ const storage={get:async(k:string)=>cache.get(k)||null,set:async(k:string,v:any)=>{cache.set(k,v);}};
+ a.beginRun(storage);const v=await a.validateRelatedness(raw,project);
+ assert.equal(v.status,'uncertain');assert.match(v.explanation,/사건일 원문 근거 미확인/);
+ assert.equal(a.usage.failures,0);await assert.rejects(()=>a.extractEvent(raw,project),/NOT_RELEVANT/);
+ a.beginRun(storage);await a.validateRelatedness(raw,project);assert.equal(calls,1);assert.equal(a.usage.cacheHits,1);
+});
+
 test('AI 응답 잘림·잘못된 JSON·통신 실패는 영구 캐시하지 않음',async()=>{
  for(const response of [{text:'{}'}, {text:'broken'}, {text:'{}',candidates:[{finishReason:'MAX_TOKENS'}]},null]){
   const a=new GeminiAnalyzer({dryRunMode:true});let writes=0;

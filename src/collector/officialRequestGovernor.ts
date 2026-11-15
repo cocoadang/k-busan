@@ -1,4 +1,4 @@
-import { freshCityFetch } from './freshCityFetch';
+import { pythonCityFetch } from './pythonCityFetch';
 /** Shared governor across the Busan city, association and API collectors. */
 export function createOfficialRequestGovernor(options:{intervalMs:number;cooldownMs:number;intervalForHost?:(host:string)=>number;fetcher?:typeof fetch}) {
  let tail=Promise.resolve(),lastFinished=0;
@@ -30,4 +30,4 @@ export function createOfficialRequestGovernor(options:{intervalMs:number;cooldow
  };
 }
 const production=process.env.NODE_ENV==='production';
-export const pacedOfficialFetch=createOfficialRequestGovernor({intervalMs:production?Math.max(1000,Number(process.env.OFFICIAL_REQUEST_INTERVAL_MS)||3000):0,cooldownMs:production?60000:0,intervalForHost:host=>production&&['www.busan.go.kr','busan.go.kr'].includes(host)?8000:production?Math.max(1000,Number(process.env.OFFICIAL_REQUEST_INTERVAL_MS)||3000):0,fetcher:(input,init)=>production&&['www.busan.go.kr','busan.go.kr'].includes(new URL(String(input)).hostname)?freshCityFetch(input,init):fetch(input,init)});
+export const pacedOfficialFetch=createOfficialRequestGovernor({intervalMs:production?Math.max(1000,Number(process.env.OFFICIAL_REQUEST_INTERVAL_MS)||3000):0,cooldownMs:production?60000:0,intervalForHost:host=>production&&['www.busan.go.kr','busan.go.kr'].includes(host)?8000:production?Math.max(1000,Number(process.env.OFFICIAL_REQUEST_INTERVAL_MS)||3000):0,fetcher:(input,init)=>production&&['www.busan.go.kr','busan.go.kr'].includes(new URL(String(input)).hostname)?pythonCityFetch(input,init):fetch(input,init)});

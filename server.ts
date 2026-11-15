@@ -1,3 +1,4 @@
+import {NewsBodyReader,firestoreNewsBodyCache} from './src/news/newsBodyReader';
 import {FirestoreAnalysisQueue} from './src/queue/analysisQueue';
 import {AttachmentReader,firestoreAttachmentCache} from './src/attachments/attachmentReader';
 import { createApiSecurity, SECURITY_VERSION } from './src/security/apiSecurity.ts';
@@ -455,7 +456,7 @@ async function runPollingCycleLocked(isProduction: boolean, enableTelegram: bool
   const result = await pipeline.run({
     projects: activeProjects,
     workQueue,
-    attachmentReader:new AttachmentReader(firestoreAttachmentCache(queueDb)),
+    newsReader:new NewsBodyReader(firestoreNewsBodyCache(queueDb)),attachmentReader:new AttachmentReader(firestoreAttachmentCache(queueDb)),
     analysisCache: {
       get: async (key) => {
         const client = await firestoreService.getClient();

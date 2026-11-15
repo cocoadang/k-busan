@@ -191,6 +191,7 @@ export interface RedevelopmentProject {
  * 수집된 원본 뉴스 또는 공식 행정자료 모델
  */
 export interface RawCollectedItem {
+  newsEvidence?:{url:string;sha256:string;checkedAt:number;publishedAt?:string;selector:string};
   actorType?: "official" | "association";
   detailVerified?: boolean;
   attachmentUrls?: string[];
@@ -322,6 +323,8 @@ export interface MaterialImpactEvidence {
 }
 
 export interface EventSourceRef {
+  newsEvidence?:RawCollectedItem['newsEvidence'];
+  eventDateEvidence?:string;
   actorType?: "official" | "association";
   detailVerified?: boolean;
   attachmentUrls?: string[];
@@ -384,6 +387,7 @@ export interface ExtractedEvent {
 }
 
 export interface ItemAuditRecord {
+  reviewDisposition?:'closed';
   projectId: string;
   matchedAlias: string;
   title: string;

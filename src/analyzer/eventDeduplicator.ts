@@ -60,11 +60,13 @@ export class EventDeduplicator {
 
       const sourceRef: EventSourceRef = {
         actorType: rawItem.actorType,
+        newsEvidence:rawItem.newsEvidence,
+        eventDateEvidence:payload.eventDateEvidence,
         detailVerified: rawItem.detailVerified,
         attachmentUrls: rawItem.attachmentUrls,
         attachmentEvidence: rawItem.attachmentEvidence,
         attachmentContentStatus: rawItem.attachmentContentStatus ?? (rawItem.attachmentUrls?.length ? "unverified" : "not_applicable"),
-        evidenceContent: rawItem.detailVerified === false ? undefined : rawItem.content,
+        evidenceContent: rawItem.detailVerified === false ? undefined : rawItem.newsEvidence ? [rawItem.content.slice(0,800),payload.eventDateEvidence,payload.materialImpactEvidence?.quote].filter(Boolean).join('\n') : rawItem.content,
         title: rawItem.title,
         url: rawItem.sourceUrl,
         source: rawItem.sourceName,
@@ -86,7 +88,7 @@ export class EventDeduplicator {
         // Add source if not already present
         const sourceIndex=existing.sources.findIndex(s=>s.url===sourceRef.url);
         if(sourceIndex<0)existing.sources.push(sourceRef);
-        else if(sourceRef.attachmentContentStatus==='verified')existing.sources[sourceIndex]={...existing.sources[sourceIndex],...sourceRef};
+        else if(sourceRef.attachmentContentStatus==='verified'||!!sourceRef.newsEvidence)existing.sources[sourceIndex]={...existing.sources[sourceIndex],...sourceRef};
 
         // Rule: Prioritize official source as primary source
         if (sourceRef.sourceTier === 'official') {

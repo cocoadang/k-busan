@@ -1,0 +1,198 @@
+{
+  "reviewedAt": "2026-11-15T10:38:22.827Z",
+  "originalCases": 16,
+  "approved": 9,
+  "closedWithoutEvent": 7,
+  "additionalFollowup": {
+    "url": "https://www.issuegate.com/m/view.php?idx=18478",
+    "date": "2026-11-06",
+    "title": "과천5단지 교육시설 안전성평가 날인 완료"
+  },
+  "decisions": [
+    {
+      "id": "120f59eb26fe4bfd0f5ef24fe654a4700c27ef9ee3606c0ccfce254be21228d3",
+      "title": "부산 재건축 최대어 삼익비치 … 한미글로벌, 건설사업관리 수주 - 매일경제",
+      "originalState": "needs_review",
+      "decision": "원문·날짜 근거 반영",
+      "kind": "model_checked",
+      "publisherUrl": "https://www.mk.co.kr/news/realestate/12009346",
+      "sourceSha256": "63b57ebf0ded74d221649e6956275a82b85503df43d1697c19dea81d16ee9c1f",
+      "eventDate": "2026-04-04",
+      "eventType": "건설사업관리(PM) 우선협상자 선정",
+      "reason": "실제 Luna 응답의 본문 날짜 인용을 검증하고 동일 사건명은 정규화했습니다.",
+      "dateQuote": "삼익비치 재건축 조합은 지난 4일 정기총회를 열고 한미글로벌을 PM 우선협상자로 선정했다."
+    },
+    {
+      "id": "3e76dbfe27edeb9a881962f03467d8528057d3a00bb58fa0712f91577d2f86e6",
+      "title": "인터뷰-이형진 과천주공 8·9단지 재건축 조합장 - 하우징헤럴드",
+      "originalState": "completed",
+      "decision": "원문·날짜 근거 반영",
+      "kind": "source_review",
+      "publisherUrl": "https://www.housingherald.co.kr/news/articleView.html?idxno=49037",
+      "sourceSha256": "f6f9c6cad3c4c414a80171986e5608cffa11345af6b68d43093fe7a26d36a612",
+      "eventDate": "2024-10-04",
+      "eventType": "관리처분총회 의결",
+      "reason": "원문 날짜·주장 범위 직접 대조",
+      "dateQuote": "▲지난 4일 성료된 관리처분총회의 핵심은 무엇인가."
+    },
+    {
+      "id": "57ed83281e2687f716a774536ee37e8a5fcd10264868579f0156e8d54e2f75e8",
+      "title": "7억 환급에 새 아파트까지 받는다…과천 주공10단지 재건축 비결 - 땅집고",
+      "originalState": "needs_review",
+      "decision": "사건 미등록 검토 종결",
+      "kind": "not_event",
+      "publisherUrl": "https://realty.chosun.com/site/data/html_dir/2024/03/25/2024032501138.html",
+      "sourceSha256": "20dbd9a5585894d8c40de0d4f4bb983e9d30a74c5036988a6f086ea46c030e47",
+      "reason": "시공사 협상 전략과 환급 가능성을 설명한 과거 인터뷰·분석 기사입니다. 신규 확정 사건과 발생일을 확인할 수 없어 사건을 추가하지 않습니다."
+    },
+    {
+      "id": "5a71d0028714787e8e5b8c807c05c20811cff0ad09d60981c5314ab8d581f0e7",
+      "title": "과천 8·9단지 재건축에 막힌 생활도로…부림동 주민 통행 불편 장기화 - 안전신문",
+      "originalState": "needs_review",
+      "decision": "사건 미등록 검토 종결",
+      "kind": "date_unconfirmed",
+      "publisherUrl": "https://www.safetynews.co.kr/news/articleView.html?idxno=247079",
+      "sourceSha256": "e78e37e610285e69cf279453b687acebff0467da97303425a16a98c8e66e8da8",
+      "reason": "생활도로 통행 불편과 진행 중인 민원을 다룬 현황 기사입니다. 원문을 읽었으나 단일 사건 발생일은 특정할 수 없어 발행일을 사건일로 대체하지 않고 종결합니다."
+    },
+    {
+      "id": "82877951e9444e643a4e1e973ee0d62416132a7d486bc5984c99d3beb5601629",
+      "title": "[시사진단] 부산 남천삼익비치 재건축, 수영구의 미래를 다시 그리다 - 국토일보",
+      "originalState": "needs_review",
+      "decision": "사건 미등록 검토 종결",
+      "kind": "not_event",
+      "publisherUrl": "https://www.ikld.kr/news/articleView.html?idxno=335536",
+      "reason": "원문은 오피니언·기고/논단의 시사진단으로 과거 경과와 미래 전망을 논합니다. 신규 확정 사건으로 등록하지 않습니다."
+    },
+    {
+      "id": "8a3c3e312c0d65557f3724d2e7d7bcd829465c7c668436e5cd49d7f92319e002",
+      "title": "삼익비치 재건축 탄력…'이기대 공원' 아파트도 사업 승인 - 네이트",
+      "originalState": "needs_review",
+      "decision": "원문·날짜 근거 반영",
+      "kind": "model_checked",
+      "publisherUrl": "https://news.nate.com/view/20260625n15742",
+      "sourceSha256": "dc814bfd001084773a7ff05dd0c685eaec06210020615813d4d3aa48c3216abe",
+      "eventDate": "2026-06-24",
+      "eventType": "사업시행계획 변경인가",
+      "reason": "실제 Luna 응답의 본문 날짜 인용을 검증하고 동일 사건명은 정규화했습니다.",
+      "dateQuote": "부산 수영구는 전날 '남천2구역 재건축정비사업'에 대한 사업시행계획 변경을 최종인가 했다."
+    },
+    {
+      "id": "8d77f7f79c36c9577482060c17f47990bc9c2fd3f4dbe06d7c96687152b215cf",
+      "title": "과천5단지재건축, 과천고·청계초 추가요구로 착공 지연 우려 - 이슈게이트",
+      "originalState": "needs_review",
+      "decision": "사건 미등록 검토 종결",
+      "kind": "superseded",
+      "publisherUrl": "https://issuegate.com/m/view.php?idx=18438",
+      "sourceSha256": "f70ff75c5d18e8be9d2f1270ee9769c86041e32a6c53e001a15642ca6f931823",
+      "reason": "10월 31일 착공지연 우려 기사에는 후속 보도가 있습니다. 11월 6일 두 학교의 안전성평가 날인 완료를 확인해 후속 사건을 별도 반영하며 과거 우려를 현재 확정 지연으로 재등록하지 않습니다."
+    },
+    {
+      "id": "90830b535bbf3dde676bb764e2a77511813a2eb79b959d1670ad64700293df48",
+      "title": "'과천 마지막 재건축' 과천주공8·9단지 9부 능선 넘었다 - 머니투데이 - 머니투데이",
+      "originalState": "needs_review",
+      "decision": "원문·날짜 근거 반영",
+      "kind": "model_checked",
+      "publisherUrl": "https://www.mt.co.kr/estate/2025/01/09/2025010910044979030",
+      "sourceSha256": "dcab68fb709485e97d7c21fb317572977500a7593848757a0b80dfcb24b6f49a",
+      "eventDate": "2025-01-08",
+      "eventType": "관리처분계획인가 고시",
+      "reason": "실제 Luna 응답의 본문 날짜 인용을 검증하고 동일 사건명은 정규화했습니다.",
+      "dateQuote": "과천시는 전날 과천시 부림동 일대 과천주공8·9단지 재건축 정비사업에 대한 관리처분계획인가를 고시했다."
+    },
+    {
+      "id": "a38db1ec9ccead54d5048ea80fc262d58e5605763a21f5db82c050e677e72229",
+      "title": "촉진3구역 DL이앤씨 시공사 해지, 삼호가든 재건축 시공사 선정 무효 총회 계획, 부산 아크로 하이엔드 가능한가? 공사비 사업비 갈등, 표준약정서 날인 거부 - Naver Blog",
+      "originalState": "needs_review",
+      "decision": "사건 미등록 검토 종결",
+      "kind": "unverified_claim",
+      "publisherUrl": "https://blog.naver.com/yak-bang/223652189010?viewType=pc",
+      "reason": "여러 현장을 섞은 비공식 블로그 제목이며 원문 열람 제한으로 촉진3 시공사 해지 확정을 검증할 수 없습니다. 해지 확정 사건을 만들지 않고 근거 미확인 사유로 검토 종결합니다."
+    },
+    {
+      "id": "ab57dc5f970eca191e5d2ebd2141618742e1242c944cc938be3c743a52b69f0d",
+      "title": "인터뷰-이형진 과천주공 8·9단지 재건축조합장 - 하우징헤럴드",
+      "originalState": "needs_review",
+      "decision": "사건 미등록 검토 종결",
+      "kind": "date_unconfirmed",
+      "publisherUrl": "https://www.housingherald.co.kr/news/articleView.html?idxno=50567",
+      "sourceSha256": "a29708aa471e44f2057b7d7cc393f4a64ff97daf5a8f5a9e6699fde441989609",
+      "reason": "조합장 인터뷰의 이주 완료 및 월 단위 후속 일정은 확인했지만 정확한 완료일은 없습니다. 8월 7일 발행일이나 임의의 1일을 사건일로 넣지 않고 종결합니다."
+    },
+    {
+      "id": "b97d907ad1ad3eb349514c8f4d0323a629ac1ba1c29146405d4e4da057ad123a",
+      "title": "해운대 우동3구역 재개발 놓고 해운정사측 크게 반발 - 네이트",
+      "originalState": "needs_review",
+      "decision": "원문·날짜 근거 반영",
+      "kind": "source_review",
+      "publisherUrl": "https://news.nate.com/view/20260714n03565",
+      "sourceSha256": "89677f02f1b6c6992e5cabebb4bfa2687d0ce25107f5738005b9e7272ed59a5f",
+      "eventDate": "2026-07-14",
+      "eventType": "시민감사 청구 예정",
+      "reason": "원문 날짜·주장 범위 직접 대조",
+      "dateQuote": "해운정사는 지난 2015년 부산시로부터 전통사찰로 등록됐다. 해운정사 측은 14일 신도 3만여명의 서명을 받아 부산시에 시민감사를 청구할 예정이며"
+    },
+    {
+      "id": "c7d1b679326ab29b23592f776160f5648437794c9b30089cffafb5c3d8971924",
+      "title": "남천 삼익비치 재건축 사업 시행계획변경 인가 완료 - Daum",
+      "originalState": "needs_review",
+      "decision": "원문·날짜 근거 반영",
+      "kind": "model_checked",
+      "publisherUrl": "https://v.daum.net/v/20260624183503994?f=p",
+      "sourceSha256": "4eccb7eb204901f7f976e30f5c6b89d51c28a766fe9fd5ac1addc2592f6ed191",
+      "eventDate": "2026-06-24",
+      "eventType": "사업시행계획변경 인가",
+      "reason": "실제 Luna 응답의 본문 날짜 인용을 검증하고 동일 사건명은 정규화했습니다.",
+      "dateQuote": "구청은 남천2구역(삼익비치) 재건축정비사업조합이 신청한 사업시행계획변경 인가와 관련, 이날 도시 및 주거환경정비법 제50조에 따라 인가했다고 밝혔다."
+    },
+    {
+      "id": "e63c9fc2b1f04181102d808a040b8e497236bb106ffb17ff21cf8c1985a811e8",
+      "title": "[현장in] 부산 해운대 우동3구역 재개발 공공도로 변경 논란 - 연합뉴스",
+      "originalState": "needs_review",
+      "decision": "원문·날짜 근거 반영",
+      "kind": "model_checked",
+      "publisherUrl": "https://www.yna.co.kr/view/AKR20260109102400051",
+      "sourceSha256": "00c0f33089d2bc9c2e341e829be2f79e97efc5e93da5a41f10b000ad68108ebb",
+      "eventDate": "2026-01-06",
+      "eventType": "공공도로 변경 반대 기자회견",
+      "reason": "실제 Luna 응답의 본문 날짜 인용을 검증하고 동일 사건명은 정규화했습니다.",
+      "dateQuote": "해운정사 관계자들은 지난 6일 부산시의회에서 기자회견을 열고"
+    },
+    {
+      "id": "e6b274a172caada808d45c360e05624e357dac0a1f5aa76738281b56cdae35cb",
+      "title": "[단독]'과천주공 8·9단지' 재건축 관리처분계획 인가 - 뉴시스",
+      "originalState": "needs_review",
+      "decision": "원문·날짜 근거 반영",
+      "kind": "model_checked",
+      "publisherUrl": "https://www.newsis.com/view/NISX20250108_0003025452",
+      "sourceSha256": "d070b2a56a2e505e168148d8233d01707a343664c1802ca4b05e9c6413c65b8d",
+      "eventDate": "2025-01-08",
+      "eventType": "관리처분계획 인가 고시",
+      "reason": "실제 Luna 응답의 본문 날짜 인용을 검증하고 동일 사건명은 정규화했습니다.",
+      "dateQuote": "과천시는 이날 과천시 부림동 일원 과천주공 8·9단지 재건축 정비사업에 대한 관리처분계획인가를 고시했다."
+    },
+    {
+      "id": "edfad0d2051468a23f4e8ccecccb683c3730147067c4e7010e6886f88728ad08",
+      "title": "과천주공8·9단지 재건축 빨라진다...관리처분계획 인가 - 리얼캐스트",
+      "originalState": "completed",
+      "decision": "사건 미등록 검토 종결",
+      "kind": "duplicate",
+      "publisherUrl": "https://www.rcast.co.kr/news/articleView.html?idxno=26679",
+      "sourceSha256": "e6c0ceaf4b946d102667964967d5807d5e6de8542b60a401578221adf6869729",
+      "reason": "원문은 관리처분계획 인가를 최근이라고만 설명한 재인용 기사입니다. 2025년 1월 8일을 명시하는 뉴시스·머니투데이 원문에 근거한 같은 사건에 통합하고, 1월 14일 발행일로 만든 별도 사건은 정정합니다."
+    },
+    {
+      "id": "fe46d37e0c7d9979459fff25993b971f0185531441b16643e4108b0e94134058",
+      "title": "부산 해운정사 \"우동3구역 재개발, 공공도로 사라질 위기\" - 뉴시스",
+      "originalState": "needs_review",
+      "decision": "원문·날짜 근거 반영",
+      "kind": "model_checked",
+      "publisherUrl": "https://www.newsis.com/view/NISX20260106_0003467018",
+      "sourceSha256": "490696b0f0daf114527d577d0010574ce2eb7fc1b6a727d32e66c6225b4ff734",
+      "eventDate": "2026-01-06",
+      "eventType": "공공도로 변경 반대 기자회견",
+      "reason": "실제 Luna 응답의 본문 날짜 인용을 검증하고 동일 사건명은 정규화했습니다.",
+      "dateQuote": "대한불교조계종 해운정사는 6일 부산시의회 브리핑룸에서 기자회견을 열고"
+    }
+  ]
+}

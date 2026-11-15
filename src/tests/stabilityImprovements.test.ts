@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TtlCache, toPublicOverview, publicErrorBody } from '../utils/publicApi.ts';
 import { capCollectionCycleDoc, CYCLE_DOC_BYTE_BUDGET } from '../storage/cycleDocLimits.ts';
-import { FirestoreService, mergeEventSources } from '../storage/firestoreService.ts';
+import { FirestoreService, mergeEventSources, sanitizeForFirestore } from '../storage/firestoreService.ts';
 import { resolvePreviewConfig } from '../storage/readinessService.ts';
 import { clampTelegramText, TELEGRAM_MAX_MESSAGE_LENGTH } from '../notifier/telegramNotifier.ts';
 import { resolveGeminiModel, DEFAULT_GEMINI_MODEL } from '../analyzer/geminiAnalyzer.ts';
@@ -133,4 +133,22 @@ test('Gemini model has one source of truth', () => {
   assert.equal(resolveGeminiModel(), 'custom-model');
   if (prevAnalysis === undefined) delete process.env.OPENAI_MODEL; else process.env.OPENAI_MODEL = prevAnalysis;
   if (prevLegacy === undefined) delete process.env.GEMINI_MODEL; else process.env.GEMINI_MODEL = prevLegacy;
+});
+
+
+test('storage preserves shared primary/source references and still removes real cycles',async()=>{
+ const svc=new FirestoreService({simulatedConnected:true});
+ const source:any={url:'https://www.newsis.com/view/test',title:'verified source',source:'뉴시스',sourceTier:'news',publishedAt:'2026-01-06T00:00:00Z',discoveredAt:'2026-11-15T00:00:00Z',newsEvidence:{url:'https://www.newsis.com/view/test',sha256:'verified-digest',checkedAt:1}};
+ const event:any={id:'shared-source-regression',projectId:'udong-3',category:'분쟁',eventType:'기자회견',title:'title',summary:'summary',importance:3,confidence:.95,eventDate:'2026-01-06',primarySource:source,sources:[source],firstSeenAt:'2026-11-15T00:00:00Z',lastSeenAt:'2026-11-15T00:00:00Z',isHistorical:true};
+ await svc.saveEvent(event,{production:true});const saved=(await svc.getRecentEvents(100)).find(x=>x.id===event.id)!;
+ assert.equal(saved.sources?.length,1);assert.equal(saved.sources![0].url,source.url);assert.equal(saved.sources![0].newsEvidence?.sha256,'verified-digest');assert.equal(saved.primarySource.url,source.url);
+ const cyclic:any={source,again:source};cyclic.self=cyclic;const clean:any=sanitizeForFirestore(cyclic);assert.deepEqual(clean.source,clean.again);assert.equal(clean.self,undefined);
+});
+
+test('new verified source evidence refreshes an existing URL without letting older data replace it',()=>{
+ const old:any={url:'https://www.newsis.com/view/test',title:'headline only'};
+ const verified:any={url:old.url,title:'publisher body checked',newsEvidence:{sha256:'new',checkedAt:2}};
+ const updated=mergeEventSources([old],[verified]);assert.equal(updated[0].newsEvidence.sha256,'new');
+ const older:any={...verified,newsEvidence:{sha256:'old',checkedAt:1}};
+ assert.equal(mergeEventSources(updated,[older])[0].newsEvidence.sha256,'new');
 });

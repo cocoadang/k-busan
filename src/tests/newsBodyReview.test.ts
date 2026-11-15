@@ -254,3 +254,18 @@ test("cached bodies with the wrong headline or checksum are fetched again", asyn
   }
   assert.equal(calls, 2);
 });
+
+test("Kookje legacy body and input date are scoped to publisher, separate from related content and event day", async () => {
+  const title="우동3 정비사업 인가 소식";
+  // Synthetic fixture reproduces the observed legacy DOM without copying the article.
+  const quote="조합은 지난 14일 관할 구청의 사업시행계획인가를 받았다고 16일 밝혔다.";
+  const fixture=`<meta property="og:title" content="${title}"><span class="f_news_date">입력 : 2025-02-16 19:20:58</span><div class="news_article">${quote}<br>${'사업 진행에 관한 확인된 설명입니다. '.repeat(12)}<script>광고문구</script></div><aside>${'추천기사'.repeat(100)}</aside>`;
+  const url="https://www.kookje.co.kr/news2011/asp/newsbody.asp?code=0200&key=synthetic";
+  const b=extractNewsBody(fixture,url,title);
+  assert.equal(b.selector,".news_article");assert.equal(b.publishedAt,"2025-02-16T10:20:58.000Z");assert.match(b.text,/지난 14일/);assert.doesNotMatch(b.text,/광고문구|추천기사/);
+  const item=await new NewsBodyReader(undefined,(async()=>new Response(fixture)) as typeof fetch).enrich({...raw,sourceUrl:url,title});
+  assert.equal(newsDateSupported(item,"2025-02-14",quote),true);
+  assert.equal(newsDateSupported(item,"2026-02-14",quote),false);
+  assert.throws(()=>extractNewsBody(fixture,"https://www.newsis.com/view/test",title),/NEWS_BODY_UNAVAILABLE/);
+  assert.throws(()=>extractNewsBody(`<meta property="og:title" content="${title}"><div class="news_article">요약만</div>`,url,title),/NEWS_BODY_UNAVAILABLE/);
+});

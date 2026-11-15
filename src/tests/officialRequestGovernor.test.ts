@@ -21,6 +21,23 @@ test('injected city transport uses its longer spacing while all hosts share one 
 });
 test('fresh city connections retain TLS verification, abort signal and manual redirects',async()=>{
  const {createFreshCityFetch}=await import('../collector/freshCityFetch');const {EventEmitter}=await import('node:events');const{PassThrough}=await import('node:stream');let calls=0;const controller=new AbortController();
- const requester=((url:any,opts:any,cb:any)=>{calls++;assert.equal(opts.agent,false);assert.equal(opts.rejectUnauthorized,true);assert.equal(opts.signal,controller.signal);assert.equal(url.hostname,'www.busan.go.kr');const req:any=new EventEmitter();req.end=()=>{const response:any=new PassThrough();response.statusCode=302;response.headers={location:'/nbgosi?next=1'};cb(response);response.end();};return req;}) as any;
+ const requester=((url:any,opts:any,cb:any)=>{calls++;assert.equal(opts.agent,false);assert.equal(opts.rejectUnauthorized,true);assert.equal(opts.minVersion,'TLSv1.2');assert.equal(opts.maxVersion,'TLSv1.2');assert.equal(opts.signal,controller.signal);assert.equal(url.hostname,'www.busan.go.kr');const req:any=new EventEmitter();req.end=()=>{const response:any=new PassThrough();response.statusCode=302;response.headers={location:'/nbgosi?next=1'};cb(response);response.end();};return req;}) as any;
  const reader=createFreshCityFetch(requester);const r=await reader('https://www.busan.go.kr/nbgosi',{signal:controller.signal});assert.equal(r.status,302);assert.equal(r.headers.get('location'),'/nbgosi?next=1');assert.equal(calls,1);await assert.rejects(reader('https://example.com/nbgosi'),/URL_REJECTED/);assert.equal(calls,1);
+});
+
+test('city TLS failure preserves its phase and transport code without logging URLs',async()=>{
+ const{createFreshCityFetch}=await import('../collector/freshCityFetch');const{EventEmitter}=await import('node:events');
+ const requester=((_url:any,_opts:any,_cb:any)=>{const req:any=new EventEmitter();req.end=()=>{const socket:any=new EventEmitter();req.emit('socket',socket);socket.emit('connect');req.emit('error',Object.assign(Error('read ECONNRESET'),{code:'ECONNRESET'}));};return req;}) as any;
+ await assert.rejects(createFreshCityFetch(requester)('https://www.busan.go.kr/nbgosi'),(e:any)=>e.cause.code==='ECONNRESET'&&e.cause.phase==='tls'&&/phase=tls/.test(e.message)&&!e.message.includes('https://'));
+});
+test('city incomplete response cannot be returned as valid HTML',async()=>{
+ const{createFreshCityFetch}=await import('../collector/freshCityFetch');const{EventEmitter}=await import('node:events');const{PassThrough}=await import('node:stream');
+ const requester=((_url:any,_opts:any,cb:any)=>{const req:any=new EventEmitter();req.end=()=>{const r:any=new PassThrough();r.statusCode=200;r.headers={};r.complete=false;cb(r);r.end('<html>truncated');};return req;}) as any;
+ await assert.rejects(createFreshCityFetch(requester)('https://www.busan.go.kr/nbgosi'),(e:any)=>e.cause.phase==='body'&&e.cause.code==='CITY_INCOMPLETE_BODY');
+});
+
+test('expired one-off city recovery does not add an unnecessary request',async()=>{
+ const {BusanCityNoticeCollector}=await import('../collector/officialCollector');const{REDEVELOPMENT_SEED_PROJECTS}=await import('../registry/redevelopmentRegistry');let calls=0;
+ const collector=new BusanCityNoticeCollector((async()=>{calls++;return new Response('<table><tr><td>등록된 자료가 없습니다</td></tr></table>')}) as typeof fetch,()=>new Date('2026-11-15T00:00:00Z'));
+ const result=await collector.fetchForProjects(REDEVELOPMENT_SEED_PROJECTS.filter(p=>p.city==='부산광역시'));assert.equal(result.error,undefined);assert.equal(result.items.length,0);assert.equal(calls,1);
 });

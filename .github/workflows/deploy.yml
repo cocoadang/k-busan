@@ -90,7 +90,7 @@ jobs:
         # "run.googleapis.com/sources" style annotations that block an image-only deploy.
         # Export the live spec, drop only those source/build annotations, swap the image,
         # and pin the current revision at 100% while the new one gets the "candidate" tag.
-        # Env vars, secrets, service account, scaling, timeout and fixed egress are preserved.
+        # Env vars, secrets, service account, scaling, timeout and the requested shared egress are preserved.
         # The exported spec may contain env values, so it is never printed.
         run: |
           gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \

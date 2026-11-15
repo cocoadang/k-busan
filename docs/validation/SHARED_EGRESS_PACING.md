@@ -1,0 +1,9 @@
+# Shared egress and restrained official collection — 2026-11-15
+
+The user requested removal of the paid dedicated IP/NAT and comparison of slower calling methods. Earlier shared-vs-static comparisons did not isolate request timing, source address and elapsed recovery time; they do not prove a permanent need for a static address or a confirmed upstream IP blacklist.
+
+Production returns to shared Cloud Run egress. NAT/router and reserved address are removed after confirming traffic uses the shared revision. Previous static network configuration is archived, not an active provisioning requirement. Deployment validation now refuses to reattach a VPC/connector, preserving the user's choice.
+
+A single process-wide governor coordinates the Busan city, association and Saeol API requests, including redirects and retries. Production has at most one in-flight request/body and a minimum 3-second pause after completion. Transport/body failure pauses that host for 60 seconds; HTTP 403/429/503 also pauses it and honors Retry-After. Queued requests honor their deadline and cannot start after abort. Response buffering is bounded at 2 MiB. Existing source failures remain visible; the change does not fabricate empty successful collections. Other-host news/AI requests are unaffected.
+
+Low-volume comparison: three authorized source endpoints, one request each at 3-second spacing using fetch; at least 120 seconds with no diagnostic requests; then one request each at 8-second spacing with fresh verified HTTPS connections. No automatic retries. An explicit access/rate restriction skips that host in the second phase. The diagnostic contains no Telegram/AI credentials and writes no Firestore data. This small sample evaluates observed behavior and cannot by itself prove why an upstream drops connections.

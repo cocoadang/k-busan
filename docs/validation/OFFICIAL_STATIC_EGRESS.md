@@ -1,3 +1,5 @@
+> Superseded: the user requested removal of fixed IP/NAT. See [shared-egress testing](./SHARED_EGRESS_PACING.md). The following records the earlier experiment, not the active configuration.
+
 # Dedicated outbound path for official sources — 2026-11-15
 
 ## Diagnosis and controlled comparison
@@ -12,7 +14,7 @@ The candidate's real full pipeline cycle `cycle_1794745121885` succeeded for all
 
 ## Configuration and deployment
 
-Live resource configuration is recorded in [official-egress.json](../../ops/official-egress.json). No VM or always-running connector was introduced. The dedicated subnet has Private Google Access and the new VPC has no ingress allow rules. The GitHub deployment identity has `compute.networkUser` only on the dedicated subnet. Production deployment validates the exported VPC annotations before replacing the service so that a later image deployment fails rather than reverting to shared/private-only egress or a different region/network.
+Live resource configuration is recorded in [official-egress.json](./archived-static-egress.json). No VM or always-running connector was introduced. The dedicated subnet has Private Google Access and the new VPC has no ingress allow rules. The GitHub deployment identity has `compute.networkUser` only on the dedicated subnet. Production deployment validates the exported VPC annotations before replacing the service so that a later image deployment fails rather than reverting to shared/private-only egress or a different region/network.
 
 `python -m unittest discover -s ops -p test_official_egress.py` checks accepted configuration and rejection of shared/private-only/wrong-network/wrong-subnet/wrong-region deployments. Type check, 187 Node tests and production build passed.
 

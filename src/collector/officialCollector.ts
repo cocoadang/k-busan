@@ -1,3 +1,4 @@
+import { pacedOfficialFetch } from './officialRequestGovernor';
 import { createHash } from 'crypto';
 import { load } from 'cheerio';
 import { parseKstDate } from './associationCollector';
@@ -153,7 +154,7 @@ export class OfficialNoticeCollector {
     const requestUrl = `${this.baseUrl}?${queryParams.toString()}`;
     let observedHttpStatus = 0;
     try {
-      const response = await fetch(requestUrl, {
+      const response = await pacedOfficialFetch(requestUrl, {
         signal: AbortSignal.timeout(timeoutMs),
         headers: {
           Accept: 'application/json, text/plain, */*',
@@ -666,7 +667,7 @@ export function parseCityNoticeDetail(html:string, url:string) {
 }
 const CITY_TRANSIENT_RETRIES = 3;
 export class BusanCityNoticeCollector {
-  constructor(private fetcher:typeof fetch=fetch, private clock:()=>Date=()=>new Date(), private retryDelayMs=1000) {}
+  constructor(private fetcher:typeof fetch=pacedOfficialFetch, private clock:()=>Date=()=>new Date(), private retryDelayMs=1000) {}
   async fetchForProjects(projects:readonly RedevelopmentProject[], options:{timeoutMs?:number;maxPages?:number;maxRequests?:number;budgetMs?:number}={}) {
     const now=this.clock(), items:RawCollectedItem[]=[],errors:string[]=[];
     const maxPages=Math.min(20,Math.max(1,options.maxPages||20));

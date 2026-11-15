@@ -32,3 +32,21 @@ test('API body timeout remains active after headers arrive',async()=>{
  const started=Date.now();const r=await new OfficialNoticeCollector().fetchRawPage({pbltnYmd:'20261028',timeoutMs:25});assert.equal(r.success,false);assert.ok(Date.now()-started<400);assert.equal(r.resultCode,'NETWORK_OR_TIMEOUT_ERROR');assert.equal(r.httpStatus,200);assert.match(r.error!,/TimeoutError/);
  }finally{globalThis.fetch=saved;if(key===undefined)delete process.env.DATA_GO_KR_API_KEY;else process.env.DATA_GO_KR_API_KEY=key;}
 });
+
+test('Saeol retries one transport failure and preserves pagination; permanent errors are not retried',async()=>{
+ const saved=globalThis.fetch,key=process.env.DATA_GO_KR_API_KEY;process.env.DATA_GO_KR_API_KEY='synthetic-test-key';
+ try{
+  let calls=0;
+  globalThis.fetch=(async()=>{
+   if(++calls===1)throw new TypeError('fetch failed',{cause:{code:'UND_ERR_CONNECT_TIMEOUT'}});
+   return Response.json({response:{header:{resultCode:'00'},body:{totalCount:1,items:{item:{ttlNm:'실제 형식 공고',mngNo:'1',pbltnYmd:'20261113'}}}}});
+  }) as typeof fetch;
+  const recovered=await new OfficialNoticeCollector().fetchAllNoticesForDate('20261113',{timeoutMs:10});
+  assert.equal(recovered.success,true);assert.equal(recovered.items.length,1);assert.equal(calls,2);
+  calls=0;globalThis.fetch=(async()=>{calls++;throw new DOMException('timeout','TimeoutError');}) as typeof fetch;
+  const failed=await new OfficialNoticeCollector().fetchAllNoticesForDate('20261113',{timeoutMs:10});
+  assert.equal(failed.success,false);assert.equal(failed.resultCode,'NETWORK_OR_TIMEOUT_ERROR');assert.equal(calls,2);
+  calls=0;globalThis.fetch=(async()=>{calls++;return Response.json({OpenAPI_ServiceResponse:{cmmMsgHeader:{returnReasonCode:'30',errMsg:'SERVICE_KEY_IS_NOT_REGISTERED_ERROR'}}});}) as typeof fetch;
+  assert.equal((await new OfficialNoticeCollector().fetchAllNoticesForDate('20261113')).success,false);assert.equal(calls,1);
+ }finally{globalThis.fetch=saved;if(key===undefined)delete process.env.DATA_GO_KR_API_KEY;else process.env.DATA_GO_KR_API_KEY=key;}
+});

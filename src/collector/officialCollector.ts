@@ -119,7 +119,7 @@ export class OfficialNoticeCollector {
     const apiKey = this.getApiKey();
     const pageNo = params.pageNo || 1;
     const numOfRows = params.numOfRows || 50;
-    const timeoutMs = params.timeoutMs || 4000;
+    const timeoutMs = params.timeoutMs || 8000;
 
     // Fail-Closed: API Key missing -> Explicit failure without mock generation
     if (!apiKey) {
@@ -291,7 +291,17 @@ export class OfficialNoticeCollector {
     rawFieldNames: string[];
   }> {
     const maxPages = options.maxPages || 5;
-    const firstPage = await this.fetchRawPage({
+    // Government gateways intermittently drop connections. Retry only transport
+    // failures, never authentication, malformed data or incomplete pagination.
+    const readPage = async (params: Parameters<OfficialNoticeCollector['fetchRawPage']>[0]) => {
+      let result = await this.fetchRawPage(params);
+      if (result.resultCode === 'NETWORK_OR_TIMEOUT_ERROR') {
+        await new Promise(resolve => setTimeout(resolve, Math.min(250, params.timeoutMs || 8000)));
+        result = await this.fetchRawPage(params);
+      }
+      return result;
+    };
+    const firstPage = await readPage({
       pbltnYmd,
       pageNo: 1,
       numOfRows: 50,
@@ -319,7 +329,7 @@ export class OfficialNoticeCollector {
 
     // Fetch subsequent pages if totalCount > 50
     for (let page = 2; page <= totalPages; page++) {
-      const nextPage = await this.fetchRawPage({
+      const nextPage = await readPage({
         pbltnYmd,
         pageNo: page,
         numOfRows,
@@ -585,7 +595,10 @@ export async function readCityNoticeHtml(fetcher: typeof fetch, url: string, tim
       const nestedCodes=e?.cause?.errors?.map((cause:any)=>cause.code).filter(Boolean).join(',');
       const code=e?.cause?.code || nestedCodes || e?.name || 'UNKNOWN';
       const transient=/TIMEOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN/i.test(String(code)) || e?.message==='fetch failed';
-      if(attempt===0 && transient) continue;
+      if(attempt===0 && transient) {
+        await new Promise(resolve=>setTimeout(resolve,250));
+        continue;
+      }
       // Codes only; no credentials, headers or environment values in diagnostics.
       throw new Error(`${e?.message || 'CITY_FETCH_FAILED'} [${code}]`);
     }

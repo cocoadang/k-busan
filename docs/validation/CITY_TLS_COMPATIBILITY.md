@@ -1,3 +1,5 @@
+> Final correction: client/version switches alone did not solve the production failure. The same Node client succeeded after a 65-second quiet retry. See [bounded delayed recovery](./CITY_DELAYED_RECOVERY.md) for the active fix; the comparisons below are historical evidence.
+
 > Updated: the TLS-1.2-only Node deployment also failed in production. The system-client refinement and its final acceptance below supersede a version-only conclusion.
 
 # Busan city TLS compatibility investigation — 2026-11-15

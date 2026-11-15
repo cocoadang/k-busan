@@ -101,10 +101,10 @@ export class CollectionPipeline {
 
     // City notices are independent of the API key, shared across projects.
     sourcesChecked++;
-    const city = await this.cityBoardCollector.fetchForProjects(projects.filter(p => p.city === '부산광역시'), {timeoutMs: options.timeoutMs || 15000});
-    discoveredItems.push(...city.items);
-    sourceDetails.push({sourceName: '부산광역시 공식 고시공고', sourceTier:'official', status:city.error?'failed':'success', itemsCount:city.items.length, error:city.error});
-    if(city.error) errors.push(city.error);
+    // Let the city's bounded quiet retry overlap other work. The shared governor
+    // still permits only one actual Busan official network request at a time.
+    const cityPromise = this.cityBoardCollector.fetchForProjects(projects.filter(p => p.city === '부산광역시'), {timeoutMs: options.timeoutMs || 15000})
+      .catch((error:Error)=>({items:[] as RawCollectedItem[],error:'부산시 고시 수집 실패: '+error.message}));
 
     if (projects.some(p=>p.city==='과천시' && p.isActiveMonitoring)) {
       sourcesChecked++;
@@ -176,6 +176,11 @@ export class CollectionPipeline {
         }
       })
     );
+
+    const city=await cityPromise;
+    discoveredItems.unshift(...city.items);
+    sourceDetails.unshift({sourceName:'부산광역시 공식 고시공고',sourceTier:'official',status:city.error?'failed':'success',itemsCount:city.items.length,error:city.error});
+    if(city.error)errors.unshift(city.error);
 
     if(options.workQueue && options.attachmentReader){
       const processed=await runQueuedAnalysis({newsReader:options.newsReader,queue:options.workQueue,attachments:options.attachmentReader,analyzer:this.geminiAnalyzer,items:discoveredItems,projects,existingEvents:options.existingEvents||[],maxItems:Math.min(80,Math.max(1,Number(process.env.AI_MAX_ITEMS_PER_CYCLE)||80)),deadline:processingDeadline});

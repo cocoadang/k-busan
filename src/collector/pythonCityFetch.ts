@@ -17,6 +17,8 @@ try:
  except urllib.error.HTTPError as e: response=e
  data=response.read(2097153)
  if len(data)>2097152: raise ValueError('BODY_LIMIT')
+ expected=response.headers.get('Content-Length')
+ if expected and expected.isdigit() and len(data)!=int(expected): raise ValueError('INCOMPLETE_BODY')
  print(json.dumps({'status':response.status,'headers':list(response.headers.items()),'body':base64.b64encode(data).decode('ascii')}))
 except Exception as error:
  reason=getattr(error,'reason',error)
@@ -25,6 +27,7 @@ except Exception as error:
  elif isinstance(reason,(TimeoutError,socket.timeout)): code='ETIMEDOUT'
  elif isinstance(reason,ConnectionResetError) or getattr(reason,'errno',None)==errno.ECONNRESET: code='ECONNRESET'
  elif isinstance(error,ValueError) and str(error)=='BODY_LIMIT': code='OFFICIAL_RESPONSE_LIMIT'
+ elif isinstance(error,ValueError) and str(error)=='INCOMPLETE_BODY': code='CITY_INCOMPLETE_BODY'
  print(json.dumps({'error':code}))
 `;
 /** Uses the existing system OpenSSL client, without credentials, proxying or redirect following. */
@@ -49,7 +52,7 @@ export function createPythonCityFetch(spawnProcess:typeof spawn=spawn):typeof fe
    child.on('error',(e:any)=>fail(e.code==='ENOENT'?'CITY_PYTHON_UNAVAILABLE':'CITY_PYTHON_PROCESS_ERROR'));
    child.on('close',code=>{
     if(settled)return;if(code!==0){fail('CITY_PYTHON_EXIT');return;}
-    try{const result=JSON.parse(output);if(result.error){const allowed=['CERTIFICATE_VERIFY_FAILED','ETIMEDOUT','ECONNRESET','OFFICIAL_RESPONSE_LIMIT','CITY_HTTPS_FAILED'];fail(allowed.includes(result.error)?result.error:'CITY_HTTPS_FAILED');return;}
+    try{const result=JSON.parse(output);if(result.error){const allowed=['CERTIFICATE_VERIFY_FAILED','ETIMEDOUT','ECONNRESET','OFFICIAL_RESPONSE_LIMIT','CITY_INCOMPLETE_BODY','CITY_HTTPS_FAILED'];fail(allowed.includes(result.error)?result.error:'CITY_HTTPS_FAILED');return;}
      if(!Number.isInteger(result.status)||result.status<200||result.status>599||typeof result.body!=='string'||!Array.isArray(result.headers))throw Error('INVALID_RESPONSE');
      const body=Buffer.from(result.body,'base64');if(body.length>2*1024*1024){fail('OFFICIAL_RESPONSE_LIMIT');return;}
      const response=new Response([204,205,304].includes(result.status)?null:body,{status:result.status,headers:new Headers(result.headers)});settled=true;cleanup();resolve(response);

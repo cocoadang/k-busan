@@ -35,7 +35,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run lint
-      - run: python3 -m unittest discover -s ops -p "test_official_egress.py"
+      - run: python3 -m unittest discover -s ops -p "test_*.py"
       - run: node --import tsx --test src/tests/*.test.ts
       - run: node --import tsx --test src/analyzer/openaiClient.test.ts
       - run: npm run build

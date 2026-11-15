@@ -1,0 +1,245 @@
+{
+  "checkedAt": "2026-11-15T13:05:38.661Z",
+  "deploymentChecksPassed": true,
+  "checks": {
+    "expectedImage": true,
+    "sharedEgress": true,
+    "publicHealth": true,
+    "firestoreReady": true,
+    "routerRemoved": true,
+    "addressReleased": true,
+    "credentialsPreserved": true,
+    "latestPromoted": true,
+    "notificationsOff": true
+  },
+  "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-44d2dd1-1",
+  "observedComparison": [
+    {
+      "timestamp": "2026-11-15T12:51:01.293768Z",
+      "phase": "B_8s_fresh_https",
+      "host": "saeol",
+      "skipped": "ACCESS_OR_RATE_RESTRICTION"
+    },
+    {
+      "timestamp": "2026-11-15T12:51:01.293660Z",
+      "phase": "B_8s_fresh_https",
+      "host": "association",
+      "status": 200,
+      "bytes": 68705,
+      "ms": 759
+    },
+    {
+      "timestamp": "2026-11-15T12:50:52.526290Z",
+      "phase": "B_8s_fresh_https",
+      "host": "city",
+      "status": 200,
+      "bytes": 63989,
+      "ms": 776
+    },
+    {
+      "timestamp": "2026-11-15T12:48:43.688153Z",
+      "phase": "A_3s_serial_fetch",
+      "host": "saeol",
+      "status": 403,
+      "bytes": 212,
+      "ms": 3040
+    },
+    {
+      "timestamp": "2026-11-15T12:48:40.647722Z",
+      "phase": "A_3s_serial_fetch",
+      "host": "association",
+      "status": 200,
+      "bytes": 68705,
+      "ms": 3772
+    },
+    {
+      "timestamp": "2026-11-15T12:48:36.876735Z",
+      "phase": "A_3s_serial_fetch",
+      "host": "city",
+      "error": "ECONNRESET",
+      "ms": 253
+    }
+  ],
+  "excludedEvidence": "Phase A Saeol 403 used a double-encoded diagnostic key; excluded from throttling inference. Production key normalization is unchanged and correct. Diagnostic script fixed without repeating it.",
+  "requestCount": 5,
+  "comparisonLimit": "Time, connection reuse/transport and shared source addresses are confounded; no definitive blacklist or rate-limit cause established.",
+  "firstProduction": {
+    "cycle": "cycle_1794747295252",
+    "seconds": 35.853,
+    "errors": [
+      "부산시 고시 목록 수집 실패: OFFICIAL_HOST_COOLDOWN [Error]; 부산시 고시 원문 확인 실패 https://www.busan.go.kr/nbgosi/view?sno=79798&gosiGbn=N: OFFICIAL_HOST_COOLDOWN [Error]"
+    ],
+    "sources": [
+      {
+        "sourceName": "부산광역시 공식 고시공고",
+        "sourceTier": "official",
+        "status": "failed",
+        "itemsCount": 0,
+        "error": "부산시 고시 목록 수집 실패: OFFICIAL_HOST_COOLDOWN [Error]; 부산시 고시 원문 확인 실패 https://www.busan.go.kr/nbgosi/view?sno=79798&gosiGbn=N: OFFICIAL_HOST_COOLDOWN [Error]"
+      },
+      {
+        "sourceName": "과천시 공식 고시·공고",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 10단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 20
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 5단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 27
+      },
+      {
+        "sourceName": "Google News RSS (삼익비치타운(남천2구역))",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 19
+      },
+      {
+        "sourceName": "Google News RSS (해운대구 우동3구역 주택재개발정비사업)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 19
+      },
+      {
+        "sourceName": "Google News RSS (부산시민공원주변(촉진3구역) 재정비촉진구역)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 20
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 8·9단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 45
+      },
+      {
+        "sourceName": "촉진3 조합 입찰 게시판",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (부산광역시 수영구 남천동)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (해운대구)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (부산진구)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      }
+    ]
+  },
+  "finalProduction": {
+    "cycle": "cycle_1794747897909",
+    "seconds": 42.131,
+    "errors": [
+      "부산시 고시 목록 수집 실패: read ECONNRESET [Error]; 부산시 고시 원문 확인 실패 https://www.busan.go.kr/nbgosi/view?sno=79798&gosiGbn=N: OFFICIAL_HOST_COOLDOWN [Error]"
+    ],
+    "sources": [
+      {
+        "sourceName": "부산광역시 공식 고시공고",
+        "sourceTier": "official",
+        "status": "failed",
+        "itemsCount": 0,
+        "error": "부산시 고시 목록 수집 실패: read ECONNRESET [Error]; 부산시 고시 원문 확인 실패 https://www.busan.go.kr/nbgosi/view?sno=79798&gosiGbn=N: OFFICIAL_HOST_COOLDOWN [Error]"
+      },
+      {
+        "sourceName": "과천시 공식 고시·공고",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 10단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 20
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 5단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 27
+      },
+      {
+        "sourceName": "Google News RSS (부산시민공원주변(촉진3구역) 재정비촉진구역)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 20
+      },
+      {
+        "sourceName": "Google News RSS (해운대구 우동3구역 주택재개발정비사업)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 19
+      },
+      {
+        "sourceName": "Google News RSS (삼익비치타운(남천2구역))",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 19
+      },
+      {
+        "sourceName": "촉진3 조합 입찰 게시판",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "Google News RSS (과천주공 8·9단지 재건축)",
+        "sourceTier": "news",
+        "status": "success",
+        "itemsCount": 45
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (해운대구)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (부산광역시 수영구 남천동)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      },
+      {
+        "sourceName": "부산광역시 새올고시정보 (부산진구)",
+        "sourceTier": "official",
+        "status": "success",
+        "itemsCount": 0
+      }
+    ],
+    "telegramSent": 0,
+    "queue": {
+      "pending": 0,
+      "retry": 0,
+      "ready": 0,
+      "completed": 82,
+      "needs_review": 1,
+      "closed": 7
+    }
+  },
+  "fullCollectionPassed": false,
+  "diagnosticJobRemoved": true,
+  "inactiveUnbilledResourcesRetained": [
+    "kbusan-official-egress VPC",
+    "kbusan-official-seoul subnet (referenced by old unrouted revisions)"
+  ]
+}

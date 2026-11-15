@@ -62,6 +62,7 @@ export class EventDeduplicator {
         actorType: rawItem.actorType,
         detailVerified: rawItem.detailVerified,
         attachmentUrls: rawItem.attachmentUrls,
+        attachmentEvidence: rawItem.attachmentEvidence,
         attachmentContentStatus: rawItem.attachmentContentStatus ?? (rawItem.attachmentUrls?.length ? "unverified" : "not_applicable"),
         evidenceContent: rawItem.detailVerified === false ? undefined : rawItem.content,
         title: rawItem.title,
@@ -83,9 +84,9 @@ export class EventDeduplicator {
         eventsMerged++;
 
         // Add source if not already present
-        if (!existing.sources.some((s) => s.url === sourceRef.url)) {
-          existing.sources.push(sourceRef);
-        }
+        const sourceIndex=existing.sources.findIndex(s=>s.url===sourceRef.url);
+        if(sourceIndex<0)existing.sources.push(sourceRef);
+        else if(sourceRef.attachmentContentStatus==='verified')existing.sources[sourceIndex]={...existing.sources[sourceIndex],...sourceRef};
 
         // Rule: Prioritize official source as primary source
         if (sourceRef.sourceTier === 'official') {

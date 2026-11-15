@@ -1,0 +1,54 @@
+{
+  "checkedAt": "2026-11-15T07:56:09.008Z",
+  "sourcePage": "https://dynamice.busan.go.kr/home/BARA_0000000000151/view.do?no=329&ntt_id=20680&pgMode=view",
+  "independentOriginalDocuments": 2,
+  "note": "OCR case is a rasterized rendering of original document 1, not a third independent notice; small paired diagnostic, not a general model ranking.",
+  "rows": [],
+  "extractions": [
+    {
+      "file": "compat-charstyle.hwp",
+      "status": "verified",
+      "sha256": "ff3faae938610fcfbedc21c27c507ca0cc038b44872b65d10fcad0b55af67ba2",
+      "pages": 1,
+      "methods": [
+        "native"
+      ],
+      "elapsedMs": 1044,
+      "excerpt": "한글 2005 예제 파일입니다.\n\n머리말입니다\n\n본문 내용입니다. 본 문서는 글 워드 프로세서의 파일 저장 형식 중, 글 2002 이후 제품에서 사용되는 글 문서 파일 형식 5.0 및 글 97 문서 파일 형식, HWPML에 관하여 설명한다.\n표\n<표>\n표끝\n<표>\n\n\n<표>\n\n다음 문단\n\n본 문서는 먼저 글 문서 파일 형식 5.0에 관하여 설명한 "
+    },
+    {
+      "file": "association-1.pdf",
+      "status": "verified",
+      "sha256": "2b2c625fcabd7d02e47de2a0b3904b869d52448f76de836a594bc40b99d8e630",
+      "pages": 1,
+      "methods": [
+        "native"
+      ],
+      "elapsedMs": 150,
+      "excerpt": "시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합 공고 제2026- 12호\n\n\n\n    협력업체【기반시설공사 건설사업관리】선정 입찰 공고\n시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합에서는 국토교통부 고시 제2025-448호(정비사업\n계약업무 처리기준)에 의거 하여 아래와 같이 용역 수행할 협력업체를 선정하고자 입찰공고 하오니 해당 업"
+    },
+    {
+      "file": "association-2.pdf",
+      "status": "verified",
+      "sha256": "7394fd50c18557e94c94986b3622f6910694c540a56cb674f3ebd908a850089e",
+      "pages": 1,
+      "methods": [
+        "native"
+      ],
+      "elapsedMs": 65,
+      "excerpt": "시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합 공고 제2026-11호\n\n\n         협력업체 【부지정지공사 용역】선정 입찰 공고\n시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합에서는 아래와 같이 협력업체를 선정하고자 「도시\n및 주거환경정비법」 제29조 및 국토교통부 고시 제2025-448호(정비사업 계약업무 처리기준)에 의거 아"
+    },
+    {
+      "file": "association-1-ocr.png",
+      "status": "verified",
+      "sha256": "08f2a54cad1e310addd1b2ca0d43404880c381f7c6832749baad50388d33073b",
+      "pages": 1,
+      "methods": [
+        "ocr"
+      ],
+      "elapsedMs": 18801,
+      "excerpt": "시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합 공고 제2026- 12호\n언         A    섬)|언과       x   차 고\n협력업체 [기반시설공사 건설사업관리] 선정 입찰 공고\n시민공원주변 재정비촉진지구 촉진3구역 주택재개발정비사업조합에서는 국토교통부 고시 제2025-448호(정비사업\n계약업무 처리기준)에 의거 하여 아래와 같이 용역"
+    }
+  ],
+  "runtimeFixtureAliasNote": "compat-charstyle.hwp in this execution was populated with the unmodified sample-5017.hwp bytes before invoking the extractor; SHA256 matches committed compat-sample-5017.hwp. Empty charstyle and image-only aligns are rejected."
+}

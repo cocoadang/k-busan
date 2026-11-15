@@ -1,3 +1,4 @@
+import {EventDeduplicator} from '../analyzer/eventDeduplicator';
 import test from 'node:test';import assert from 'node:assert/strict';import AdmZip from 'adm-zip';
 import {enqueueEntry,stageEntry,queueId,type AnalysisQueue,type QueueEntry} from '../queue/analysisQueue';
 import {runQueuedAnalysis} from '../pipeline/queuedAnalysis';import {AttachmentReader,readableHwpText,extractAttachment,safeAttachmentUrl,downloadAttachment} from '../attachments/attachmentReader';
@@ -20,3 +21,5 @@ test('expired worker budget leaves persisted work pending without calling the pr
 test('image placeholders from HWP converters are not treated as read document text',()=>{assert.equal(readableHwpText('<그림>\n\n'.repeat(20)),false);assert.equal(readableHwpText('촉진3구역 조합 총회는 2026년 11월 20일 오후 2시에 개최합니다.'),true);});
 
 test('expired attachment deadline prevents even a download request',async()=>{let calls=0;await assert.rejects(downloadAttachment('https://www.busan.go.kr/file.pdf',(async()=>{calls++;return new Response('');}) as typeof fetch,Date.now()-1),/CYCLE_BUDGET/);assert.equal(calls,0);});
+
+test('rereading an existing event refreshes its attachment text and page evidence',()=>{const d=new EventDeduplicator(),raw=item(1),payload:any={projectId:raw.projectId,eventType:'조합 총회',eventDate:'2026-10-01',title:raw.title,summary:'총회 개최',importance:2,confidence:.9,sourceUrl:raw.sourceUrl,sourceTier:'official'};const original=d.deduplicateAndMerge([{rawItem:raw,payload}]).events;const attachmentEvidence=[{url:'https://www.busan.go.kr/file.pdf',sha256:'new-digest',pages:[{locator:'p.1',method:'native'}],checkedAt:Date.now()}];const refreshed=d.deduplicateAndMerge([{payload,rawItem:{...raw,content:'다시 읽은 실제 첨부 원문',attachmentContentStatus:'verified',attachmentEvidence}}],original);assert.equal(refreshed.events.length,1);assert.deepEqual(refreshed.events[0].sources[0].attachmentEvidence,attachmentEvidence);assert.equal(refreshed.events[0].sources[0].evidenceContent,'다시 읽은 실제 첨부 원문');});

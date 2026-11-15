@@ -13,6 +13,9 @@ export interface ProductionReadinessResult {
   firestoreReady: boolean;
   telegramConfigured: boolean;
   geminiConfigured: boolean;
+  aiProvider: string;
+  aiModel: string;
+  openaiConfigured: boolean;
   schedulerMode: 'cloud-scheduler' | 'internal-interval';
   officialApiStatus: string;
   officialApiLastCheck?: ReturnType<OfficialNoticeCollector['getLastCheck']>;
@@ -61,7 +64,7 @@ export async function evaluateProductionReadiness(
   const telegram = notifier || new TelegramNotifier();
   const telegramConfigured = telegram.isConfigured();
   const geminiConfigured = Boolean(
-    process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== ''
+    process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim() !== ''
   );
   const internalSchedulerEnabled = process.env.ENABLE_INTERNAL_SCHEDULER === 'true';
   const schedulerMode = internalSchedulerEnabled ? 'internal-interval' : 'cloud-scheduler';
@@ -106,6 +109,9 @@ export async function evaluateProductionReadiness(
     firestoreReady: fsHealth.ready,
     telegramConfigured,
     geminiConfigured,
+    aiProvider: 'openai',
+    aiModel: geminiModel,
+    openaiConfigured: geminiConfigured,
     schedulerMode,
     officialApiStatus,
     officialApiLastCheck,

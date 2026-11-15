@@ -89,3 +89,6 @@ Plan images, project history, aggregate plan/supply data, subscription compariso
 ## Tests
 
 All suites pass: `node --import tsx --test src/tests/*.test.ts`. Plan-data tests check that capability flags (coordinates, building mappings) match the data actually present, since later phases onboarded verified coordinates for 우동3 and 삼익비치.
+
+## OpenAI analysis (2026-11-15)
+Active text analysis uses OpenAI Responses, `gpt-6-luna`, reasoning none, no tools or automatic retries. `OPENAI_API_KEY` must be bound server-side; `OPENAI_MODEL` optionally overrides the model. Legacy Gemini-named internal fields remain for stored-data/API compatibility; public `aiProvider` and `aiModel` report the actual provider. Existing collection, fact validation, dispatch rules and budget ceilings are preserved. Input reservations include a conservative local UTF-8 bound; output usage includes reasoning once. Gemini keys are retained only for rollback and inactive legacy paths.

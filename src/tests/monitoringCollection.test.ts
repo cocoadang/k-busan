@@ -290,7 +290,7 @@ test('AI 관련성·추출 1회 호출 및 재시작 후 캐시 재사용', asyn
     const a=new GeminiAnalyzer({dryRunMode:true});
     (a as any).ai={models:{generateContent:async (request:any)=>{
       calls++;assert.equal(request.config.maxOutputTokens,4096);
-      assert.equal(request.config.thinkingConfig.thinkingLevel,'LOW');
+      assert.equal(request.config.thinkingConfig,undefined);
       assert.ok(request.config.responseSchema.required.includes('eventType'));
       return {text:JSON.stringify(answer),usageMetadata:{promptTokenCount:100,candidatesTokenCount:50,thoughtsTokenCount:20,totalTokenCount:170}};
     }}};

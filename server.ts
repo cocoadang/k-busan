@@ -131,7 +131,7 @@ console.log(`[STARTUP] Target Port: ${PORT} (process.env.PORT: ${process.env.POR
 console.log(`[STARTUP] Bind Address: 0.0.0.0`);
 console.log(`[STARTUP] Runtime Module: ${typeof __dirname !== 'undefined' ? 'CommonJS (bundled)' : 'ES Modules'}`);
 console.log(`[STARTUP] Firestore Configured: ${Boolean(process.env.FIRESTORE_DATABASE_ID || process.env.GOOGLE_APPLICATION_CREDENTIALS)}`);
-console.log(`[STARTUP] Gemini Configured: ${Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '')}`);
+console.log(`[STARTUP] Gemini Configured: ${Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim() !== '')}`);
 console.log(`[STARTUP] Telegram Configured: ${Boolean(process.env.TELEGRAM_BOT_TOKEN && (process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHANNEL_ID))}`);
 console.log(`[STARTUP] Poll Job Secret Configured: ${Boolean(process.env.POLL_JOB_SECRET || process.env.CRON_SECRET)}`);
 console.log('====================================================');
@@ -776,17 +776,17 @@ app.all('/api/jobs/poll', async (req, res) => {
 
   // B. Gemini API Key configured check
   const geminiConfigured = Boolean(
-    process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== ''
+    process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim() !== ''
   );
   if (!geminiConfigured) {
-    console.error('[Jobs/Poll Preflight] GEMINI_API_KEY is not configured in production environment.');
-    await trackPollHealth({ ok: false, reason: 'GEMINI_API_KEY 미설정' });
+    console.error('[Jobs/Poll Preflight] OPENAI_API_KEY is not configured in production environment.');
+    await trackPollHealth({ ok: false, reason: 'OPENAI_API_KEY 미설정' });
     return res.status(503).json({
       success: false,
       statusCode: 503,
       preflightPassed: false,
-      error: 'Service Unavailable: GEMINI_API_KEY is not configured.',
-      message: 'AI 뉴스 적합성 분류 및 이벤트 추출을 위해 GEMINI_API_KEY 설정이 필수입니다.',
+      error: 'Service Unavailable: OPENAI_API_KEY is not configured.',
+      message: 'AI 뉴스 적합성 분류 및 이벤트 추출을 위해 OPENAI_API_KEY 설정이 필수입니다.',
       telegramSent: 0,
       eventsCreated: 0,
     });

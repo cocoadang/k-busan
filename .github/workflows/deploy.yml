@@ -36,6 +36,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run lint
       - run: node --import tsx --test src/tests/*.test.ts
+      - run: node --import tsx --test src/analyzer/openaiClient.test.ts
       - run: npm run build
 
   deploy:
@@ -112,6 +113,12 @@ jobs:
           containers = tmpl['spec']['containers']
           assert len(containers) == 1, 'expected a single container'
           containers[0]['image'] = os.environ['IMAGE']
+          env = containers[0].setdefault('env', [])
+          env[:] = [e for e in env if e['name'] not in ('OPENAI_API_KEY', 'OPENAI_MODEL')]
+          env.extend([
+              {'name': 'OPENAI_API_KEY', 'valueFrom': {'secretKeyRef': {'name': 'apt-openai-api-key', 'key': 'latest'}}},
+              {'name': 'OPENAI_MODEL', 'value': 'gpt-6-luna'},
+          ])
           svc['spec']['traffic'] = [
               {'revisionName': os.environ['CURRENT'], 'percent': 100},
               {'revisionName': os.environ['NEW_REV'], 'tag': 'candidate'},
@@ -149,6 +156,7 @@ jobs:
           h = json.load(open('/tmp/health.json'))
           assert h.get('status') == 'ok', h
           assert h.get('firestoreReady') is True, 'Firestore not ready on candidate'
+          assert h.get('openaiConfigured') is True and h.get('aiModel') == 'gpt-6-luna', 'OpenAI not ready'
           print('firestoreReady', h['firestoreReady'], 'gemini', h['checks']['gemini'])
           PY
           curl -sf "$URL/api/registry" > /dev/null

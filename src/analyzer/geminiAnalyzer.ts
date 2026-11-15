@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { validateMaterialEvidence } from '../notifier/dispatchPolicy';
-import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
+import { Type } from '@google/genai';
+import { OpenAITextClient as GoogleGenAI, resolveOpenAIModel } from './openaiClient';
 import {
   AnalysisCategory,
   ImportanceLevel,
@@ -37,21 +38,17 @@ export interface AnalysisCache {
   get(key: string): Promise<AnalysisResult | null>;
   set(key: string, value: AnalysisResult): Promise<void>;
 }
-export const ANALYSIS_VERSION = 'combined-attachments-20261115-v3';
+export const ANALYSIS_VERSION = 'openai-attachments-20261115-v1';
 /**
- * Single source of truth for the Gemini model. Override with GEMINI_ANALYSIS_MODEL.
- * The default is the model the production analyzer has been using, so cached analyses stay valid.
- *
- * GEMINI_MODEL (from the old .env.example) was only ever shown in /api/health and never used by
- * the analyzer. It is deliberately NOT honoured here: an existing deployment that still has
- * GEMINI_MODEL=gemini-2.5-flash set would otherwise silently switch models on upgrade.
+ * Single source of truth for the OpenAI model. Override with OPENAI_MODEL.
+ * Legacy Gemini environment values cannot change the active OpenAI model.
  * Note: the model name is part of the cache key — changing it re-analyses every item once.
  */
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+export const DEFAULT_GEMINI_MODEL = 'gpt-6-luna';
 export function resolveGeminiModel(): string {
-  return process.env.GEMINI_ANALYSIS_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
+  return resolveOpenAIModel();
 }
-export const GEMINI_ANALYSIS_SETTINGS = { concurrency: 4, timeoutMs: 45000, thinkingLevel: 'low', maxOutputTokens: 4096 } as const;
+export const GEMINI_ANALYSIS_SETTINGS = { concurrency: 4, timeoutMs: 45000, thinkingLevel: 'none', maxOutputTokens: 4096 } as const;
 /** Retries for transient Gemini failures (429 / 5xx), with backoff between attempts. */
 const GEMINI_RETRY_DELAYS_MS = [2000, 6000];
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -106,7 +103,7 @@ export class GeminiAnalyzer {
 
   constructor(options: { dryRunMode?: boolean } = {}) {
     this.dryRunMode = options.dryRunMode ?? false;
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (apiKey && !this.dryRunMode) {
       this.ai = new GoogleGenAI({
         apiKey,
@@ -227,7 +224,6 @@ JSON 응답 포맷:
             httpOptions:{timeout:Math.max(1000,Math.min(GEMINI_ANALYSIS_SETTINGS.timeoutMs,this.deadlineAt-Date.now()))},
             responseMimeType: 'application/json',
             maxOutputTokens: GEMINI_ANALYSIS_SETTINGS.maxOutputTokens,
-            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
             responseSchema: {
               type: Type.OBJECT,
               properties: {

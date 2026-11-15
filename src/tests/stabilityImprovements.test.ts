@@ -124,13 +124,13 @@ test('Telegram text is clamped below the API limit', () => {
 });
 
 test('Gemini model has one source of truth', () => {
-  const prevAnalysis = process.env.GEMINI_ANALYSIS_MODEL;
+  const prevAnalysis = process.env.OPENAI_MODEL;
   const prevLegacy = process.env.GEMINI_MODEL;
-  delete process.env.GEMINI_ANALYSIS_MODEL;
+  delete process.env.OPENAI_MODEL;
   process.env.GEMINI_MODEL = 'gemini-2.5-flash';
   assert.equal(resolveGeminiModel(), DEFAULT_GEMINI_MODEL, 'legacy GEMINI_MODEL must not switch the model');
-  process.env.GEMINI_ANALYSIS_MODEL = 'custom-model';
+  process.env.OPENAI_MODEL = 'custom-model';
   assert.equal(resolveGeminiModel(), 'custom-model');
-  if (prevAnalysis === undefined) delete process.env.GEMINI_ANALYSIS_MODEL; else process.env.GEMINI_ANALYSIS_MODEL = prevAnalysis;
+  if (prevAnalysis === undefined) delete process.env.OPENAI_MODEL; else process.env.OPENAI_MODEL = prevAnalysis;
   if (prevLegacy === undefined) delete process.env.GEMINI_MODEL; else process.env.GEMINI_MODEL = prevLegacy;
 });

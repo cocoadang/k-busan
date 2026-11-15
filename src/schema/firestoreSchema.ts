@@ -290,6 +290,9 @@ export interface FirestoreProjectDoc extends RedevelopmentProject {}
  * Document ID: sha256(url)
  */
 export interface FirestoreDocumentDoc {
+  attachmentUrls?:string[];
+  attachmentContentStatus?:string;
+  attachmentEvidence?:import('../types/redevelopment').RawCollectedItem['attachmentEvidence'];
   id: string; // sha256(url)
   sourceType: SourceType; // 'news-rss' | 'official-api' | 'official-web'
   sourceTier: SourceTier; // 'news' | 'official'

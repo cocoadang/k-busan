@@ -1,0 +1,52 @@
+[
+  {
+    "id": "cycle_1794697231734",
+    "startedAt": "2026-11-14T23:00:06.254Z",
+    "discovered": 150,
+    "deferred": [
+      {
+        "projectId": "chokjin-3",
+        "title": "부산시민공원 촉진3구역에 `아크로` 들어선다 - 국제신문"
+      },
+      {
+        "projectId": "chokjin-3",
+        "title": "DL이앤씨, 1.6조 규모 부산 촉진3구역 시공사 선정 - 뉴스핌"
+      }
+    ],
+    "requests": 4,
+    "cacheHits": 76,
+    "failures": 0
+  },
+  {
+    "id": "cycle_1794610875758",
+    "startedAt": "2026-11-13T23:00:05.892Z",
+    "discovered": 151,
+    "deferred": [
+      {
+        "projectId": "chokjin-3",
+        "title": "부산시민공원 촉진3구역에 `아크로` 들어선다 - 국제신문"
+      },
+      {
+        "projectId": "chokjin-3",
+        "title": "DL이앤씨, 1.6조 규모 부산 촉진3구역 시공사 선정 - 뉴스핌"
+      }
+    ],
+    "requests": 46,
+    "cacheHits": 34,
+    "failures": 1
+  },
+  {
+    "id": "cycle_1794524520915",
+    "startedAt": "2026-11-12T23:00:06.907Z",
+    "discovered": 150,
+    "deferred": [
+      {
+        "projectId": "chokjin-3",
+        "title": "DL이앤씨, 1.6조 규모 부산 촉진3구역 시공사 선정 - 뉴스핌"
+      }
+    ],
+    "requests": 1,
+    "cacheHits": 79,
+    "failures": 0
+  }
+]

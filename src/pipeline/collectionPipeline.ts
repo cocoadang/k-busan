@@ -1,3 +1,6 @@
+import {runQueuedAnalysis} from './queuedAnalysis';
+import type {AnalysisQueue} from '../queue/analysisQueue';
+import type {AttachmentReader} from '../attachments/attachmentReader';
 import { AssociationNoticeCollector } from '../collector/associationCollector';
 import { evaluateDispatch } from '../notifier/dispatchPolicy';
 import { EventDeduplicator } from '../analyzer/eventDeduplicator';
@@ -15,6 +18,8 @@ import {
 } from '../types/redevelopment';
 
 export interface PipelineRunOptions {
+  workQueue?:AnalysisQueue;
+  attachmentReader?:AttachmentReader;
   projects?: readonly RedevelopmentProject[] | RedevelopmentProject[];
   timeoutMs?: number;
   existingEvents?: ExtractedEvent[];
@@ -24,6 +29,7 @@ export interface PipelineRunOptions {
 }
 
 export interface PipelineRunResult {
+  queueReadyIds?:string[];
   aiUsage: GeminiAnalyzer['usage'];
   audit: CollectionCycleAudit;
   events: ExtractedEvent[];
@@ -76,7 +82,8 @@ export class CollectionPipeline {
   }
 
   private async runInternal(options: PipelineRunOptions): Promise<PipelineRunResult> {
-    this.geminiAnalyzer.beginRun(options.analysisCache);
+    const processingDeadline=Date.now()+200000;
+    this.geminiAnalyzer.beginRun(options.analysisCache,options.workQueue?processingDeadline:Infinity);
     const projects = options.projects || REDEVELOPMENT_SEED_PROJECTS;
     const isOfficialEnabled = (options.enableOfficialApi ?? true) && process.env.ENABLE_OFFICIAL_API !== 'false' && Boolean(process.env.DATA_GO_KR_API_KEY?.trim());
     const errors: string[] = [];
@@ -166,6 +173,12 @@ export class CollectionPipeline {
         }
       })
     );
+
+    if(options.workQueue && options.attachmentReader){
+      const processed=await runQueuedAnalysis({queue:options.workQueue,attachments:options.attachmentReader,analyzer:this.geminiAnalyzer,items:discoveredItems,projects,existingEvents:options.existingEvents||[],maxItems:Math.min(80,Math.max(1,Number(process.env.AI_MAX_ITEMS_PER_CYCLE)||80)),deadline:processingDeadline});
+      const audit:CollectionCycleAudit={id:`audit_${Date.now()}`,timestamp:new Date().toISOString(),sourcesChecked,itemsDiscovered:discoveredItems.length,relevantItems:processed.audits.filter(a=>a.geminiRelatednessResult==='relevant').length,irrelevantItems:processed.audits.filter(a=>a.geminiRelatednessResult==='irrelevant').length,uncertainItems:processed.audits.filter(a=>a.geminiRelatednessResult==='uncertain').length,eventsCreated:processed.eventsCreated,eventsMerged:processed.eventsMerged,telegramCandidates:processed.telegramCandidates,officialApiStatus:isOfficialEnabled?'active':'disabled',errors,sourceDetails,itemAudits:processed.audits,queueStats:processed.stats,queueAttempted:processed.attempted,explanationWhyNoAlert:`대기 ${processed.stats.pending||0}건 · 재시도 ${processed.stats.retry||0}건 · 검토 필요 ${processed.stats.needs_review||0}건. 미처리 자료는 원본 목록에서 사라져도 대기열에 보존됩니다.`};
+      return {audit,events:processed.events,rawItems:processed.items,aiUsage:{...this.geminiAnalyzer.usage},queueReadyIds:processed.readyIds};
+    }
 
     // 2. 1ST PASS: DETERMINISTIC GATE
     const passed1stGate: Array<{ item: RawCollectedItem; project: RedevelopmentProject; gateStatus: 'relevant' | 'irrelevant'; gateReason: string }> = [];

@@ -1,0 +1,28 @@
+[
+  {
+    "timestamp": "2026-11-15T06:39:32.709020Z",
+    "job": "apt-queue-storage-check",
+    "passed": true,
+    "isolatedCollection": "analysisQueueValidation_1794724767646",
+    "firstBatch": 80,
+    "remainingBatch": 2,
+    "completed": 82,
+    "readyReplay": true
+  },
+  {
+    "timestamp": "2026-11-15T06:39:30.326177Z",
+    "job": "apt-queue-backfill",
+    "legacyDeferredFound": 3,
+    "queued": 3,
+    "skipped": [],
+    "stats": {
+      "pending": 3,
+      "retry": 0,
+      "ready": 0,
+      "completed": 0,
+      "needs_review": 0
+    },
+    "telegramSent": 0,
+    "aiRequests": 0
+  }
+]

@@ -734,7 +734,7 @@ export class BusanCityNoticeCollector {
         }
       }catch(e){errors.push(`부산시 고시 원문 확인 실패 ${url}: ${(e as Error).message}`);}
     }
-    if(process.env.NODE_ENV==='production')console.log('[CITY_COLLECTION]',JSON.stringify({requests,pages:seenPages.size,items:items.length,complete:complete&&!errors.length,errorCount:errors.length}));
+    if(process.env.NODE_ENV==='production')console.log('[CITY_COLLECTION]',JSON.stringify({requestAttempts:requests,pages:seenPages.size,items:items.length,complete:complete&&!errors.length,errorCount:errors.length}));
     return {items,error:errors.length?errors.join('; '):undefined};
   }
 }

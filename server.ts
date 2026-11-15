@@ -1,3 +1,5 @@
+import {FirestoreAnalysisQueue} from './src/queue/analysisQueue';
+import {AttachmentReader,firestoreAttachmentCache} from './src/attachments/attachmentReader';
 import { createApiSecurity, SECURITY_VERSION } from './src/security/apiSecurity.ts';
 import { GwacheonCityNoticeCollector } from './src/collector/officialCollector';
 import { existsSync } from 'node:fs';
@@ -196,6 +198,18 @@ app.get('/api/health', async (req, res) => {
  * Phase 3B: Dedicated Production Status & Readiness Endpoints
  * Provides complete deployment readiness inspection with zero secret leakage.
  */
+app.get('/api/analysis-queue',async(_req,res)=>{
+  try{const stats=await publicReadCache.get('analysis-queue:stats',async()=>{const db=await firestoreService.getClient();if(!db)throw Error('QUEUE_UNAVAILABLE');return new FirestoreAnalysisQueue(db).stats();});res.json({stats});}
+  catch{res.status(503).json({error:'대기열 상태를 확인하지 못했습니다.'});}
+});
+app.post('/api/analysis-queue/:id/retry',async(req,res)=>{
+  if(!/^[a-f0-9]{64}$/.test(req.params.id))return res.status(400).json({error:'INVALID_QUEUE_ID'});
+  const db=await firestoreService.getClient();if(!db)return res.status(503).json({error:'QUEUE_UNAVAILABLE'});
+  const ref=db.collection('analysisQueue').doc(req.params.id);
+  try{const result=await db.runTransaction(async tx=>{const snap=await tx.get(ref),data=snap.data();if(!data)return 404;if(!['retry','needs_review'].includes(data.state))return 409;tx.update(ref,{state:'pending',attempts:0,nextAttemptAt:Date.now(),updatedAt:Date.now()});return 200;});publicReadCache.clear();return res.status(result).json({success:result===200});}
+  catch{return res.status(503).json({error:'QUEUE_RETRY_FAILED'});}
+});
+
 app.get('/api/status', async (req, res) => {
   const readiness = await getProductionReadiness();
   res.json({ ...readiness, securityVersion: SECURITY_VERSION, aiAnalysis: aiAnalysisInfo() });
@@ -434,9 +448,14 @@ async function runPollingCycleLocked(isProduction: boolean, enableTelegram: bool
   const existingEvents = await firestoreService.getRecentEvents(50);
   const activeProjects = defaultRegistry.getAllActiveProjects();
 
-  // Run pipeline: Phase 3A News-Only mode (official-api disabled)
+  const queueDb=await firestoreService.getClient();
+  if(!queueDb)throw Error('ANALYSIS_QUEUE_UNAVAILABLE');
+  const workQueue=new FirestoreAnalysisQueue(queueDb);
+  // Persist all eligible work before analysis.
   const result = await pipeline.run({
     projects: activeProjects,
+    workQueue,
+    attachmentReader:new AttachmentReader(firestoreAttachmentCache(queueDb)),
     analysisCache: {
       get: async (key) => {
         const client = await firestoreService.getClient();
@@ -504,6 +523,9 @@ async function runPollingCycleLocked(isProduction: boolean, enableTelegram: bool
         confidence: matchedAudit?.confidence ?? 0,
         sourceName: rawItem.sourceName || '언론보도',
         content: rawItem.content || '',
+        attachmentUrls:rawItem.attachmentUrls||[],
+        attachmentContentStatus:rawItem.attachmentContentStatus||'not_applicable',
+        attachmentEvidence:rawItem.attachmentEvidence||[],
         rawFingerprint: rawItem.rawFingerprint || `${rawItem.projectId}_${rawItem.sourceUrl}`,
       },
       { production: isProduction }
@@ -655,15 +677,20 @@ async function runPollingCycleLocked(isProduction: boolean, enableTelegram: bool
     sourceDetails: result.audit.sourceDetails,
   };
 
-  Object.assign(cycleDoc, { aiUsage: result.aiUsage });
+  Object.assign(cycleDoc, { aiUsage: result.aiUsage,queueStats:result.audit.queueStats,queueAttempted:result.audit.queueAttempted });
   console.log('[AI_USAGE]', JSON.stringify(result.aiUsage));
   // Firestore documents are capped at 1 MiB; oversized audits would fail the cycle after alerts went out.
   await firestoreService.saveCollectionCycle(capCollectionCycleDoc(cycleDoc), { production: isProduction });
+
+  // Complete only after all event/document/cycle writes succeed; ready results survive a crash.
+  await workQueue.ack(result.queueReadyIds||[]);
 
   // Phase 3B: Structured Operational Log for Cloud Logging / Cloud Run
   const operationalLog = {
     startedAt,
     finishedAt,
+    queueStats:result.audit.queueStats,
+    queueAttempted:result.audit.queueAttempted,
     rssItemsDiscovered: result.rawItems.length,
     relevantItems: result.audit.relevantItems,
     eventsCreated: result.audit.eventsCreated,

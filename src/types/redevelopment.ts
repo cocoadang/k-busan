@@ -195,7 +195,8 @@ export interface RawCollectedItem {
   detailVerified?: boolean;
   attachmentUrls?: string[];
   /** HTML detail verification never implies attachment text was read. */
-  attachmentContentStatus?: "unverified" | "not_applicable";
+  attachmentContentStatus?: "unverified" | "not_applicable" | "verified";
+  attachmentEvidence?: Array<{url:string;sha256:string;pages:Array<{locator:string;method:string}>;checkedAt:number}>;
   id: string; // URL 해시 또는 고유 식별자
   projectId: string; // 매칭된 RedevelopmentProject id
   sourceTier: SourceTier; // 'official' | 'news'
@@ -325,7 +326,8 @@ export interface EventSourceRef {
   detailVerified?: boolean;
   attachmentUrls?: string[];
   /** HTML detail verification never implies attachment text was read. */
-  attachmentContentStatus?: "unverified" | "not_applicable";
+  attachmentContentStatus?: "unverified" | "not_applicable" | "verified";
+  attachmentEvidence?: Array<{url:string;sha256:string;pages:Array<{locator:string;method:string}>;checkedAt:number}>;
   evidenceContent?: string;
   title: string;
   url: string;
@@ -415,6 +417,8 @@ export interface ItemAuditRecord {
 export interface CollectionCycleAudit {
   id: string;
   timestamp: string;
+  queueStats?: Record<string,number>;
+  queueAttempted?: number;
   sourcesChecked: number;
   itemsDiscovered: number;
   relevantItems: number;

@@ -53,7 +53,7 @@ export class EventDeduplicator {
 
       // Recency policy calculation: 72 hours threshold
       const pubTime = new Date(rawItem.publishedAt).getTime();
-      const discTime = new Date(rawItem.collectedAt || new Date().toISOString()).getTime();
+      const discTime = Date.now(); // Delayed queue work must not revive historical alerts.
       const ageHours = (discTime - pubTime) / (1000 * 60 * 60);
       const isHistorical = ageHours > 72;
       const telegramEligibleByRecency = !isHistorical;

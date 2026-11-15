@@ -37,7 +37,7 @@ export interface AnalysisCache {
   get(key: string): Promise<AnalysisResult | null>;
   set(key: string, value: AnalysisResult): Promise<void>;
 }
-export const ANALYSIS_VERSION = 'combined-20261014-v2';
+export const ANALYSIS_VERSION = 'combined-attachments-20261115-v3';
 /**
  * Single source of truth for the Gemini model. Override with GEMINI_ANALYSIS_MODEL.
  * The default is the model the production analyzer has been using, so cached analyses stay valid.
@@ -68,7 +68,7 @@ export function analysisCacheKey(item: RawCollectedItem, project: RedevelopmentP
   return createHash('sha256').update(JSON.stringify([ANALYSIS_VERSION, resolveGeminiModel(),
     project.id, project.name, project.district, project.aliases, item.title, item.content,
     item.publishedAt, item.sourceUrl, item.sourceTier, item.sourceType, item.sourceName,
-    item.actorType, item.detailVerified, item.noticeNumber])).digest('hex');
+    item.actorType, item.detailVerified, item.noticeNumber,item.attachmentEvidence?.map(e=>[e.url,e.sha256])])).digest('hex');
 }
 export function compactAnalysisContent(content: string): string {
   const clean = content.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')

@@ -1,3 +1,4 @@
+import {AnalysisQueueStatus} from './components/AnalysisQueueStatus';
 import React from 'react';
 import { Header } from './components/Header.tsx';
 import { Phase3Dashboard } from './components/Phase3Dashboard.tsx';
@@ -9,6 +10,7 @@ export default function App() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0">
         {/* 부산 정비사업 분석: [단지계획] [사업현황] [진행이력] [지역변화] [뉴스] */}
+        <AnalysisQueueStatus />
         <Phase3Dashboard />
       </main>
     </div>

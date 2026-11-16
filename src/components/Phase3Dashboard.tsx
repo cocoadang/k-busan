@@ -10,6 +10,8 @@ import { UnitPlanView } from './UnitPlanView.tsx';
 // Only the default tab ([단지계획]) is in the initial bundle. The other tabs are loaded on
 // demand; the subscription strategy tab (calculator + benchmark data) is the largest of them,
 // and the status/timeline tabs carry the verified history data.
+const HousingMapView = lazy(() => import('./HousingMapView.tsx').then(m => ({ default: m.HousingMapView })));
+
 const loadProjectStatusView = () => import('./ProjectStatusView.tsx');
 const loadProjectTimelineView = () => import('./ProjectTimelineView.tsx');
 const loadAreaDevelopmentsView = () => import('./AreaDevelopmentsView.tsx');
@@ -33,9 +35,10 @@ const TabLoading: React.FC<{ label: string }> = ({ label }) => (
   <div role="status" className="p-6 text-sm text-slate-500">{label} 화면을 불러오는 중입니다…</div>
 );
 
-export type MainTabType = 'plans' | 'status' | 'timeline' | 'developments' | 'news' | 'strategy';
+export type MainTabType = 'housing' | 'plans' | 'status' | 'timeline' | 'developments' | 'news' | 'strategy';
 
 const MAIN_TABS: ReadonlyArray<{ id: MainTabType; label: string; Icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }> }> = [
+  { id: 'housing', label: '지도·시세', Icon: MapPin },
   { id: 'plans', label: '단지계획', Icon: Building },
   { id: 'status', label: '사업현황', Icon: LayoutDashboard },
   { id: 'timeline', label: '진행이력', Icon: History },
@@ -44,7 +47,7 @@ const MAIN_TABS: ReadonlyArray<{ id: MainTabType; label: string; Icon: React.Com
   { id: 'strategy', label: '청약전략', Icon: Calculator },
 ];
 
-const TAB_IDS = new Set<MainTabType>(['plans', 'status', 'timeline', 'developments', 'news', 'strategy']);
+const TAB_IDS = new Set<MainTabType>(['housing', 'plans', 'status', 'timeline', 'developments', 'news', 'strategy']);
 const DEFAULT_PROJECT_ID = 'chokjin-3';
 const KNOWN_PROJECT_IDS = new Set(REDEVELOPMENT_SEED_PROJECTS.map((p) => p.id));
 
@@ -228,11 +231,12 @@ export const Phase3Dashboard: React.FC = () => {
 
       {/* Main Tab Content Panels */}
       <div id="tab-content-panel" role="tabpanel">
-        {loadError && activeTab !== 'news' && activeTab !== 'strategy' && (
+        {loadError && activeTab !== 'housing' && activeTab !== 'news' && activeTab !== 'strategy' && (
           <div role="status" className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-xs sm:text-sm text-amber-800">
             최신 데이터를 불러오지 못해 기본 수록 자료로 표시 중입니다.
           </div>
         )}
+        {activeTab === 'housing' && <Suspense fallback={<TabLoading label="지도·시세" />}><HousingMapView /></Suspense>}
         {activeTab === 'status' && (
           <Suspense fallback={<TabLoading label="사업현황" />}>
             <ProjectStatusView

@@ -21,3 +21,7 @@ TypeScript/build and application tests cover source membership, all three marker
 ## Production acceptance
 
 Revision `busan-redevelopment-news-monitor-b0fa83e-1` passed public health, unchanged runtime-template comparison and exact source comparisons for all four apartments in both area families. Desktop checks verified seven markers, four apartment footprints, independent layer toggles, unsupported 59-area states, three project panels, status navigation and retained 31 analysis/13 regional links. Automated validation passed 208 application, three mocked AI and two operations tests. See BUSAN_LIVE_MAP_RELEASE_20261116.json. Mobile viewport acceptance was not obtained because the connected browser viewport override did not apply; no mobile pass is claimed. Conditional public requests returned 200, so 304 savings are not claimed; hourly upstream caching and freshness headers are verified.
+
+## Mobile and pointer follow-up
+
+Mobile selection scrolls the compact selected detail into view and offers a return-to-map button; full-width lists remain available when markers overlap. Primary list/filter/zoom targets are at least 44px high. Desktop dragging pans; wheel zoom is enabled. The map-size button expands the map to the content width and 75dvh without remounting the map or changing data/connections. ResizeObserver preserves correct Leaflet sizing. Bounds use padding for edge labels. No collection, AI, notification or runtime configuration change is involved.

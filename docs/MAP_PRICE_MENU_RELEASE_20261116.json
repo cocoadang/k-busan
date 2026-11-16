@@ -1,0 +1,63 @@
+{
+  "checkedAt": "2026-11-16T13:22:55.395Z",
+  "url": "https://apt.dsoom.com/#/housing/chokjin-3",
+  "revision": "busan-redevelopment-news-monitor-9ccb0f4-1",
+  "previousRevision": "busan-redevelopment-news-monitor-21cba82-1",
+  "image": "asia-northeast3-docker.pkg.dev/busan-redevelopment/kbusan-images/k-busan:9ccb0f4800d27accf2fab23ac24ab02e010b5244",
+  "pullRequest": "https://github.com/cocoadang/k-busan/pull/25",
+  "sourceCommit": "f0cad2c",
+  "mergeCommit": "9ccb0f4",
+  "deploymentRun": "https://github.com/cocoadang/k-busan/actions/runs/43873923928",
+  "checks": {
+    "runtimeTemplatePreserved": true,
+    "health": true,
+    "firestoreReady": true,
+    "aiConfigurationUnchanged": true,
+    "registry": true,
+    "cpuIdle": true
+  },
+  "validation": {
+    "applicationTests": 204,
+    "mockedOpenAiTests": 3,
+    "operationsTests": 2,
+    "typecheck": true,
+    "build": true
+  },
+  "browser": {
+    "passed": true,
+    "defaultPlansPreserved": true,
+    "directHousingRouteAndReload": true,
+    "links": {
+      "apartments": 31,
+      "maps": 14,
+      "newTabAndNoopener": true
+    },
+    "regionFilterCentumShowsTwoApartments": true,
+    "actualNewMapTab": true,
+    "mapTargetLoaded": true,
+    "actualNewDetailTab": "https://k-housing-5he2zcaska-du.a.run.app/?view=ANALYSIS&complex=busan_centum_park_2",
+    "detailShowsCentumPark2And84": true,
+    "legacyLinks": [
+      {
+        "href": "https://k-housing-5he2zcaska-du.a.run.app/?view=REDEVELOPMENT&lineage=chokjin3_redevelopment",
+        "text": "사업성 분석 보기"
+      },
+      {
+        "href": "https://k-housing-5he2zcaska-du.a.run.app/?view=ANALYSIS&complex=busan_samick_beach",
+        "text": "실거래가 분석 보기"
+      }
+    ],
+    "desktop": true,
+    "mobile": {
+      "verified": false,
+      "reason": "Viewport capability returned no effective resize (window.innerWidth remained 1280); no mobile pass claimed."
+    },
+    "viewportReset": true
+  },
+  "syntheticTelemetryWindow": {
+    "start": "2026-11-16T13:11:32.550Z",
+    "end": "2026-11-16T13:22:55.395Z"
+  },
+  "noNotifications": "No Telegram, poll/collection/scheduler or paid AI calls were invoked; only ordinary read-only UI and health/registry requests.",
+  "passed": true
+}

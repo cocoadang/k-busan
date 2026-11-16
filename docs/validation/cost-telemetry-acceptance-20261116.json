@@ -1,0 +1,107 @@
+{
+  "checkedAt": "2026-11-16T09:14:41.567Z",
+  "http": {
+    "startedAt": "2026-11-16T09:14:07.821Z",
+    "revision": "projects/busan-redevelopment/locations/asia-northeast3/services/busan-redevelopment-news-monitor/revisions/busan-redevelopment-news-monitor-21cba82-1",
+    "reads": [
+      {
+        "route": "registry",
+        "first": {
+          "status": 200,
+          "bytes": 2080,
+          "etag": "W/\"1abf-AVcrKigZxc7pcw6uGOCjCSybHYw\"",
+          "encoding": "gzip"
+        },
+        "second": {
+          "status": 304,
+          "bytes": 0,
+          "etag": "W/\"1abf-AVcrKigZxc7pcw6uGOCjCSybHYw\""
+        }
+      },
+      {
+        "route": "overview",
+        "first": {
+          "status": 200,
+          "bytes": 100735,
+          "etag": "W/\"815ff-/oFDz3LGzIGAOzb6Db1PSTyhbWY\"",
+          "encoding": "gzip"
+        },
+        "second": {
+          "status": 304,
+          "bytes": 0,
+          "etag": "W/\"815ff-/oFDz3LGzIGAOzb6Db1PSTyhbWY\""
+        }
+      }
+    ],
+    "checks": {
+      "registry": true,
+      "overview": true,
+      "dailySchedulePreserved": true,
+      "noVpc": true,
+      "requestBilling": true
+    },
+    "finishedAt": "2026-11-16T09:14:10.019Z",
+    "noTelegram": "Public GETs and resource metadata only; no collection, AI generation, reanalysis, scheduler execution or notification requests",
+    "aiCacheValidation": "Offline mocked analyzer confirmed 1 persistent hit, 2 misses, 1 coalesced request, 2 in-run reuses with no paid provider",
+    "passed": true
+  },
+  "checks": {
+    "completePages": true,
+    "noModelCalls": true,
+    "registry": true,
+    "overview": true
+  },
+  "rows": [
+    {
+      "timestamp": "2026-11-16T09:14:08.363464Z",
+      "type": "COST_HTTP_V1",
+      "v": 1,
+      "route": "registry",
+      "method": "GET",
+      "status": 200,
+      "complete": true,
+      "responseBodyBytes": 2080,
+      "conditional": false,
+      "durationMs": 4
+    },
+    {
+      "timestamp": "2026-11-16T09:14:08.471019Z",
+      "type": "COST_HTTP_V1",
+      "v": 1,
+      "route": "registry",
+      "method": "GET",
+      "status": 304,
+      "complete": true,
+      "responseBodyBytes": 0,
+      "conditional": true,
+      "durationMs": 1
+    },
+    {
+      "timestamp": "2026-11-16T09:14:08.931793Z",
+      "type": "COST_HTTP_V1",
+      "v": 1,
+      "route": "overview",
+      "method": "GET",
+      "status": 200,
+      "complete": true,
+      "responseBodyBytes": 100735,
+      "conditional": false,
+      "durationMs": 347
+    },
+    {
+      "timestamp": "2026-11-16T09:14:09.186603Z",
+      "type": "COST_HTTP_V1",
+      "v": 1,
+      "route": "overview",
+      "method": "GET",
+      "status": 304,
+      "complete": true,
+      "responseBodyBytes": 0,
+      "conditional": true,
+      "durationMs": 6
+    }
+  ],
+  "logRetentionDays": 30,
+  "normalTrafficFrom": "2026-11-16T09:14:12.019Z",
+  "passed": true
+}

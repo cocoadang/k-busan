@@ -1,3 +1,4 @@
+import { createBusanPriceHandler } from './src/housing/busanPriceApi.ts';
 import {costHttpTelemetry} from './src/utils/costTelemetry';
 import {NewsBodyReader,firestoreNewsBodyCache} from './src/news/newsBodyReader';
 import {FirestoreAnalysisQueue} from './src/queue/analysisQueue';
@@ -98,6 +99,8 @@ app.get('/api/official/diagnostics', async (req, res) => {
     if (!res.headersSent) res.status(502).json({ error: 'DIAGNOSTICS_FAILED' });
   }
 });
+
+app.get('/api/housing/busan-prices', createBusanPriceHandler());
 
 // Optional development preview: proxies public reads to PREVIEW_UPSTREAM_ORIGIN, blocks writes.
 // Opt-in via PREVIEW_MODE=true (never active when NODE_ENV=production).

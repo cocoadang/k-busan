@@ -1,0 +1,120 @@
+{
+  "checkedAt": "2026-11-16T03:05:18.773Z",
+  "passed": true,
+  "checks": {
+    "asia-northeast3TrafficUnchanged": true,
+    "asia-northeast3TemplateUnchanged": true,
+    "asia-northeast3ReferencedImagesRetained": true,
+    "asia-northeast3UnusedImagesRemoved": true,
+    "asia-northeast3AutomaticCleanup": true,
+    "asia-south1TrafficUnchanged": true,
+    "asia-south1TemplateUnchanged": true,
+    "asia-south1ReferencedImagesRetained": true,
+    "asia-south1UnusedImagesRemoved": true,
+    "asia-south1AutomaticCleanup": true,
+    "ai-studio-bucket-432348267432-asia-south1Removed": true,
+    "ai-studio-bucket-432348267432-asia-south1RecoveryCopies": true,
+    "ai-studio-bucket-432348267432-asia-south1Lifecycle": true,
+    "run-sources-busan-redevelopment-asia-south1Removed": true,
+    "run-sources-busan-redevelopment-asia-south1RecoveryCopies": true,
+    "run-sources-busan-redevelopment-asia-south1Lifecycle": true,
+    "pausedJobDeleted": true,
+    "activeScheduleUnchanged": true,
+    "publicHealth": true,
+    "recoveryChecksums": true
+  },
+  "counts": {
+    "imagesDeleted": 5,
+    "objectsDeleted": 50,
+    "sourceBytesDeleted": 4531532888,
+    "recoveryCopies": 6
+  },
+  "telegram": "No collection/poll/notification endpoints invoked; read-only health validation only",
+  "summary": {
+    "asia-northeast3": {
+      "remainingImages": 18,
+      "cleanup": {
+        "delete-older-thirty-days": {
+          "id": "delete-older-thirty-days",
+          "action": "DELETE",
+          "condition": {
+            "tagState": "ANY",
+            "olderThan": "2592000s"
+          }
+        },
+        "keep-deployed": {
+          "id": "keep-deployed",
+          "action": "KEEP",
+          "condition": {
+            "tagState": "ANY",
+            "versionNamePrefixes": [
+              "sha256:f0dd68a9e7163ae988345c8f3b2e317074dd0f0bb88eda540e42cacc3",
+              "sha256:bfd6cd35b8b47eca0cedf18b17a97f781419c3d5b7f32f47702f3d8ae",
+              "sha256:83fdc259b57ff2f408e18bc7b84c2dd8b5d176d4ddd8fcf6c4dea0081",
+              "sha256:9f7426d3d6dca643b6cb9931aefc17374d3c60c3e51cc6a7d44b73f60",
+              "sha256:2f1af098d166daf870fdc8ea8956047ed52d244e90932878128f159d4",
+              "sha256:e7bda7818d28aa2bddc3512c12dfec7bf674033444ca3d20f01582087",
+              "sha256:f48b8acb1c8d187c409bb4afb9408a1d8cd89f482121c84b754122339",
+              "sha256:620d3417c5d96476a63a47dca4d1a6ee7383d1ab09a491a4b2f0fa4bc",
+              "sha256:b1febe0ba383e57e3df62a093c50f9c7da18284929f0157004dab6d2d",
+              "sha256:6bc9e658e49a1409c7ffe706425c609c78ab84f8511419144a02d6f9f",
+              "sha256:80addd19e01be72a765a030785f0d1f952000b474a574de598aa1914e",
+              "sha256:da57b89e527d84f52c28be1031099cfef564fab26e78e916193975e8f",
+              "sha256:71cfd5356ec88932e0eafa7aad0ddde85024a74edd5bca78af7d4d88d",
+              "sha256:faa62d2fcdf561830a159978366c3e5e93c70899fb3083c47c0c4d4e7",
+              "sha256:b42902bb4c595fc0146157043f601c3ab27d58c1e32dea0256aa05c31",
+              "sha256:2310ba437eff0d2ace93d940bcad744128093c20f99f8d0822dbf2e8a",
+              "sha256:98b7c6e8db6b28d4d002818de9bf7f50f3531030e5eef3d14cbc09aab",
+              "sha256:39dc5b4dd2028dc6163305c036c2dd83d083d939cdeb240ae14b6ae0d"
+            ]
+          }
+        },
+        "keep-latest-five": {
+          "id": "keep-latest-five",
+          "action": "KEEP",
+          "mostRecentVersions": {
+            "keepCount": 5
+          }
+        }
+      }
+    },
+    "asia-south1": {
+      "remainingImages": 9,
+      "cleanup": {
+        "delete-older-thirty-days": {
+          "id": "delete-older-thirty-days",
+          "action": "DELETE",
+          "condition": {
+            "tagState": "ANY",
+            "olderThan": "2592000s"
+          }
+        },
+        "keep-deployed": {
+          "id": "keep-deployed",
+          "action": "KEEP",
+          "condition": {
+            "tagState": "ANY",
+            "versionNamePrefixes": [
+              "sha256:8a56766aee7174cc46fc0fec944a46793dade85304669f81b0b4e679f",
+              "sha256:fbbd41d6e673aa971ed686da204024e237f6f952ae961a1e7673b3228",
+              "sha256:acd3655c0ef7d3cc1b1d7e1473f2ee9589b0e8dc14a0fd421ebfec361",
+              "sha256:c6c10b40c4c9504fa374357f847f0e31abfec9bde0f27ad9562904dae",
+              "sha256:a7305e6aec1c91ab415257b55089d0b90be60e1ae072b4bc4aaa9f7f5",
+              "sha256:6a84d9a01f0120046ea72408c74be642e5b838c913f896c1fcfe8ae26",
+              "sha256:4488622c1add031ab4b91e523f153b4ab343cc15d4d60386b1cb54b73",
+              "sha256:ed5e724726cbfa43c20c33182016e9543706fcde39aa7c8e84bcb0d8a",
+              "sha256:8cee1d565301b4305616e6ba269b57294a1d96bdc83062f69c1eb3d41"
+            ]
+          }
+        },
+        "keep-latest-five": {
+          "id": "keep-latest-five",
+          "action": "KEEP",
+          "mostRecentVersions": {
+            "keepCount": 5
+          }
+        }
+      }
+    }
+  }
+}

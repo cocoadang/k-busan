@@ -236,7 +236,7 @@ export const Phase3Dashboard: React.FC = () => {
             최신 데이터를 불러오지 못해 기본 수록 자료로 표시 중입니다.
           </div>
         )}
-        {activeTab === 'housing' && <Suspense fallback={<TabLoading label="지도·시세" />}><HousingMapView projects={projects} /></Suspense>}
+        {activeTab === 'housing' && <Suspense fallback={<TabLoading label="지도·시세" />}><HousingMapView events={events} /></Suspense>}
         {activeTab === 'status' && (
           <Suspense fallback={<TabLoading label="사업현황" />}>
             <ProjectStatusView

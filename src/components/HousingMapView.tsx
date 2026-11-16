@@ -4,16 +4,17 @@ import type { GeoJsonObject } from 'geojson';
 import 'leaflet/dist/leaflet.css';
 import DATA from '../data/busanHousingMap.json';
 import type { BusanPrices } from '../housing/busanPriceApi';
-import type { RedevelopmentProject } from '../types/redevelopment';
+import type { ExtractedEvent } from '../types/redevelopment';
 import { getHousingApartmentLink, getHousingLink } from '../utils/housingLinks';
 import { HousingDestinationList } from './HousingDestinationList';
 import './housingMap.css';
 import { mapPriceLabel } from '../housing/mapDisplay';
+import { resolveProjectStatutoryStage } from '../utils/redevelopmentStages';
 
 const allPoints: L.LatLngTuple[] = [...DATA.apartments, ...DATA.projects].map(p => [p.latitude, p.longitude]);
 const bounds = L.latLngBounds(allPoints).pad(0.15);
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-export const HousingMapView: React.FC<{projects?: RedevelopmentProject[]}> = ({projects = []}) => {
+export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = []}) => {
   const container = useRef<HTMLDivElement>(null), map = useRef<L.Map | null>(null), layers = useRef<L.LayerGroup | null>(null);
   const [area, setArea] = useState<'59'|'84'>('84');
   const [prices, setPrices] = useState<BusanPrices | null>(null), [error, setError] = useState(false), [retry, setRetry] = useState(0);
@@ -66,7 +67,7 @@ export const HousingMapView: React.FC<{projects?: RedevelopmentProject[]}> = ({p
   },[selected]);
   const apartment=DATA.apartments.find(a=>a.id===selected), project=DATA.projects.find(p=>p.id===selected);
   const summary=apartment ? currentPrices?.summaries[apartment.id] : undefined;
-  const liveProject=project && projects.find(p=>p.id===project.id);
+  const projectStage=project && resolveProjectStatutoryStage(project.id, events.filter(e=>e.projectId===project.id)).currentStage;
   const financialLink=project && getHousingLink(project.id);
   return <section aria-label="부산 아파트·정비사업 지도" className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -87,7 +88,7 @@ export const HousingMapView: React.FC<{projects?: RedevelopmentProject[]}> = ({p
       <aside className="rounded-xl bg-white border border-slate-200 p-4 space-y-3" aria-label="지도 선택 정보">
         {!selected && <p className="text-sm text-slate-600">지도 마커나 아래 목록을 선택하면 상세 정보가 표시됩니다.</p>}
         {apartment && <><h3 className="font-bold text-lg">{apartment.name}</h3><p className="text-emerald-800 font-bold">{area}㎡급 · {error?'조회 실패':mapPriceLabel(summary)}</p>{summary?.month && <p className="text-xs text-slate-600">{summary.month.slice(0,4)}.{summary.month.slice(4)} 거래월 중앙값</p>}<p className="text-xs text-slate-500">단지별 실제 전용면적은 상세 분석에서 확인하세요. 녹색 외곽은 기존 아파트의 참고용 필지 경계입니다.</p><a className="block text-blue-700 underline py-2" href={getHousingApartmentLink(apartment.id)!} target="_blank" rel="noopener noreferrer">실거래가 상세 분석 (새 탭)</a>{apartment.id==='busan_samick_beach' && <a className="block text-purple-700 underline py-2" href="#/status/samik-beach">삼익비치 사업현황 보기</a>}</>}
-        {project && <><h3 className="font-bold text-lg text-purple-800">{project.name}</h3>{liveProject && <p className="text-sm">사업 단계: {liveProject.stage}</p>}<p className="text-xs text-purple-800">위치 마커 · 사업구역 경계 미표시</p><p className="text-xs leading-5 text-slate-600">{project.positionNote}</p><p className="text-xs leading-5 text-slate-600">{project.boundaryNote}</p><a href={`#/status/${project.id}`} className="block py-2 text-blue-700 underline">사업현황·진행 정보 보기</a><a href={project.officialMapUrl} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">부산시 공식 위치도 (새 탭)</a>{financialLink && <a href={financialLink.href} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">{financialLink.label} (새 탭)</a>}</>}
+        {project && <><h3 className="font-bold text-lg text-purple-800">{project.name}</h3>{projectStage && <p className="text-sm">사업 단계: {projectStage}</p>}<p className="text-xs text-purple-800">위치 마커 · 사업구역 경계 미표시</p><p className="text-xs leading-5 text-slate-600">{project.positionNote}</p><p className="text-xs leading-5 text-slate-600">{project.boundaryNote}</p><a href={`#/status/${project.id}`} className="block py-2 text-blue-700 underline">사업현황·진행 정보 보기</a><a href={project.officialMapUrl} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">부산시 공식 위치도 (새 탭)</a>{financialLink && <a href={financialLink.href} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">{financialLink.label} (새 탭)</a>}</>}
         <div className="border-t border-slate-100 pt-3 space-y-1"><h3 className="text-sm font-bold">아파트 4곳</h3>{DATA.apartments.map(a=><button key={a.id} type="button" onClick={()=>{setSelected(a.id);setApartmentsOn(true);}} className="block w-full text-left text-sm text-emerald-800 hover:bg-emerald-50 rounded p-2">{a.name} · {error?'조회 실패':mapPriceLabel(currentPrices?.summaries[a.id])}</button>)}<h3 className="text-sm font-bold pt-2">정비사업 3곳</h3>{DATA.projects.map(p=><button key={p.id} type="button" onClick={()=>{setSelected(p.id);setProjectsOn(true);}} className="block w-full text-left text-sm text-purple-800 hover:bg-purple-50 rounded p-2">{p.name} · 위치 보기</button>)}</div>
       </aside>
     </div>

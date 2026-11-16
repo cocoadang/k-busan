@@ -1,0 +1,110 @@
+{
+  "checkedAt": "2026-11-16T14:13:14.065Z",
+  "url": "https://apt.dsoom.com/#/housing/chokjin-3",
+  "revision": "busan-redevelopment-news-monitor-b0fa83e-1",
+  "previousRevision": "busan-redevelopment-news-monitor-9ccb0f4-1",
+  "image": "asia-northeast3-docker.pkg.dev/busan-redevelopment/kbusan-images/k-busan:b0fa83e6fd2a5071f5392eaf3fd56cc2c61671b7",
+  "pullRequests": [
+    "https://github.com/cocoadang/k-busan/pull/26",
+    "https://github.com/cocoadang/k-busan/pull/27"
+  ],
+  "sourceCommits": [
+    "096eeca",
+    "8450970"
+  ],
+  "mergeCommit": "b0fa83e",
+  "deploymentRun": "https://github.com/cocoadang/k-busan/actions/runs/43882425379",
+  "checks": {
+    "runtimeTemplatePreserved": true,
+    "health": true,
+    "firestoreReady": true,
+    "aiConfigurationUnchanged": true,
+    "cpuIdle": true,
+    "allFourSourcePricesMatch_59": true,
+    "allFourSourcePricesMatch_84": true
+  },
+  "validation": {
+    "applicationTests": 208,
+    "mockedOpenAiTests": 3,
+    "operationsTests": 2,
+    "typecheck": true,
+    "build": true
+  },
+  "mapData": {
+    "apartments": 4,
+    "projectMarkers": 3,
+    "verifiedProjectPolygons": 0,
+    "udongPositionApproximate": true,
+    "apartmentBoundariesNeverUsedAsProjectBoundaries": true
+  },
+  "browser": {
+    "checkedAt": "2026-11-16T14:12:09.032Z",
+    "passed": true,
+    "url": "https://apt.dsoom.com/#/housing/samik-beach",
+    "desktop": {
+      "initialMapDom": {
+        "markers": [
+          "아파트 삼익비치 11.1억",
+          "아파트 남천자이 13.7억",
+          "아파트 센텀파크1차 11.9억",
+          "아파트 센텀파크2차 10.3억",
+          "정비사업 촉진3구역 위치 마커",
+          "정비사업 우동3구역 위치 마커",
+          "정비사업 삼익비치 정비사업 위치 마커"
+        ],
+        "paths": 4,
+        "tiles": 12
+      },
+      "layerProof": [
+        {
+          "layer": "정비사업 위치",
+          "off": {
+            "markers": 4,
+            "paths": 4
+          }
+        },
+        {
+          "layer": "아파트 필지 외곽",
+          "off": {
+            "markers": 7,
+            "paths": 0
+          }
+        },
+        {
+          "layer": "아파트 실거래가",
+          "off": {
+            "markers": 3,
+            "paths": 0
+          }
+        }
+      ],
+      "preservedLinks": {
+        "analysis": 31,
+        "regions": 13
+      },
+      "prices84": true,
+      "prices59UnsupportedAreas": true,
+      "centum2Detail": true,
+      "allThreeProjectDetails": true,
+      "udongApproximationDisclosed": true,
+      "canonicalStagesMatchStatus": true,
+      "statusNavigation": true,
+      "allSevenMenusPreserved": true,
+      "fitAll": true,
+      "basemapVisible": true
+    },
+    "mobile": {
+      "verified": false,
+      "reason": "Viewport override in this browser previously did not apply; no mobile acceptance claimed."
+    },
+    "screenshot": "busan-live-map-production.jpg"
+  },
+  "conditionalRevalidationNote": "Public hosting returned 200 for conditional requests; 304 savings are not claimed. Hourly upstream cache and public freshness headers verified.",
+  "syntheticTelemetryWindow": {
+    "start": "2026-11-16T13:48:52.322Z",
+    "end": "2026-11-16T14:13:14.066Z",
+    "note": "Includes local preview source reads, staging and production verification; exclude from organic cost/cache comparisons."
+  },
+  "noNotifications": "No Telegram, poll/collection/scheduler or paid AI calls were invoked; ordinary public read-only requests and map tiles only.",
+  "passed": true
+}

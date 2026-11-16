@@ -1,3 +1,5 @@
+> Superseded by the embedded Busan map on 2026-11-16. Nationwide destination links remain below the map. See BUSAN_LIVE_MAP.md.
+
 # Map and price entry — 2026-11-16
 
 The new 지도·시세 main tab is directly accessible at `#/housing/chokjin-3`. Existing default plans, project selection, hash history and all six original tabs remain. The tab lazily loads a static landing page with the whole K-housing map, 13 regional maps, and price-analysis links for all 31 registered apartment IDs. A region filter works locally. Links open a separate tab with noopener/noreferrer; no embedding, new service, cross-origin API request or Maps-key permission is introduced.

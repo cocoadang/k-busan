@@ -17,3 +17,7 @@ Leaflet1.9.4 is bundled; OpenStreetMap's standard raster tile layer uses normal 
 ## Validation
 
 TypeScript/build and application tests cover source membership, all three marker fallbacks, fixed-endpoint reads, request coalescing/cache separation, area-unavailable handling, malformed source failure/cooldown and public-read/protected-write isolation. A read-only local preview exercised actual OSM tiles and live K-housing prices without loading the collection pipeline, credentials or notifications. Final production acceptance records preserve the prior runtime revision for rollback and identify synthetic validation traffic. No Telegram notification, collection/poll job or paid AI request is used for validation.
+
+## Production acceptance
+
+Revision `busan-redevelopment-news-monitor-b0fa83e-1` passed public health, unchanged runtime-template comparison and exact source comparisons for all four apartments in both area families. Desktop checks verified seven markers, four apartment footprints, independent layer toggles, unsupported 59-area states, three project panels, status navigation and retained 31 analysis/13 regional links. Automated validation passed 208 application, three mocked AI and two operations tests. See BUSAN_LIVE_MAP_RELEASE_20261116.json. Mobile viewport acceptance was not obtained because the connected browser viewport override did not apply; no mobile pass is claimed. Conditional public requests returned 200, so 304 savings are not claimed; hourly upstream caching and freshness headers are verified.

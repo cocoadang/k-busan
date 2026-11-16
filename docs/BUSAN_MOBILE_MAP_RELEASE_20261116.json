@@ -1,0 +1,244 @@
+{
+  "checkedAt": "2026-11-16T14:35:48.795Z",
+  "url": "https://apt.dsoom.com/#/housing/chokjin-3",
+  "revision": "busan-redevelopment-news-monitor-5a3e4c4-1",
+  "previousRevision": "busan-redevelopment-news-monitor-b0fa83e-1",
+  "image": "asia-northeast3-docker.pkg.dev/busan-redevelopment/kbusan-images/k-busan:5a3e4c4fad894c94d3562e5e44ce1bc649c5d9b6",
+  "pullRequests": [
+    "https://github.com/cocoadang/k-busan/pull/28"
+  ],
+  "sourceCommits": [
+    "54d8d17"
+  ],
+  "mergeCommit": "5a3e4c4",
+  "deploymentRun": "https://github.com/cocoadang/k-busan/actions/runs/43886439930",
+  "checks": {
+    "runtimeTemplatePreserved": true,
+    "health": true,
+    "firestoreReady": true,
+    "aiConfigurationUnchanged": true,
+    "cpuIdle": true,
+    "allFourSourcePricesMatch_59": true,
+    "allFourSourcePricesMatch_84": true
+  },
+  "validation": {
+    "applicationTests": 208,
+    "mockedOpenAiTests": 3,
+    "operationsTests": 2,
+    "typecheck": true,
+    "build": true
+  },
+  "mapData": {
+    "apartments": 4,
+    "projectMarkers": 3,
+    "verifiedProjectPolygons": 0,
+    "udongPositionApproximate": true,
+    "apartmentBoundariesNeverUsedAsProjectBoundaries": true
+  },
+  "browser": {
+    "checkedAt": "2026-11-16T14:35:33.281Z",
+    "passed": true,
+    "productionMobileChecks": [
+      {
+        "bottom": 607.5,
+        "heading": "삼익비치",
+        "height": 844,
+        "links": [
+          "https://k-housing-5he2zcaska-du.a.run.app/?view=ANALYSIS&complex=busan_samick_beach",
+          "#/status/samik-beach"
+        ],
+        "top": 311.5375061035156,
+        "width": 390
+      },
+      {
+        "bottom": 260.3000087738037,
+        "heading": "남천자이",
+        "height": 844,
+        "links": [
+          "https://k-housing-5he2zcaska-du.a.run.app/?view=ANALYSIS&complex=busan_namcheon_xi"
+        ],
+        "top": 16.337499618530273,
+        "width": 390
+      },
+      {
+        "bottom": 260.3000087738037,
+        "heading": "센텀파크1차",
+        "height": 844,
+        "links": [
+          "https://k-housing-5he2zcaska-du.a.run.app/?view=ANALYSIS&complex=busan_centum_park_1"
+        ],
+        "top": 16.337499618530273,
+        "width": 390
+      },
+      {
+        "bottom": 260.3000087738037,
+        "heading": "센텀파크2차",
+        "height": 844,
+        "links": [
+          "https://k-housing-5he2zcaska-du.a.run.app/?view=ANALYSIS&complex=busan_centum_park_2"
+        ],
+        "top": 16.337499618530273,
+        "width": 390
+      },
+      {
+        "bottom": 420.3250179290771,
+        "heading": "촉진3구역",
+        "height": 844,
+        "links": [
+          "#/status/chokjin-3",
+          "https://dynamice.busan.go.kr/home/BARA_0000000000151/view.do?no=316",
+          "https://k-housing-5he2zcaska-du.a.run.app/?view=REDEVELOPMENT&lineage=chokjin3_redevelopment"
+        ],
+        "top": 16.337499618530273,
+        "width": 390
+      },
+      {
+        "bottom": 368.3250179290771,
+        "heading": "우동3구역",
+        "height": 844,
+        "links": [
+          "#/status/udong-3",
+          "https://dynamice.busan.go.kr/home/BARA_0000000000013/view.do?no=316"
+        ],
+        "top": 16.337499618530273,
+        "width": 390
+      },
+      {
+        "bottom": 420.3250179290771,
+        "heading": "삼익비치 정비사업",
+        "height": 844,
+        "links": [
+          "#/status/samik-beach",
+          "https://dynamice.busan.go.kr/home/BARA_0000000000084/view.do?no=316",
+          "https://k-housing-5he2zcaska-du.a.run.app/?view=ANALYSIS&complex=busan_samick_beach"
+        ],
+        "top": 16.337499618530273,
+        "width": 390
+      }
+    ],
+    "markerChecks": [
+      "촉진3구역",
+      "우동3구역",
+      "삼익비치 정비사업"
+    ],
+    "productionMobileWidth": 390,
+    "previewResponsiveChecks": [
+      {
+        "height": 800,
+        "mapWidth": 312.8000183105469,
+        "markers": 7,
+        "scrollWidth": 345,
+        "width": 360
+      },
+      {
+        "height": 1024,
+        "mapWidth": 704.7999877929688,
+        "markers": 7,
+        "scrollWidth": 753,
+        "width": 768
+      }
+    ],
+    "productionOtherSizeAttempts": [
+      {
+        "height": 844,
+        "mapWidth": 343.20001220703125,
+        "markers": 7,
+        "scrollWidth": 375,
+        "width": 390
+      },
+      {
+        "height": 844,
+        "mapWidth": 343.20001220703125,
+        "markers": 7,
+        "scrollWidth": 375,
+        "width": 390
+      }
+    ],
+    "viewportNote": "390px production and 360/768px preview widths verified by rendered DOM. Later production size changes did not apply; these attempts are not counted. No physical handset or pinch-touch injection used.",
+    "prices59and84": true,
+    "statusNavigation": true,
+    "pcBefore": {
+      "pane": "transform: translate3d(0px, 0px, 0px);",
+      "tiles": [
+        "https://tile.openstreetmap.org/13/7033/3240.png",
+        "https://tile.openstreetmap.org/13/7034/3240.png",
+        "https://tile.openstreetmap.org/13/7033/3239.png",
+        "https://tile.openstreetmap.org/13/7034/3239.png",
+        "https://tile.openstreetmap.org/13/7033/3241.png",
+        "https://tile.openstreetmap.org/13/7034/3241.png",
+        "https://tile.openstreetmap.org/13/7032/3240.png",
+        "https://tile.openstreetmap.org/13/7035/3240.png",
+        "https://tile.openstreetmap.org/13/7032/3239.png",
+        "https://tile.openstreetmap.org/13/7035/3239.png",
+        "https://tile.openstreetmap.org/13/7032/3241.png",
+        "https://tile.openstreetmap.org/13/7035/3241.png"
+      ],
+      "width": 1280
+    },
+    "pcDragged": {
+      "pane": "transform: translate3d(112px, 0px, 0px);"
+    },
+    "pcZoomed": {
+      "tiles": [
+        "https://tile.openstreetmap.org/16/56272/25917.png",
+        "https://tile.openstreetmap.org/16/56273/25917.png",
+        "https://tile.openstreetmap.org/16/56272/25916.png",
+        "https://tile.openstreetmap.org/16/56273/25916.png",
+        "https://tile.openstreetmap.org/16/56272/25918.png",
+        "https://tile.openstreetmap.org/16/56273/25918.png",
+        "https://tile.openstreetmap.org/16/56271/25917.png",
+        "https://tile.openstreetmap.org/16/56274/25917.png",
+        "https://tile.openstreetmap.org/16/56271/25916.png",
+        "https://tile.openstreetmap.org/16/56274/25916.png",
+        "https://tile.openstreetmap.org/16/56271/25918.png",
+        "https://tile.openstreetmap.org/16/56274/25918.png"
+      ]
+    },
+    "pcExpanded": {
+      "map": {
+        "bottom": 970.1750183105468,
+        "height": 540,
+        "left": 32,
+        "right": 1217.5999755859375,
+        "top": 430.1750183105469,
+        "width": 1185.5999755859375,
+        "x": 32,
+        "y": 430.1750183105469
+      },
+      "width": 1280
+    },
+    "finalLayers": [
+      {
+        "layer": "정비사업 위치",
+        "markers": 4,
+        "paths": 4
+      },
+      {
+        "layer": "아파트 필지 외곽",
+        "markers": 7,
+        "paths": 0
+      },
+      {
+        "layer": "아파트 실거래가",
+        "markers": 3,
+        "paths": 0
+      }
+    ],
+    "finalLinks": {
+      "analysis": 31,
+      "regions": 13
+    },
+    "screenshots": [
+      "busan-mobile-map-production.jpg",
+      "busan-pc-expanded-production.jpg"
+    ]
+  },
+  "conditionalRevalidationNote": "Public hosting returned 200 for conditional requests; 304 savings are not claimed. Hourly upstream cache and public freshness headers verified.",
+  "syntheticTelemetryWindow": {
+    "start": "2026-11-16T13:51:54.357Z",
+    "end": "2026-11-16T14:35:48.795Z",
+    "note": "Includes local preview source reads, staging and production verification; exclude from organic cost/cache comparisons."
+  },
+  "noNotifications": "No Telegram, poll/collection/scheduler or paid AI calls were invoked; ordinary public read-only requests and map tiles only.",
+  "passed": true
+}

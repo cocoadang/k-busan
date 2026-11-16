@@ -1,0 +1,118 @@
+{
+  "checkedAt": "2026-11-16",
+  "apartments": {
+    "count": 4,
+    "sourceRepository": "cocoadang/k-housing",
+    "sourceVersion": "official-parcel-footprints-20261116-v1",
+    "sourceEvidence": "https://github.com/cocoadang/k-housing/blob/main/docs/validation/registered-parcel-audit-20261116.json",
+    "geometrySha256": {
+      "busan_samick_beach": "e1be1ce5d5adb7608061b5f4ea94df1dc04419c7a696b9c80a2582cff51581d2",
+      "busan_namcheon_xi": "e7576bf5bf0d75c4d421327cbbf1b882a2bf9164929e3b2ee86f59da6ad32dbe",
+      "busan_centum_park_1": "57dea05d5d6bb51cc75bd6943804da449c28eee0c85741243a58e09ae45781f8",
+      "busan_centum_park_2": "c88204b7309a9bb4ce0a21d6e9edcfbc0a9136ce9c619c4da80fac6829c6478c"
+    },
+    "license": "KOGL-Type-1",
+    "meaning": "Existing apartment cadastral reference footprints, never redevelopment project boundaries."
+  },
+  "projects": [
+    {
+      "id": "chokjin-3",
+      "name": "촉진3구역",
+      "latitude": 35.1688397,
+      "longitude": 129.0637217,
+      "positionNote": "고시 대상 대표 지번(범전동 71-5)의 필지 내부 위치. 사업구역 중심·전체 경계가 아닙니다.",
+      "positionSource": "https://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=2623010500100710005",
+      "identitySource": "https://kind.krx.co.kr/external/2022/11/07/000091/20221104000457/92008.htm",
+      "officialMapUrl": "https://dynamice.busan.go.kr/home/BARA_0000000000151/view.do?no=316",
+      "boundaryStatus": "marker-only",
+      "boundaryNote": "공식 위치도·고시를 참고하되, 지도 좌표로 검증한 정비사업 경계는 미확보하여 위치만 표시합니다."
+    },
+    {
+      "id": "udong-3",
+      "name": "우동3구역",
+      "latitude": 35.1695,
+      "longitude": 129.1655,
+      "positionNote": "공식 위치도의 해운대고 동측 사업지에 놓은 근사 대표 위치입니다. 개별 필지·구역 경계를 뜻하지 않습니다.",
+      "positionSource": "https://dynamice.busan.go.kr/home/BARA_0000000000013/view.do?no=316",
+      "identitySource": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=639728",
+      "officialMapUrl": "https://dynamice.busan.go.kr/home/BARA_0000000000013/view.do?no=316",
+      "boundaryStatus": "marker-only",
+      "boundaryNote": "공식 위치도·고시를 참고하되, 지도 좌표로 검증한 정비사업 경계는 미확보하여 위치만 표시합니다."
+    },
+    {
+      "id": "samik-beach",
+      "name": "삼익비치 정비사업",
+      "latitude": 35.1423265,
+      "longitude": 129.1156809,
+      "positionNote": "기존 삼익비치 아파트의 검증된 필지 내부 위치. 재건축 정비구역의 전체 경계가 아닙니다.",
+      "positionSource": "https://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=2650010500101480004",
+      "identitySource": "https://www.busan.go.kr/nbgosi/view?gosiGbn=N&sno=77885",
+      "officialMapUrl": "https://dynamice.busan.go.kr/home/BARA_0000000000084/view.do?no=316",
+      "boundaryStatus": "marker-only",
+      "boundaryNote": "공식 위치도·고시를 참고하되, 지도 좌표로 검증한 정비사업 경계는 미확보하여 위치만 표시합니다."
+    }
+  ],
+  "chokjinRepresentativeParcel": {
+    "features": [
+      {
+        "geometry": {
+          "coordinates": [
+            [
+              [
+                1142401.47561,
+                1687080.7343
+              ],
+              [
+                1142405.96747,
+                1687081.52609
+              ],
+              [
+                1142415.07962,
+                1687074.73495
+              ],
+              [
+                1142409.64217,
+                1687065.11026
+              ],
+              [
+                1142407.34524,
+                1687060.21078
+              ],
+              [
+                1142393.2658,
+                1687067.23291
+              ],
+              [
+                1142393.69193,
+                1687068.15031
+              ],
+              [
+                1142401.47561,
+                1687080.7343
+              ]
+            ]
+          ],
+          "type": "Polygon"
+        },
+        "id": "8923803",
+        "type": "Feature",
+        "properties": {
+          "code": "08",
+          "pnu": "2623010500100710005",
+          "jibun": "71-5대",
+          "order": 188632
+        }
+      }
+    ],
+    "type": "FeatureCollection"
+  },
+  "boundaryReview": "Municipal project location pages supply raster location plans; their old images were checked but are not coordinate-verified current project polygon data. Samick also has a 2026-181 official notice/geographic-plan PDF. No project polygon was synthesized from imagery, individual parcels, neighbouring apartments or district boundaries. All three projects are intentionally marker-only. Udong position is explicitly approximate.",
+  "samickNotice": "https://www.busan.go.kr/nbgosi/view?gosiGbn=N&sno=77885",
+  "sourceHashes": {
+    "chokjin-location.html": "ebcc1aaac58c89e8ac9fcc4ec01af62bb688fb4dc2d2b4b6770280366edefb5d",
+    "udong-location.html": "f43bcc3fa09473fa7b0f31f65eb13d11cdb0a7688e714239feb7588e53fdc719",
+    "samik-location.html": "9ae3d1b4e5a0e288812e1cb23b38f7ef79deb3d822b4bae87d34dba7ea84899e",
+    "chokjin-location-plan.png": "28e6a0cbafd312757deed27b054dcd383be52eafe6001ae06ed388e5f53844dd",
+    "udong-location-plan.png": "2eee13e8b50ca463e63281b028d982e3547aa6c30b21e307b51391e2d56a6368"
+  }
+}

@@ -16,6 +16,8 @@ const bounds = L.latLngBounds(allPoints).pad(0.15);
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = []}) => {
   const container = useRef<HTMLDivElement>(null), map = useRef<L.Map | null>(null), layers = useRef<L.LayerGroup | null>(null);
+  const selectionInfo = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
   const [area, setArea] = useState<'59'|'84'>('84');
   const [prices, setPrices] = useState<BusanPrices | null>(null), [error, setError] = useState(false), [retry, setRetry] = useState(0);
   const [apartmentsOn, setApartmentsOn] = useState(true), [projectsOn, setProjectsOn] = useState(true), [outlinesOn, setOutlinesOn] = useState(true);
@@ -31,8 +33,8 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
   }, [area,retry]);
   useEffect(() => {
     if (!container.current) return;
-    const instance = L.map(container.current, {scrollWheelZoom:false, zoomControl:false, minZoom:10, maxZoom:19}); map.current = instance;
-    instance.fitBounds(bounds);
+    const instance = L.map(container.current, {scrollWheelZoom:true, zoomControl:false, minZoom:10, maxZoom:19}); map.current = instance;
+    instance.fitBounds(bounds, {padding:[48,48]});
     L.control.zoom({zoomInTitle:'지도 확대',zoomOutTitle:'지도 축소'}).addTo(instance);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
@@ -63,7 +65,10 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
   },[area,currentPrices,error,apartmentsOn,projectsOn,outlinesOn]);
   useEffect(() => {
     const p=[...DATA.apartments,...DATA.projects].find(p=>p.id===selected);
-    if (p) map.current?.setView([p.latitude,p.longitude],15,{animate:false});
+    if (p) {
+      map.current?.setView([p.latitude,p.longitude],15,{animate:false});
+      if (window.matchMedia('(max-width: 1023px)').matches) selectionInfo.current?.scrollIntoView({block:'nearest',behavior:'instant'});
+    }
   },[selected]);
   const apartment=DATA.apartments.find(a=>a.id===selected), project=DATA.projects.find(p=>p.id===selected);
   const summary=apartment ? currentPrices?.summaries[apartment.id] : undefined;
@@ -75,21 +80,29 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
       <div className="flex gap-2" aria-label="실거래가 면적군">{(['59','84'] as const).map(a=><button key={a} type="button" aria-pressed={a===area} onClick={()=>setArea(a)} className={`rounded-lg px-3 py-2 min-h-[44px] text-sm font-bold ${a===area?'bg-blue-700 text-white':'bg-white border border-slate-300 text-slate-700'}`}>{a}㎡급</button>)}</div>
     </div>
     <div className="flex flex-wrap items-center gap-4 text-sm">
-      <label><input type="checkbox" checked={apartmentsOn} onChange={e=>setApartmentsOn(e.target.checked)} className="mr-2"/>아파트 실거래가</label>
-      <label><input type="checkbox" checked={projectsOn} onChange={e=>setProjectsOn(e.target.checked)} className="mr-2"/>정비사업 위치</label>
-      <label><input type="checkbox" checked={outlinesOn} onChange={e=>setOutlinesOn(e.target.checked)} className="mr-2"/>아파트 필지 외곽</label>
-      <button type="button" onClick={()=>{setSelected(null);map.current?.fitBounds(bounds);}} className="ml-auto rounded-lg border border-slate-300 bg-white px-3 py-2 min-h-[44px]">부산 전체 보기</button>
+      <label className="inline-flex min-h-[44px] items-center"><input type="checkbox" checked={apartmentsOn} onChange={e=>setApartmentsOn(e.target.checked)} className="mr-2"/>아파트 실거래가</label>
+      <label className="inline-flex min-h-[44px] items-center"><input type="checkbox" checked={projectsOn} onChange={e=>setProjectsOn(e.target.checked)} className="mr-2"/>정비사업 위치</label>
+      <label className="inline-flex min-h-[44px] items-center"><input type="checkbox" checked={outlinesOn} onChange={e=>setOutlinesOn(e.target.checked)} className="mr-2"/>아파트 필지 외곽</label>
+      <button type="button" onClick={()=>{setSelected(null);map.current?.fitBounds(bounds, {padding:[48,48]});}} className="ml-auto rounded-lg border border-slate-300 bg-white px-3 py-2 min-h-[44px]">부산 전체 보기</button>
+    </div>
+    <div className="flex flex-wrap items-center gap-3 text-sm">
+      <button type="button" aria-pressed={expanded} onClick={()=>setExpanded(v=>!v)} className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 py-2 font-bold">{expanded?'지도 기본 크기로':'지도 크게 보기'}</button>
+      {selected && <button type="button" onClick={()=>selectionInfo.current?.scrollIntoView({block:'nearest',behavior:'instant'})} className="min-h-[44px] px-3 py-2 text-blue-700 underline">선택 정보 보기</button>}
+      <p className="text-xs text-slate-500">PC: 드래그로 이동 · 휠로 확대/축소. 휴대전화: 손가락으로 이동 · 두 손가락으로 확대/축소.</p>
     </div>
     <p className="text-xs text-slate-600">녹색: 기존 아파트 필지·가격 · 보라색: 정비사업 대표 위치. 세 사업은 지도용 공식 경계 좌표 미확보로 위치만 표시하며, 아파트 외곽을 사업구역으로 대신 사용하지 않습니다.</p>
     {error && <div role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">실거래가를 불러오지 못했습니다. 위치와 단지 목록은 계속 사용할 수 있습니다. <button type="button" onClick={()=>setRetry(v=>v+1)} className="underline font-bold">가격 다시 조회</button></div>}
     {tilesError && <p role="status" className="text-sm text-amber-800">배경지도의 일부를 불러오지 못했습니다. 아래 목록에서 단지를 선택할 수 있습니다.</p>}
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-      <div ref={container} role="region" aria-label="부산 통합 지도" className="busan-leaflet-map isolate relative z-0 h-[56vh] min-h-[360px] sm:h-[560px] rounded-xl border border-slate-200"/>
+    <div className={`grid min-w-0 gap-4 ${expanded?'':'lg:grid-cols-[minmax(0,1fr)_300px]'}`}>
+      <div ref={container} role="region" aria-label="부산 통합 지도" className={`busan-leaflet-map isolate relative z-0 min-w-0 min-h-[360px] rounded-xl border border-slate-200 ${expanded?'h-[75dvh]':'h-[56vh] sm:h-[560px]'}`}/>
       <aside className="rounded-xl bg-white border border-slate-200 p-4 space-y-3" aria-label="지도 선택 정보">
+        <div ref={selectionInfo} tabIndex={-1} aria-live="polite" aria-atomic="true" className="space-y-3 scroll-mt-4">
         {!selected && <p className="text-sm text-slate-600">지도 마커나 아래 목록을 선택하면 상세 정보가 표시됩니다.</p>}
         {apartment && <><h3 className="font-bold text-lg">{apartment.name}</h3><p className="text-emerald-800 font-bold">{area}㎡급 · {error?'조회 실패':mapPriceLabel(summary)}</p>{summary?.month && <p className="text-xs text-slate-600">{summary.month.slice(0,4)}.{summary.month.slice(4)} 거래월 중앙값</p>}<p className="text-xs text-slate-500">단지별 실제 전용면적은 상세 분석에서 확인하세요. 녹색 외곽은 기존 아파트의 참고용 필지 경계입니다.</p><a className="block text-blue-700 underline py-2" href={getHousingApartmentLink(apartment.id)!} target="_blank" rel="noopener noreferrer">실거래가 상세 분석 (새 탭)</a>{apartment.id==='busan_samick_beach' && <a className="block text-purple-700 underline py-2" href="#/status/samik-beach">삼익비치 사업현황 보기</a>}</>}
         {project && <><h3 className="font-bold text-lg text-purple-800">{project.name}</h3>{projectStage && <p className="text-sm">사업 단계: {projectStage}</p>}<p className="text-xs text-purple-800">위치 마커 · 사업구역 경계 미표시</p><p className="text-xs leading-5 text-slate-600">{project.positionNote}</p><p className="text-xs leading-5 text-slate-600">{project.boundaryNote}</p><a href={`#/status/${project.id}`} className="block py-2 text-blue-700 underline">사업현황·진행 정보 보기</a><a href={project.officialMapUrl} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">부산시 공식 위치도 (새 탭)</a>{financialLink && <a href={financialLink.href} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">{financialLink.label} (새 탭)</a>}</>}
-        <div className="border-t border-slate-100 pt-3 space-y-1"><h3 className="text-sm font-bold">아파트 4곳</h3>{DATA.apartments.map(a=><button key={a.id} type="button" onClick={()=>{setSelected(a.id);setApartmentsOn(true);}} className="block w-full text-left text-sm text-emerald-800 hover:bg-emerald-50 rounded p-2">{a.name} · {error?'조회 실패':mapPriceLabel(currentPrices?.summaries[a.id])}</button>)}<h3 className="text-sm font-bold pt-2">정비사업 3곳</h3>{DATA.projects.map(p=><button key={p.id} type="button" onClick={()=>{setSelected(p.id);setProjectsOn(true);}} className="block w-full text-left text-sm text-purple-800 hover:bg-purple-50 rounded p-2">{p.name} · 위치 보기</button>)}</div>
+        {selected && <button type="button" onClick={()=>container.current?.scrollIntoView({block:'start',behavior:'instant'})} className="min-h-[44px] rounded-lg border border-slate-300 px-3 py-2 text-sm">지도로 돌아가기</button>}
+        </div>
+        <div className="border-t border-slate-100 pt-3 space-y-1"><h3 className="text-sm font-bold">아파트 4곳</h3>{DATA.apartments.map(a=><button key={a.id} type="button" onClick={()=>{setSelected(a.id);setApartmentsOn(true);}} className="block min-h-[44px] w-full text-left text-sm text-emerald-800 hover:bg-emerald-50 rounded p-2">{a.name} · {error?'조회 실패':mapPriceLabel(currentPrices?.summaries[a.id])}</button>)}<h3 className="text-sm font-bold pt-2">정비사업 3곳</h3>{DATA.projects.map(p=><button key={p.id} type="button" onClick={()=>{setSelected(p.id);setProjectsOn(true);}} className="block min-h-[44px] w-full text-left text-sm text-purple-800 hover:bg-purple-50 rounded p-2">{p.name} · 위치 보기</button>)}</div>
       </aside>
     </div>
     <p className="text-xs text-slate-500">가격: K-housing·국토교통부 실거래가의 최근 거래월 중앙값{currentPrices ? ` · 조회 ${new Date(currentPrices.fetchedAt).toLocaleString('ko-KR')}` : ''}. 아파트 필지: {DATA.attribution} · {DATA.checkedAt} 확인. 표시 경계는 측량 성과가 아닙니다.</p>

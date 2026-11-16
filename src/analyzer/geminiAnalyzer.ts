@@ -1,3 +1,4 @@
+import {aiCacheMetric} from '../utils/costAiTelemetry';
 import {newsDateSupported} from '../news/newsDateEvidence';
 import { createHash } from 'node:crypto';
 import { validateMaterialEvidence } from '../notifier/dispatchPolicy';
@@ -95,11 +96,12 @@ export class GeminiAnalyzer {
   private dryRunMode: boolean;
   private cache?: AnalysisCache;
   private deadlineAt=Infinity;
+  private completedKeys = new Set<string>();
   private pending = new Map<string, Promise<AnalysisResult>>();
   public usage = { requests: 0, cacheHits: 0, failures: 0, cacheErrors: 0, inputTokens: 0, outputTokens: 0, thinkingTokens: 0, totalTokens: 0, responsesWithUsage: 0, failureReasons: {} as Record<string, number> };
   public beginRun(cache?: AnalysisCache, deadlineAt=Infinity) {
     this.deadlineAt=deadlineAt;
-    this.cache = cache; this.pending.clear();
+    this.cache = cache; this.pending.clear(); this.completedKeys.clear();
     this.usage = { requests: 0, cacheHits: 0, failures: 0, cacheErrors: 0, inputTokens: 0, outputTokens: 0, thinkingTokens: 0, totalTokens: 0, responsesWithUsage: 0, failureReasons: {} };
   }
 
@@ -136,8 +138,8 @@ export class GeminiAnalyzer {
   private analyze(item: RawCollectedItem, project: RedevelopmentProject): Promise<AnalysisResult> {
     const key = analysisCacheKey(item, project);
     const pending = this.pending.get(key);
-    if (pending) return pending;
-    const task = this.analyzeUncached(item, project, key);
+    if (pending) {aiCacheMetric(this.completedKeys.has(key)?'in_run_reuse':'coalesced');return pending;}
+    const task = this.analyzeUncached(item, project, key).then(result=>{this.completedKeys.add(key);return result;});
     this.pending.set(key, task);
     return task;
   }
@@ -151,10 +153,14 @@ export class GeminiAnalyzer {
           && (cached.validation.status !== 'relevant' || cached.payload?.projectId === project.id)) {
           this.usage.cacheHits++;
           if (cached.payload) cached.payload.materialImpactEvidence = validateMaterialEvidence(cached.payload.materialImpactEvidence, item);
+          aiCacheMetric('hit');
           return cached;
         }
-      } catch { this.usage.cacheErrors++; }
+        aiCacheMetric('miss');
+      } catch { this.usage.cacheErrors++; aiCacheMetric('error'); }
     }
+    if(!this.ai)aiCacheMetric('not_eligible');
+    else if(!this.cache)aiCacheMetric('disabled');
     if (!this.ai) return { validation: this.heuristicSemanticValidation(item, project), payload: this.heuristicEventExtraction(item, project) };
 
     const prompt = `당신은 한국 재건축·재개발 정비사업 데이터 엔지니어입니다.

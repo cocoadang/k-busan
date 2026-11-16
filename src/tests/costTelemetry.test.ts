@@ -1,0 +1,15 @@
+import test from 'node:test';import assert from 'node:assert/strict';import express from 'express';import http from 'node:http';import{gzipSync}from'node:zlib';
+import{costHttpTelemetry}from'../utils/costTelemetry';
+test('telemetry counts encoded bytes and bodyless 304 once, without URL query or secrets',async()=>{
+ const logs:string[]=[];const app=express();app.use(costHttpTelemetry(line=>logs.push(line)));const body=gzipSync('private report '.repeat(200));
+ app.get('/api/registry',(req,res)=>{res.setHeader('ETag','W/"one"');if(req.headers['if-none-match'])return res.status(304).end();res.setHeader('Content-Encoding','gzip');res.write(body.subarray(0,5));res.end(body.subarray(5));});
+ const server=app.listen(0);const base=`http://127.0.0.1:${(server.address()as any).port}`;
+ const get=(headers:any={})=>new Promise<void>((resolve,reject)=>http.get(base+'/api/registry?token=DO_NOT_LOG',{headers:{Authorization:'Bearer DO_NOT_LOG',...headers}},r=>{r.resume();r.on('end',()=>resolve());}).on('error',reject));
+ try{await get();await get({'If-None-Match':'W/"one"'});assert.equal(logs.length,2);const rows=logs.map(l=>JSON.parse(l.slice(l.indexOf('{'))));assert.equal(rows[0].responseBodyBytes,body.length);assert.equal(rows[1].responseBodyBytes,0);assert.equal(rows[1].status,304);assert.equal(rows[1].conditional,true);assert.ok(rows.every(r=>r.complete&&r.route==='registry'));assert.ok(logs.every(l=>!l.includes('DO_NOT_LOG')&&!l.includes('private report')));}finally{server.close();}
+});
+test('telemetry emitter failure cannot break delivery',async()=>{const app=express();app.use(costHttpTelemetry(()=>{throw Error()}));app.get('/',(_q,r)=>r.send('ok'));const s=app.listen(0);try{assert.equal(await(await fetch(`http://127.0.0.1:${(s.address()as any).port}`)).text(),'ok');}finally{s.close();}});
+
+test('route labels remain correct inside mounted routers',async()=>{const logs:string[]=[];const a=express(),router=express.Router();a.use(costHttpTelemetry(l=>logs.push(l)));router.post('/analyze',(_q,r)=>r.json({cached:true}));a.use('/api/ai',router);const server=a.listen(0);try{await(await fetch(`http://127.0.0.1:${(server.address()as any).port}/api/ai/analyze`,{method:'POST'})).json();assert.equal(JSON.parse(logs[0].slice(logs[0].indexOf('{'))).route,'other_api');}finally{server.close();}});
+
+import compression from 'compression';
+test('counts bytes after compression middleware, not uncompressed input',async()=>{const logs:string[]=[];const a=express();a.use(costHttpTelemetry(l=>logs.push(l)));a.use(compression({threshold:1}));a.get('/api/registry',(_q,r)=>r.json({text:'abc'.repeat(5000)}));const s=a.listen(0);try{const bytes=await new Promise<number>((resolve,reject)=>http.get(`http://127.0.0.1:${(s.address()as any).port}/api/registry`,{headers:{'Accept-Encoding':'gzip'}},r=>{let n=0;r.on('data',b=>n+=b.length);r.on('end',()=>resolve(n));}).on('error',reject));assert.ok(bytes<1000);assert.equal(JSON.parse(logs[0].slice(logs[0].indexOf('{'))).responseBodyBytes,bytes);}finally{s.close();}});

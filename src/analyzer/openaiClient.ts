@@ -1,3 +1,4 @@
+import {aiAttemptMetric,aiUsageMetric} from '../utils/costAiTelemetry';
 /** Text-only OpenAI Responses adapter. Legacy result fields keep existing validators and ledgers intact. */
 export const OPENAI_MODEL = 'gpt-6-luna';
 export const resolveOpenAIModel = () => process.env.OPENAI_MODEL?.trim() || OPENAI_MODEL;
@@ -58,6 +59,7 @@ export class OpenAITextClient {
         body.instructions = [body.instructions, 'Return valid JSON only.'].filter(Boolean).join('\n');
         body.text = { format: { type: 'json_object' } };
       }
+      aiAttemptMetric();
       let r: Response;
       try {
         r = await this.fetcher('https://api.openai.com/v1/responses', {
@@ -68,6 +70,7 @@ export class OpenAITextClient {
       } catch (e: any) { throw Error(/timeout|abort/i.test(e?.name || '') ? 'AI_TIMEOUT' : 'AI_NETWORK_ERROR'); }
       if (!r.ok) throw Object.assign(Error(`AI_HTTP_${r.status}`), { status: r.status });
       const result: any = await r.json();
+      aiUsageMetric(result.usage,result.status,body.model);
       const parts = (result.output || []).filter((x: any) => x.type === 'message').flatMap((x: any) => x.content || []);
       if (result.status !== 'completed' || parts.some((x: any) => x.type === 'refusal')) throw Error('AI_RESPONSE_INCOMPLETE');
       const text = parts.filter((x: any) => x.type === 'output_text').map((x: any) => x.text).join('');

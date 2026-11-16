@@ -281,7 +281,8 @@ test('부산시 레거시 리다이렉트 HTTPS 유지·외부 리다이렉트 �
 });
 
 
-test('AI 관련성·추출 1회 호출 및 재시작 후 캐시 재사용', async () => {
+test('AI 관련성·추출 1회 호출 및 재시작 후 캐시 재사용', async (t) => {
+  const telemetry:string[]=[];t.mock.method(console,'log',(...args:any[])=>telemetry.push(args.join(' ')));
   const cache = new Map<string, any>(); let calls=0;
   const answer={status:'relevant',relatednessConfidence:.95,explanation:'실제 입찰 공고',
     projectId:project.id,eventType:'협력업체/용역 입찰공고',category:'사업단계',title,summary:'용역 입찰',
@@ -302,6 +303,8 @@ test('AI 관련성·추출 1회 호출 및 재시작 후 캐시 재사용', asyn
   const b=setup();await b.validateRelatedness(raw,project);await b.extractEvent(raw,project);
   assert.equal(calls,1);assert.equal(b.usage.cacheHits,1);assert.equal(b.usage.requests,0);
   await b.validateRelatedness({...raw,content:raw.content+'수정'},project);assert.equal(calls,2);
+  const outcomes=telemetry.filter(l=>l.startsWith('[COST_AI_CACHE_V1]')).map(l=>JSON.parse(l.slice(l.indexOf('{'))).outcome);
+  assert.equal(outcomes.filter(x=>x==='hit').length,1);assert.equal(outcomes.filter(x=>x==='miss').length,2);assert.equal(outcomes.filter(x=>x==='coalesced').length,1);assert.equal(outcomes.filter(x=>x==='in_run_reuse').length,2);
 });
 
 test('AI 무관한 자료도 캐시하고 이벤트 추출하지 않음',async()=>{

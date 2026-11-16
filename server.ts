@@ -1,3 +1,4 @@
+import {costHttpTelemetry} from './src/utils/costTelemetry';
 import {NewsBodyReader,firestoreNewsBodyCache} from './src/news/newsBodyReader';
 import {FirestoreAnalysisQueue} from './src/queue/analysisQueue';
 import {AttachmentReader,firestoreAttachmentCache} from './src/attachments/attachmentReader';
@@ -44,6 +45,7 @@ const PORT = Number(process.env.PORT) || 3000;
 
 const apiSecurity = createApiSecurity({ production: process.env.NODE_ENV === 'production', secret: () => process.env.POLL_JOB_SECRET || process.env.CRON_SECRET });
 app.disable('x-powered-by');
+app.use(costHttpTelemetry());
 // JSON and HTML compress 5-10x; images are already compressed and skipped by the filter.
 app.use(compression());
 // This guard must precede EVERY API route, including live upstream diagnostics.

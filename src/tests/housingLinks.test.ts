@@ -18,6 +18,7 @@ import { parseDashboardHash, formatDashboardHash } from '../components/Phase3Das
 
 test('map menu has a shareable route without changing the existing default or project route', () => {
  assert.deepEqual(parseDashboardHash('#/housing/chokjin-3'), {tab:'housing',projectId:'chokjin-3'});
+ assert.deepEqual(parseDashboardHash('#/housing/samik-beach?place=busan_centum_park_1'), {tab:'housing',projectId:'samik-beach'});
  assert.equal(formatDashboardHash('housing','samik-beach'),'#/housing/samik-beach');
  assert.equal(parseDashboardHash('').tab,'plans');
  assert.deepEqual(parseDashboardHash('#/status/samik-beach'),{tab:'status',projectId:'samik-beach'});

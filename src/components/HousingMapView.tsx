@@ -70,9 +70,10 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
       style:{color:'#047857',weight:2,fillColor:'#10b981',fillOpacity:0.14},
       onEachFeature:(f, layer) => { layer.on('click', () => choose(f.properties.complexId)); },
     }).addTo(group);
-    if (apartmentsOn) DATA.apartments.forEach((a,index) => {
+    if (apartmentsOn) DATA.apartments.forEach(a => {
       const label = error ? '조회 실패' : mapPriceLabel(currentPrices?.summaries[a.id]);
-      const icon = L.divIcon({className:`busan-map-icon ${selected===a.id?'is-selected':''}`, iconSize:[1,1], iconAnchor:[0,0], html:`<span class="busan-map-dot"></span><span class="busan-price-tag ${index % 2 ? 'right' : 'left'}"><span class="busan-marker-name">${escape(a.name)}</span><b>${escape(label)}</b></span>`});
+      const labelPosition = a.id==='busan_centum_park_2'?'right':a.id==='busan_namcheon_xi'?'lower':'left';
+      const icon = L.divIcon({className:`busan-map-icon ${selected===a.id?'is-selected':''}`, iconSize:[1,1], iconAnchor:[0,0], html:`<span class="busan-map-dot"></span><span class="busan-price-tag ${labelPosition}"><span class="busan-marker-name">${escape(a.name)}</span><b>${escape(label)}</b></span>`});
       const marker = L.marker([a.latitude,a.longitude],{icon,title:a.name,keyboard:true,zIndexOffset:selected===a.id?1000:0}).addTo(group).on('click',()=>choose(a.id));
       marker.getElement()?.setAttribute('aria-label',`아파트 ${a.name} ${label}`);
     });

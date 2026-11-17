@@ -8,5 +8,6 @@
 .busan-map-icon.is-selected .busan-map-dot,.busan-map-icon.is-selected .busan-project-dot{outline:3px solid #fff;box-shadow:0 0 0 6px #2563eb80}
 .busan-map-icon.is-selected .busan-price-tag,.busan-map-icon.is-selected .busan-project-tag{outline:2px solid white;box-shadow:0 0 0 4px #2563eb,0 3px 8px #0003}
 .busan-price-tag b{font-size:14px;line-height:19px}
+.busan-price-tag.lower{transform:translate(-100%,44px)}
 .busan-project-tag{font-size:12px;line-height:18px;transform:translate(-50%,-42px)}
 .housing-map-view button:focus-visible,.housing-map-view a:focus-visible,.housing-map-view summary:focus-visible{outline:3px solid #2563eb;outline-offset:3px}

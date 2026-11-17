@@ -41,8 +41,12 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
       referrerPolicy:'strict-origin-when-cross-origin', updateWhenIdle:true, keepBuffer:1,
     }).on('tileerror', () => setTilesError(true)).addTo(instance);
     layers.current = L.layerGroup().addTo(instance);
-    const observer = new ResizeObserver(() => instance.invalidateSize({pan:false})); observer.observe(container.current);
-    return () => { observer.disconnect(); instance.remove(); map.current = null; layers.current = null; };
+    let resizeFrame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => instance.invalidateSize({animate:false,pan:true,debounceMoveend:true}));
+    }); observer.observe(container.current);
+    return () => { observer.disconnect(); cancelAnimationFrame(resizeFrame); instance.remove(); map.current = null; layers.current = null; };
   }, []);
   useEffect(() => {
     const group = layers.current; if (!group) return; group.clearLayers();
@@ -94,7 +98,10 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
     {error && <div role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">실거래가를 불러오지 못했습니다. 위치와 단지 목록은 계속 사용할 수 있습니다. <button type="button" onClick={()=>setRetry(v=>v+1)} className="underline font-bold">가격 다시 조회</button></div>}
     {tilesError && <p role="status" className="text-sm text-amber-800">배경지도의 일부를 불러오지 못했습니다. 아래 목록에서 단지를 선택할 수 있습니다.</p>}
     <div className={`grid min-w-0 gap-4 ${expanded?'':'lg:grid-cols-[minmax(0,1fr)_300px]'}`}>
-      <div ref={container} role="region" aria-label="부산 통합 지도" className={`busan-leaflet-map isolate relative z-0 min-w-0 min-h-[360px] rounded-xl border border-slate-200 ${expanded?'h-[75dvh]':'h-[56vh] sm:h-[560px]'}`}/>
+      <div className={`relative min-w-0 min-h-[360px] ${expanded?'h-[75dvh]':'h-[56vh] sm:h-[560px]'}`}>
+        {/* Leaflet owns this element's classes. Resize its parent so React never replaces them. */}
+        <div ref={container} role="region" aria-label="부산 통합 지도" className="busan-leaflet-map isolate absolute inset-0 z-0 h-full w-full rounded-xl border border-slate-200"/>
+      </div>
       <aside className="rounded-xl bg-white border border-slate-200 p-4 space-y-3" aria-label="지도 선택 정보">
         <div ref={selectionInfo} tabIndex={-1} aria-live="polite" aria-atomic="true" className="space-y-3 scroll-mt-4">
         {!selected && <p className="text-sm text-slate-600">지도 마커나 아래 목록을 선택하면 상세 정보가 표시됩니다.</p>}

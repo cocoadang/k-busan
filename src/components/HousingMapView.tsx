@@ -89,6 +89,7 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
     if (p) {
       map.current?.setView([p.latitude,p.longitude],15,{animate:false});
       if (interacted.current && window.matchMedia('(max-width: 1023px)').matches) selectionInfo.current?.scrollIntoView({block:'nearest',behavior:'instant'});
+      if (window.matchMedia('(min-width: 1024px)').matches) selectionInfo.current?.parentElement?.scrollTo({top:0,behavior:'instant'});
     }
     interacted.current = false;
   },[selected]);
@@ -120,21 +121,26 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
     {error && <div role="alert" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">실거래가를 불러오지 못했습니다. 위치와 목록은 이용할 수 있습니다. <button type="button" onClick={()=>setRetry(v=>v+1)} className="min-h-[44px] px-2 font-bold underline">가격 다시 조회</button></div>}
     {tilesError && <p role="status" className="text-sm text-amber-800">배경지도의 일부를 불러오지 못했습니다. 단지 목록에서 위치를 선택할 수 있습니다.</p>}
     <div className={`grid min-w-0 items-start gap-3 ${expanded?'':'lg:grid-cols-[minmax(0,1fr)_320px]'}`}>
-      <div className={`relative min-w-0 min-h-[360px] ${expanded?'h-[max(560px,75dvh)]':'h-[52dvh] lg:h-[min(62dvh,640px)]'}`}>
+      <div className={`relative min-w-0 min-h-[360px] ${expanded?'h-[max(560px,75dvh)]':'h-[52dvh] lg:min-h-[480px] lg:h-[min(70dvh,640px)]'}`}>
         {/* Leaflet owns this element's classes; only the outer wrapper resizes. */}
         <div ref={container} role="region" aria-label="부산 통합 지도" className="busan-leaflet-map isolate absolute inset-0 z-0 h-full w-full rounded-xl border border-slate-200"/>
         {selected && <button type="button" onClick={()=>selectionInfo.current?.scrollIntoView({block:'nearest',behavior:'instant'})} className="absolute bottom-7 right-3 z-[500] min-h-[44px] rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 shadow-sm lg:hidden">선택 정보 보기 ↓</button>}
       </div>
-      <aside aria-label="지도 선택 정보" className={`min-w-0 space-y-3 ${expanded?'lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0':''}`}>
+      <aside aria-label="지도 선택 정보" className={`housing-map-sidebar min-w-0 space-y-3 ${expanded?'lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0':'lg:max-h-[max(480px,min(70dvh,640px))] lg:overflow-y-auto lg:overscroll-contain lg:pr-1'}`}>
         <div ref={selectionInfo} tabIndex={-1} aria-live="polite" aria-atomic="true" className="scroll-mt-20 rounded-xl border border-slate-200 bg-white p-4">
           {!selected && <><p className="text-base font-bold text-slate-900">어디가 궁금하세요?</p><p className="mt-2 text-sm leading-6 text-slate-600">지도나 목록에서 단지를 선택하면 가격과 사업 정보를 함께 볼 수 있습니다.</p></>}
           {selected && <>
-            <span className={`inline-block rounded-full px-2 py-1 text-xs font-bold ${apartment?'bg-emerald-50 text-emerald-800':'bg-purple-50 text-purple-800'}`}>{apartment?'아파트 실거래가':'정비사업 · 위치'}</span>
-            <h3 className="mt-2 text-xl font-bold tracking-tight text-slate-900">{apartment?.name || project?.name}</h3>
+            <div className="flex flex-wrap items-center gap-2"><h3 className="text-lg font-bold tracking-tight text-slate-900">{apartment?.name || project?.name}</h3><span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${apartment?'bg-emerald-50 text-emerald-800':'bg-purple-50 text-purple-800'}`}>{apartment?'아파트':'정비사업 · 위치'}</span></div>
             {pricedApartment && <div className="mt-3 border-t border-slate-100 pt-3"><div className="flex items-baseline justify-between gap-2"><span className="text-sm text-slate-600">{area}㎡급{project?' 기존 아파트':''}</span><strong className="text-2xl font-extrabold tabular-nums text-emerald-800">{error?'조회 실패':mapPriceLabel(summary)}</strong></div><p className="mt-1 text-sm text-slate-500">{monthLabel(summary?.month)}</p></div>}
             {projectStage && <p className="mt-3 text-sm leading-6 text-slate-700"><span className="text-slate-500">사업 단계</span><br/><strong>{projectStage}</strong></p>}
-            {project && <><a href={`#/status/${project.id}`} className="mt-3 flex min-h-[44px] items-center justify-center rounded-lg bg-blue-700 px-3 text-sm font-bold text-white hover:bg-blue-800">사업현황·진행 정보</a><details className="mt-3 text-sm leading-6 text-slate-600"><summary className="cursor-pointer py-1">사업 위치·공식 자료 안내</summary><p className="mt-2">{project.positionNote}</p><p className="mt-2">{project.boundaryNote}</p><a href={project.officialMapUrl} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">부산시 공식 위치도 ↗</a>{financialLink && <a href={financialLink.href} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">{financialLink.label} ↗</a>}</details></>}
-            {pricedApartment && <a href={getHousingApartmentLink(pricedApartment.id)!} target="_blank" rel="noopener noreferrer" className={`mt-2 flex min-h-[44px] items-center justify-center rounded-lg px-3 text-sm font-bold ${project?'border border-slate-200 text-blue-700 hover:bg-blue-50':'bg-blue-700 text-white hover:bg-blue-800'}`}>실거래가 상세 분석 ↗</a>}
+            {project && <>
+              <div className={`mt-3 grid gap-2 ${pricedApartment?'grid-cols-2':''}`}>
+                <a href={`#/status/${project.id}`} className="flex min-h-[44px] items-center justify-center rounded-lg bg-blue-700 px-2 text-sm font-bold text-white hover:bg-blue-800">사업현황 보기</a>
+                {pricedApartment && <a href={getHousingApartmentLink(pricedApartment.id)!} target="_blank" rel="noopener noreferrer" className="flex min-h-[44px] items-center justify-center rounded-lg border border-slate-200 px-2 text-sm font-bold text-blue-700 hover:bg-blue-50">실거래가 분석 ↗</a>}
+              </div>
+              <details className="mt-2 text-sm leading-6 text-slate-600"><summary className="cursor-pointer py-1">사업 위치·공식 자료 안내</summary><p className="mt-2">{project.positionNote}</p><p className="mt-2">{project.boundaryNote}</p><a href={project.officialMapUrl} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">부산시 공식 위치도 ↗</a>{financialLink && <a href={financialLink.href} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">{financialLink.label} ↗</a>}</details>
+            </>}
+            {pricedApartment && !project && <a href={getHousingApartmentLink(pricedApartment.id)!} target="_blank" rel="noopener noreferrer" className="mt-2 flex min-h-[44px] items-center justify-center rounded-lg bg-blue-700 px-3 text-sm font-bold text-white hover:bg-blue-800">실거래가 상세 분석 ↗</a>}
             {apartment?.id==='busan_samick_beach' && <a className="mt-2 block py-2 text-center text-sm font-semibold text-blue-700" href="#/status/samik-beach">삼익비치 사업현황 보기</a>}
           </>}
         </div>

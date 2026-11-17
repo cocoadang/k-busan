@@ -11,3 +11,4 @@
 .busan-price-tag.lower{transform:translate(-100%,44px)}
 .busan-project-tag{font-size:12px;line-height:18px;transform:translate(-50%,-42px)}
 .housing-map-view button:focus-visible,.housing-map-view a:focus-visible,.housing-map-view summary:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.housing-map-sidebar{scrollbar-width:thin;scrollbar-color:#94a3b8 transparent}

@@ -53,7 +53,7 @@ const KNOWN_PROJECT_IDS = new Set(REDEVELOPMENT_SEED_PROJECTS.map((p) => p.id));
 
 /** Reads "#/<tab>/<projectId>" so tabs survive refresh, sharing and the back button. */
 export function parseDashboardHash(hash: string): { tab: MainTabType; projectId: string } {
-  const [rawTab, rawProject] = hash.replace(/^#\/?/, '').split('/');
+  const [rawTab, rawProject] = hash.split('?')[0].replace(/^#\/?/, '').split('/');
   const tab = TAB_IDS.has(rawTab as MainTabType) ? (rawTab as MainTabType) : 'plans';
   const projectId = rawProject && KNOWN_PROJECT_IDS.has(decodeURIComponent(rawProject))
     ? decodeURIComponent(rawProject) : DEFAULT_PROJECT_ID;
@@ -172,7 +172,7 @@ export const Phase3Dashboard: React.FC = () => {
   };
 
   return (
-    <div id="main-dashboard-container" className="space-y-6">
+    <div id="main-dashboard-container" className="space-y-4">
       {/* Main Navigation Tabs: [단지계획] [사업현황] [진행이력] [지역변화] [뉴스] [청약전략] */}
       <div className="w-full border-b border-slate-200 min-w-0">
         <div className="flex items-center justify-between min-w-0">

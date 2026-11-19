@@ -242,6 +242,7 @@ export const Phase3Dashboard: React.FC = () => {
             <ProjectStatusView
               projects={projects}
               events={events}
+              selectedProjectId={selectedTimelineProject}
               onSelectProjectTimeline={handleSelectProjectTimeline}
             />
           </Suspense>

@@ -97,7 +97,7 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
   const pricedApartment=apartment || (project?.id==='samik-beach' ? DATA.apartments.find(a=>a.id==='busan_samick_beach') : undefined);
   const summary=pricedApartment ? currentPrices?.summaries[pricedApartment.id] : undefined;
   const projectStage=project && resolveProjectStatutoryStage(project.id, events.filter(e=>e.projectId===project.id)).currentStage;
-  const financialLink=project && getHousingLink(project.id);
+  const financialLink=project && getHousingLink(project.id, area);
   const monthLabel = (month?: string | null) => month ? `${month.slice(0,4)}.${month.slice(4)} 거래월 중앙값` : '최근 거래월 중앙값';
   return <section aria-label="부산 아파트·정비사업 지도" className="housing-map-view space-y-3">
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -136,11 +136,11 @@ export const HousingMapView: React.FC<{events?: ExtractedEvent[]}> = ({events = 
             {project && <>
               <div className={`mt-3 grid gap-2 ${pricedApartment?'grid-cols-2':''}`}>
                 <a href={`#/status/${project.id}`} className="flex min-h-[44px] items-center justify-center rounded-lg bg-blue-700 px-2 text-sm font-bold text-white hover:bg-blue-800">사업현황 보기</a>
-                {pricedApartment && <a href={getHousingApartmentLink(pricedApartment.id)!} target="_blank" rel="noopener noreferrer" className="flex min-h-[44px] items-center justify-center rounded-lg border border-slate-200 px-2 text-sm font-bold text-blue-700 hover:bg-blue-50">실거래가 분석 ↗</a>}
+                {pricedApartment && <a href={getHousingApartmentLink(pricedApartment.id, area)!} target="_blank" rel="noopener noreferrer" className="flex min-h-[44px] items-center justify-center rounded-lg border border-slate-200 px-2 text-sm font-bold text-blue-700 hover:bg-blue-50">실거래가 분석 ↗</a>}
               </div>
               <details className="mt-2 text-sm leading-6 text-slate-600"><summary className="cursor-pointer py-1">사업 위치·공식 자료 안내</summary><p className="mt-2">{project.positionNote}</p><p className="mt-2">{project.boundaryNote}</p><a href={project.officialMapUrl} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">부산시 공식 위치도 ↗</a>{financialLink && <a href={financialLink.href} target="_blank" rel="noopener noreferrer" className="block py-2 text-blue-700 underline">{financialLink.label} ↗</a>}</details>
             </>}
-            {pricedApartment && !project && <a href={getHousingApartmentLink(pricedApartment.id)!} target="_blank" rel="noopener noreferrer" className="mt-2 flex min-h-[44px] items-center justify-center rounded-lg bg-blue-700 px-3 text-sm font-bold text-white hover:bg-blue-800">실거래가 상세 분석 ↗</a>}
+            {pricedApartment && !project && <a href={getHousingApartmentLink(pricedApartment.id, area)!} target="_blank" rel="noopener noreferrer" className="mt-2 flex min-h-[44px] items-center justify-center rounded-lg bg-blue-700 px-3 text-sm font-bold text-white hover:bg-blue-800">실거래가 상세 분석 ↗</a>}
             {apartment?.id==='busan_samick_beach' && <a className="mt-2 block py-2 text-center text-sm font-semibold text-blue-700" href="#/status/samik-beach">삼익비치 사업현황 보기</a>}
           </>}
         </div>

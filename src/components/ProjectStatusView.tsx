@@ -1,6 +1,6 @@
 import { getHousingLink } from '../utils/housingLinks';
 import { REDEVELOPMENT_SEED_PROJECTS } from '../registry/redevelopmentRegistry.ts';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Building2, ArrowRight, Calendar, AlertCircle } from 'lucide-react';
 import { ExtractedEvent, RedevelopmentProject } from '../types/redevelopment.ts';
 import { getNextRedevelopmentStage, resolveProjectStatutoryStage } from '../utils/redevelopmentStages.ts';
@@ -8,16 +8,26 @@ import { getNextRedevelopmentStage, resolveProjectStatutoryStage } from '../util
 interface ProjectStatusViewProps {
   projects: RedevelopmentProject[];
   events: ExtractedEvent[];
+  selectedProjectId?: string;
   onSelectProjectTimeline: (projectId: string) => void;
 }
 
 export const ProjectStatusView: React.FC<ProjectStatusViewProps> = ({
   projects,
   events,
+  selectedProjectId,
   onSelectProjectTimeline,
 }) => {
   const displayProjects = REDEVELOPMENT_SEED_PROJECTS.map(seed =>
     projects.find(project => project.id === seed.id) || seed);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const card = document.getElementById(`status-card-${selectedProjectId}`);
+      card?.scrollIntoView({block:'start',behavior:'instant'});
+      card?.focus({preventScroll:true});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedProjectId]);
 
   return (
     <div id="project-status-view" className="space-y-4 sm:space-y-6 min-w-0">
@@ -82,7 +92,9 @@ export const ProjectStatusView: React.FC<ProjectStatusViewProps> = ({
             <div
               key={project.id}
               id={`status-card-${project.id}`}
-              className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 min-w-0"
+              tabIndex={-1}
+              aria-current={selectedProjectId===project.id?'true':undefined}
+              className={`bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs flex flex-col justify-between transition-all hover:border-slate-300 min-w-0 scroll-mt-20 ${selectedProjectId===project.id?'ring-2 ring-blue-600':''}`}
             >
               <div className="space-y-4 sm:space-y-5 min-w-0">
                 {/* Header: Name and Region */}

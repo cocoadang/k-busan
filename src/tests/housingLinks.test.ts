@@ -12,6 +12,13 @@ test('Samik project links to the existing Samick apartment asset; unrelated proj
  assert.equal(url.searchParams.get('complex'),'busan_samick_beach');
  for (const id of ['gwacheon-5','gwacheon-89','gwacheon-10','udong-3','unknown']) assert.equal(getHousingLink(id),null);
 });
+test('map price links preserve the selected 59/84 group in both direct and project links',()=>{
+ for(const area of ['59','84'] as const){
+  assert.equal(new URL(getHousingApartmentLink('busan_samick_beach',area)!).searchParams.get('areaCategory'),area);
+  assert.equal(new URL(getHousingApartmentLink('busan_centum_park_2',area)!).searchParams.get('areaCategory'),area);
+  assert.equal(new URL(getHousingLink('samik-beach',area)!.href).searchParams.get('areaCategory'),area);
+ }
+});
 
 import { HOUSING_DESTINATIONS } from '../data/housingDestinations';
 import { parseDashboardHash, formatDashboardHash } from '../components/Phase3Dashboard';

@@ -10,7 +10,8 @@
     "TL_WqYQsUJw",
     "Gm9WV25i08A",
     "XZF4lUnY1GY",
-    "XzpH1WcvQSo"
+    "XzpH1WcvQSo",
+    "k77oE9hz4pY"
   ],
   "apartments": [
     {
@@ -155,6 +156,43 @@
       "videoId": "XzpH1WcvQSo",
       "time": 62,
       "note": "대치 은마와 비교해 2024~2025년 두 단지의 신고 가격 격차가 어떻게 달라졌는지 설명했습니다."
+    },
+    {
+      "neighborhood": "포일동",
+      "region": "41430",
+      "aliases": [
+        "인덕원센트럴푸르지오"
+      ],
+      "name": "인덕원센트럴푸르지오",
+      "district": "경기 의왕시",
+      "videoId": "k77oE9hz4pY",
+      "time": 134,
+      "note": "산성역 인근 신축과 비교해 인덕원 역세권과 계획 철도를 검토 요소로 짚었습니다. 철도 계획을 확정 개통으로 보지는 않습니다."
+    },
+    {
+      "neighborhood": "봉천동",
+      "region": "11620",
+      "aliases": [
+        "관악푸르지오"
+      ],
+      "name": "관악푸르지오",
+      "district": "서울 관악구",
+      "videoId": "Gm9WV25i08A",
+      "time": 191,
+      "note": "관악현대 등과 가격 차이가 유지될 수 있다고 보고, 단지 순위보다 매물의 층·동 위치·경사·수리 상태를 비교하라고 설명했습니다."
+    },
+    {
+      "neighborhood": "봉천동",
+      "region": "11620",
+      "aliases": [
+        "현대(관악)",
+        "관악현대"
+      ],
+      "name": "관악현대",
+      "district": "서울 관악구",
+      "videoId": "Gm9WV25i08A",
+      "time": 191,
+      "note": "관악푸르지오와의 가정상 가격 차이를 비교하고, 개별 매물의 층·동 위치·경사·수리 상태를 함께 보는 편이 낫다고 설명했습니다."
     }
   ]
 }

@@ -1,0 +1,73 @@
+name: Backfill Song Hee-gu captions
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: song-caption-backfill
+  cancel-in-progress: false
+jobs:
+  captions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Collect public Korean captions
+        timeout-minutes: 325
+        run: |
+          python3 -m venv /tmp/song-caption-venv
+          /tmp/song-caption-venv/bin/pip install 'yt-dlp==2026.10.26'
+          /tmp/song-caption-venv/bin/python - <<'PY'
+          import csv, json, pathlib, subprocess, sys, time
+          out = pathlib.Path("caption-backfill")
+          out.mkdir()
+          yt = [sys.executable, "-m", "yt_dlp", "--ignore-config", "--socket-timeout", "15", "--retries", "0"]
+          playlist = "https://www.youtube.com/playlist?list=UULFrxr7eBgbKdz0e1t5ax9kCg"
+          info = json.loads(subprocess.check_output(yt + ["--flat-playlist", "-J", playlist], timeout=180))
+          videos = {entry["id"]: entry for entry in info["entries"] if entry and entry.get("id")}
+          if not videos or info.get("channel_id") != "UCrxr7eBgbKdz0e1t5ax9kCg":
+              raise RuntimeError("Unexpected public long-video inventory")
+          already = set("2VVIO2aepnc 9f7SKimLzQA BtnDMMXOjlo L0LKvj7tbbg QHXwrNs_ANM XZF4lUnY1GY XzpH1WcvQSo _ySlz6d1kQU bXQCkfZ3PE4 qV5o8XLMg_s vKLugnui6uY ylhxbGAJbpU ytWGioUQpa0".split())
+          state = {video: "checkpoint" if video in already else "pending" for video in videos}
+          def save():
+              pending = out / "status.tmp"
+              with pending.open("w", encoding="utf-8-sig", newline="") as handle:
+                  writer = csv.writer(handle)
+                  writer.writerow(["video_id", "title", "duration", "status"])
+                  writer.writerows((video, entry.get("title"), entry.get("duration"), state[video]) for video, entry in videos.items())
+              pending.replace(out / "status.csv")
+          save()
+          stop_at = time.monotonic() + 310 * 60
+          for video in videos:
+              if video in already:
+                  continue
+              if time.monotonic() >= stop_at:
+                  break
+              url = "https://www.youtube.com/watch?v=" + video
+              try:
+                  result = subprocess.run(yt + ["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", "ko", "--sub-format", "vtt", "--sleep-requests", "1", "--sleep-subtitles", "2", "-o", str(out / "%(id)s.%(ext)s"), "--", url], capture_output=True, text=True, timeout=75)
+                  log = (result.stdout + result.stderr).lower()
+                  path = out / (video + ".ko.vtt")
+                  if result.returncode == 0 and path.is_file() and b"-->" in path.read_bytes():
+                      state[video] = "collected"
+                  elif "http error 429" in log or "not a bot" in log:
+                      state[video] = "provider_limit"
+                      save()
+                      print("Provider restricted further access; retained verified checkpoint.", flush=True)
+                      break
+                  elif "no subtitles for the requested languages" in log or "there are no subtitles" in log:
+                      state[video] = "no_korean_caption"
+                  else:
+                      state[video] = "retryable_error"
+              except subprocess.TimeoutExpired:
+                  state[video] = "timeout"
+              save()
+              print(video, state[video], flush=True)
+              time.sleep(1)
+          PY
+      - name: Preserve downloadable progress
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: song-caption-backfill
+          path: caption-backfill/
+          if-no-files-found: warn

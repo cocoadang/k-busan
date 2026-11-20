@@ -63,10 +63,16 @@ async function loadPrices(): Promise<ResponseData> {
   });
   const marketTrends = readRoneMarketTrends();
   const feeds = key ? await Promise.allSettled(regions.map(async region => {
-    const data = await Promise.all(months.map(month => monthTrades(key, region, month)));
-    return [region, data.flat()] as const;
+    const data = await Promise.allSettled(months.map(month => monthTrades(key, region, month)));
+    return {
+      region,
+      missingMonths: data.filter(month => month.status === 'rejected').length,
+      rows: data.flatMap(month => month.status === 'fulfilled' ? month.value : []),
+    };
   })) : [];
-  const byRegion = new Map(feeds.flatMap(feed => feed.status === 'fulfilled' ? [feed.value] : []));
+  const received = feeds.flatMap(feed => feed.status === 'fulfilled' ? [feed.value] : []);
+  const byRegion = new Map(received.filter(feed => feed.missingMonths < months.length).map(feed => [feed.region, feed.rows]));
+  const incomplete = byRegion.size < regions.length || received.some(feed => feed.missingMonths > 0);
   const results = catalog.apartments.flatMap(apt => {
     const rows = (byRegion.get(apt.region) ?? []).flatMap(row => {
       if (normalize(row.umdNm) !== normalize(apt.neighborhood) || !apt.aliases.some(alias => normalize(alias) === normalize(row.aptNm))) return [];
@@ -88,7 +94,7 @@ async function loadPrices(): Promise<ResponseData> {
   });
   if (!byRegion.has('41290')) results.push(...await existingHousingPrices(months[2], months[0]));
   if (!byRegion.size && !results.length) throw new Error('MOLIT_UNAVAILABLE');
-  return { results, marketTrends: await marketTrends, incomplete: byRegion.size < regions.length, checkedAt: new Date().toISOString() };
+  return { results, marketTrends: await marketTrends, incomplete, checkedAt: new Date().toISOString() };
 }
 
 export function createApartmentBudgetHandler(): RequestHandler {

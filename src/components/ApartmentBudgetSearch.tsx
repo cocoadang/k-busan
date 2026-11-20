@@ -4,6 +4,22 @@ import catalog from '../housing/songApartmentCatalog.json';
 
 type Listing = (typeof catalog.apartments)[number] & { area: number; price: number; date: string; floor: number; areaCategory: string };
 type PriceFeed = { results: Listing[]; incomplete: boolean; checkedAt: string; marketTrends?: { region: string; month: string; index: number; monthlyChange: number | null }[] };
+const priorities = { budget: '예산에 가까운 순', transit: '교통', schools: '학군', living: '주거환경' };
+type Priority = keyof typeof priorities;
+const strengths: Record<string, Partial<Record<Exclude<Priority, 'budget'>, string>>> = {
+  '힐스테이트 e편한세상 문정': { schools: '학교 접근성을 장점으로 언급', living: '주변 주거환경을 장점으로 언급' },
+  '가락쌍용1차': { schools: '학군을 가격과 함께 검토' },
+  '래미안슈르': { living: '주차와 거주 여건을 장점으로 언급' },
+  '광장현대3단지': { transit: '광나루·강변역 접근을 장점으로 언급', schools: '학원가 접근을 장점으로 언급' },
+  '고덕 아이파크': { transit: '고덕역 접근을 장점으로 언급', schools: '학원가 접근을 장점으로 언급' },
+  '대치 은마': { transit: '대치역·삼성역 접근을 장점으로 언급', schools: '대치동 학군을 장점으로 언급' },
+};
+const principles = [
+  { title: '같은 생활권의 대안을 비교', note: '호가가 예산을 넘으면 생활권과 주거 여건이 비슷한 단지를 살펴봅니다.', links: [{ id: 'XZF4lUnY1GY', time: 78 }] },
+  { title: '교통·학군·거주 여건을 함께 확인', note: '역 접근성, 학원가, 주차처럼 실제 거주에 영향을 주는 조건을 비교합니다.', links: [{ id: 'TL_WqYQsUJw', time: 33 }, { id: '9f7SKimLzQA', time: 62 }] },
+  { title: '리모델링 비용과 일정을 함께 검토', note: '매매가와 함께 예상 추가분담금, 이주·공사 일정을 확인합니다.', links: [{ id: '9f7SKimLzQA', time: 137 }, { id: 'iwO_jSjdRaI', time: 190 }] },
+];
+const videoUrl = (id: string, time: number) => `https://www.youtube.com/watch?v=${id}&t=${time}s`;
 const districts = [...new Set(catalog.apartments.map(({ district }) => district))].sort();
 const formatPrice = (price: number) => {
   const eok = Math.floor(price / 10000);
@@ -15,21 +31,23 @@ export default function ApartmentBudgetSearch() {
   const [budget, setBudget] = useState('');
   const [district, setDistrict] = useState('');
   const [size, setSize] = useState('');
-  const [query, setQuery] = useState<{ budget: number; district: string; size: string } | null>(null);
+  const [priority, setPriority] = useState<Priority>('budget');
+  const [query, setQuery] = useState<{ budget: number; district: string; size: string; priority: Priority } | null>(null);
   const [feed, setFeed] = useState<PriceFeed | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  const matchEvidence = (apt: Listing) => query && query.priority !== 'budget' ? strengths[apt.name]?.[query.priority] : undefined;
   const matches = query ? (feed?.results ?? []).filter((apt) =>
     apt.price <= query.budget &&
     (!query.district || apt.district === query.district) &&
     (!query.size || apt.areaCategory === query.size)
-  ).sort((first, second) => second.price - first.price) : [];
+  ).sort((first, second) => Number(Boolean(matchEvidence(second))) - Number(Boolean(matchEvidence(first))) || second.price - first.price) : [];
 
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const amount = Math.round(Number(budget) * 10000);
     if (!Number.isSafeInteger(amount) || amount <= 0 || loading) return;
-    setQuery({ budget: amount, district, size });
+    setQuery({ budget: amount, district, size, priority });
     setLoading(true);
     setFailed(false);
     setFeed(null);
@@ -50,7 +68,7 @@ export default function ApartmentBudgetSearch() {
         <p className="mb-3 text-sm font-semibold text-sky-300">아파트 예산 검색</p>
         <h1 id="budget-title" className="text-3xl font-bold tracking-tight sm:text-5xl">내 예산으로 어디에 살 수 있을까?</h1>
         <p className="mt-4 max-w-xl text-base text-slate-200">송희구 작가가 입지를 분석한 단지에서 매매 예산에 맞는 후보를 찾아보세요.</p>
-        <form onSubmit={search} className="mt-8 grid gap-3 rounded-2xl bg-white p-4 text-slate-900 sm:grid-cols-[1.3fr_1fr_1fr_auto] sm:items-end">
+        <form onSubmit={search} className="mt-8 grid gap-3 rounded-2xl bg-white p-4 text-slate-900 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_auto] sm:items-end">
           <label className="grid gap-1 text-sm font-semibold">매매 예산 (억 원)
             <input className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" type="number" min="0.0001" step="0.0001" required placeholder="예: 19" value={budget} onChange={(event) => setBudget(event.target.value)} />
           </label>
@@ -65,17 +83,32 @@ export default function ApartmentBudgetSearch() {
               <option value="">전체 면적</option><option value="59">59㎡대</option><option value="84">84㎡대</option>
             </select>
           </label>
+          <label className="grid gap-1 text-sm font-semibold">우선 조건
+            <select className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+              {(Object.keys(priorities) as Priority[]).map(key => <option key={key} value={key}>{priorities[key]}</option>)}
+            </select>
+          </label>
           <button type="submit" disabled={loading} className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800">아파트 찾기</button>
         </form>
         <p className="mt-4 text-sm text-slate-300">영상 자막 검토 {catalog.reviewedVideoIds.length}편 · 분석 단지 {catalog.apartments.length}곳 · 최근 3개 계약월의 국토교통부 신고 거래 기준</p>
       </div>
+      <details className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+        <summary className="cursor-pointer font-semibold">검토한 영상에서 정리한 투자 판단 기준</summary>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-3">
+          {principles.map(principle => <li key={principle.title}>
+            <h3 className="font-semibold">{principle.title}</h3>
+            <p className="text-sm text-slate-700">{principle.note}</p>
+            {principle.links.map(({ id, time }, index) => <a key={id} className="mr-3 text-sm text-blue-800 underline" href={videoUrl(id, time)} target="_blank" rel="noreferrer">근거 영상{principle.links.length > 1 ? ` ${index + 1}` : ''}</a>)}
+          </li>)}
+        </ul>
+      </details>
       {query && <div className="mt-6" aria-live="polite">
         {loading && <p role="status">국토교통부 신고 거래를 확인하고 있습니다.</p>}
         {failed && <p role="status">현재 국토교통부 거래 정보를 조회할 수 없습니다. 잠시 후 다시 검색해 주세요.</p>}
         {feed?.incomplete && <p role="status">일부 지역의 거래를 조회하지 못했습니다. 조회된 지역의 후보를 표시합니다.</p>}
         {feed && <>
         <h2 className="text-xl font-bold">{formatPrice(query.budget)} 이하 후보 {new Set(matches.map(apt => apt.name)).size}곳</h2>
-        <p className="mt-1 text-sm text-slate-600">{[query.district || '전체 지역', query.size ? `전용 ${query.size}㎡대` : '전체 면적', '예산에 가까운 순'].join(' · ')}. 현재 매물이나 호가는 별도로 확인해야 합니다.</p>
+        <p className="mt-1 text-sm text-slate-600">{[query.district || '전체 지역', query.size ? `전용 ${query.size}㎡대` : '전체 면적', query.priority === 'budget' ? priorities.budget : `${priorities[query.priority]} 관련 영상 근거 우선`].join(' · ')}. 현재 매물이나 호가는 별도로 확인해야 합니다.</p>
         {!!feed.marketTrends?.length && <aside aria-label="지역 아파트 매매가격지수" className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
           <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2">
             <a className="font-semibold text-blue-800 underline" href="https://www.reb.or.kr/r-one/" target="_blank" rel="noreferrer">한국부동산원 R-ONE · 월간 아파트 매매가격지수</a>
@@ -91,9 +124,12 @@ export default function ApartmentBudgetSearch() {
             <h3 className="mt-1 text-xl font-bold">{apt.name}</h3>
             <p className="mt-3 text-lg font-bold text-blue-800">{formatPrice(apt.price)}</p>
             <p className="text-sm text-slate-600">{apt.date} 계약 · {apt.floor}층</p>
-            <p className="mt-4 flex-1 text-base text-slate-700">{apt.note}</p>
+            <dl className="mt-4 flex-1 space-y-2 text-sm text-slate-700">
+              <div><dt className="font-semibold text-slate-900">작가가 분석한 내용</dt><dd>{apt.note}</dd></div>
+              <div><dt className="font-semibold text-slate-900">내 조건에 맞는 이유</dt><dd>{query.district ? '선택 지역 · ' : ''}{query.size ? '선택 전용면적 · ' : ''}예산 이내 신고 거래{matchEvidence(apt) ? ` · ${matchEvidence(apt)}` : ''}</dd></div>
+            </dl>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-3 text-sm font-semibold text-blue-800">
-              <a className="underline" href={`https://www.youtube.com/watch?v=${apt.videoId}&t=${apt.time}s`} target="_blank" rel="noreferrer">입지 분석 영상</a>
+              <a className="underline" href={videoUrl(apt.videoId, apt.time)} target="_blank" rel="noreferrer">입지 분석 영상</a>
               <a className="underline" href="https://rt.molit.go.kr/" target="_blank" rel="noreferrer">신고 거래 확인</a>
             </div>
           </article>)}

@@ -31,21 +31,40 @@ async function monthTrades(key: string, region: string, month: string) {
   throw new Error('MOLIT_INCOMPLETE_MONTH');
 }
 
+async function existingHousingPrices(startYmd: string, endYmd: string): Promise<Result[]> {
+  const apt = catalog.apartments.find(item => item.region === '41290' && item.name === '래미안슈르');
+  if (!apt) return [];
+  const results = await Promise.allSettled((['59', '84'] as const).map(async areaCategory => {
+    const url = new URL('https://k-housing-5he2zcaska-du.a.run.app/api/complex-trades/gwacheon_raemian_sur');
+    url.search = new URLSearchParams({ areaCategory, startYmd, endYmd }).toString();
+    const response = await fetch(url, { signal: AbortSignal.timeout(8000), redirect: 'error' });
+    if (!response.ok) return [];
+    const body = await response.json();
+    if (body.success !== true || body.complexId !== 'gwacheon_raemian_sur' || body.startYmd !== startYmd || body.endYmd !== endYmd || body.areaCategory !== areaCategory || !Array.isArray(body.items)) return [];
+    const rows = body.items.filter(row =>
+      row.complexId === body.complexId && row.dataSource === 'MOLIT_OPENAPI' && row.isCancelled === false &&
+      Number.isSafeInteger(row.price) && row.price > 0 && Number.isFinite(row.exclusiveArea) &&
+      Math.floor(row.exclusiveArea) === Number(areaCategory) && Number.isInteger(row.floor) && /^\d{4}-\d{2}-\d{2}$/.test(row.dealDate)
+    ).sort((a, b) => b.dealDate.localeCompare(a.dealDate) || b.price - a.price);
+    const row = rows[0];
+    return row ? [{ ...apt, areaCategory, area: row.exclusiveArea, price: row.price, date: row.dealDate, floor: row.floor }] : [];
+  }));
+  return results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+}
+
 async function loadPrices(): Promise<ResponseData> {
   const raw = process.env.MOLIT_API_KEY?.trim() || process.env.DATA_GO_KR_API_KEY?.trim();
-  if (!raw) throw new Error('MOLIT_KEY_MISSING');
-  const key = decodeURIComponent(raw);
+  const key = raw ? decodeURIComponent(raw) : null;
   const now = new Date(Date.now() + 9 * 3600_000);
   const months = [0, 1, 2].map(offset => {
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1));
     return String(month.getUTCFullYear()) + pad(month.getUTCMonth() + 1);
   });
-  const feeds = await Promise.allSettled(regions.map(async region => {
+  const feeds = key ? await Promise.allSettled(regions.map(async region => {
     const data = await Promise.all(months.map(month => monthTrades(key, region, month)));
     return [region, data.flat()] as const;
-  }));
+  })) : [];
   const byRegion = new Map(feeds.flatMap(feed => feed.status === 'fulfilled' ? [feed.value] : []));
-  if (!byRegion.size) throw new Error('MOLIT_UNAVAILABLE');
   const results = catalog.apartments.flatMap(apt => {
     const rows = (byRegion.get(apt.region) ?? []).flatMap(row => {
       if (normalize(row.umdNm) !== normalize(apt.neighborhood) || !apt.aliases.some(alias => normalize(alias) === normalize(row.aptNm))) return [];
@@ -62,6 +81,8 @@ async function loadPrices(): Promise<ResponseData> {
       return sale ? [{ ...apt, ...sale, areaCategory }] : [];
     });
   });
+  if (!byRegion.has('41290')) results.push(...await existingHousingPrices(months[2], months[0]));
+  if (!byRegion.size && !results.length) throw new Error('MOLIT_UNAVAILABLE');
   return { results, incomplete: byRegion.size < regions.length, checkedAt: new Date().toISOString() };
 }
 

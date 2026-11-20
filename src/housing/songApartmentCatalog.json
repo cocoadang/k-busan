@@ -9,7 +9,8 @@
     "l3ONoblEkFo",
     "TL_WqYQsUJw",
     "Gm9WV25i08A",
-    "XZF4lUnY1GY"
+    "XZF4lUnY1GY",
+    "XzpH1WcvQSo"
   ],
   "apartments": [
     {
@@ -127,6 +128,31 @@
       "videoId": "XZF4lUnY1GY",
       "time": 100,
       "note": "같은 생활권에서 13단지가 예산을 넘을 때 12단지를 비교하는 사례로 제시했습니다."
+    },
+    {
+      "neighborhood": "대치동",
+      "region": "11680",
+      "aliases": [
+        "은마",
+        "은마아파트"
+      ],
+      "name": "대치 은마",
+      "district": "서울 강남구",
+      "videoId": "XzpH1WcvQSo",
+      "time": 16,
+      "note": "대치역·삼성역 접근과 학군을 강점으로 짚고, 주변 단지의 재건축이 생활환경에 미칠 영향을 설명했습니다."
+    },
+    {
+      "neighborhood": "길음동",
+      "region": "11290",
+      "aliases": [
+        "롯데캐슬클라시아"
+      ],
+      "name": "길음 롯데캐슬클라시아",
+      "district": "서울 성북구",
+      "videoId": "XzpH1WcvQSo",
+      "time": 62,
+      "note": "대치 은마와 비교해 2024~2025년 두 단지의 신고 가격 격차가 어떻게 달라졌는지 설명했습니다."
     }
   ]
 }

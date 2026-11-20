@@ -8,7 +8,8 @@
     "g2DMAR_lvGI",
     "l3ONoblEkFo",
     "TL_WqYQsUJw",
-    "Gm9WV25i08A"
+    "Gm9WV25i08A",
+    "XZF4lUnY1GY"
   ],
   "apartments": [
     {
@@ -86,6 +87,46 @@
       "videoId": "9f7SKimLzQA",
       "time": 62,
       "note": "지하철역까지 거리와 주변 주거환경을 감안해 이문·월계 단지와 비교했습니다."
+    },
+    {
+      "neighborhood": "관양동",
+      "region": "41173",
+      "aliases": [
+        "공작",
+        "공작아파트",
+        "공작부영"
+      ],
+      "name": "평촌 공작부영",
+      "district": "경기 안양시 동안구",
+      "videoId": "9f7SKimLzQA",
+      "time": 137,
+      "note": "갈아타기 후보로 거론하며 리모델링 진행 상황과 추가분담금 확인을 검토 기준으로 짚었습니다."
+    },
+    {
+      "neighborhood": "철산동",
+      "region": "41210",
+      "aliases": [
+        "주공12단지",
+        "철산주공12단지"
+      ],
+      "name": "철산주공 12단지",
+      "district": "경기 광명시",
+      "videoId": "XZF4lUnY1GY",
+      "time": 100,
+      "note": "같은 생활권에서 13단지가 예산을 넘을 때 12단지를 비교하는 사례로 제시했습니다."
+    },
+    {
+      "neighborhood": "철산동",
+      "region": "41210",
+      "aliases": [
+        "주공13단지",
+        "철산주공13단지"
+      ],
+      "name": "철산주공 13단지",
+      "district": "경기 광명시",
+      "videoId": "XZF4lUnY1GY",
+      "time": 100,
+      "note": "같은 생활권에서 13단지가 예산을 넘을 때 12단지를 비교하는 사례로 제시했습니다."
     }
   ]
 }

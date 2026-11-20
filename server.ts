@@ -1,3 +1,4 @@
+import { createApartmentBudgetHandler } from './src/housing/apartmentBudgetApi.ts';
 import { createBusanPriceHandler } from './src/housing/busanPriceApi.ts';
 import {costHttpTelemetry} from './src/utils/costTelemetry';
 import {NewsBodyReader,firestoreNewsBodyCache} from './src/news/newsBodyReader';
@@ -101,6 +102,7 @@ app.get('/api/official/diagnostics', async (req, res) => {
 });
 
 app.get('/api/housing/busan-prices', createBusanPriceHandler());
+app.get('/api/housing/apartment-budget', createApartmentBudgetHandler());
 
 // Optional development preview: proxies public reads to PREVIEW_UPSTREAM_ORIGIN, blocks writes.
 // Opt-in via PREVIEW_MODE=true (never active when NODE_ENV=production).

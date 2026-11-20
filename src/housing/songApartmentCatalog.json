@@ -1,0 +1,90 @@
+{
+  "channelId": "UCrxr7eBgbKdz0e1t5ax9kCg",
+  "reviewedVideoIds": [
+    "9f7SKimLzQA",
+    "ytWGioUQpa0",
+    "iwO_jSjdRaI",
+    "xIsEcZ8gGsE",
+    "g2DMAR_lvGI",
+    "l3ONoblEkFo",
+    "TL_WqYQsUJw",
+    "Gm9WV25i08A"
+  ],
+  "apartments": [
+    {
+      "neighborhood": "문정동",
+      "region": "11710",
+      "aliases": [
+        "힐스테이트e편한세상문정"
+      ],
+      "name": "힐스테이트 e편한세상 문정",
+      "district": "서울 송파구",
+      "videoId": "TL_WqYQsUJw",
+      "time": 196,
+      "note": "학교 접근성과 주변 주거환경을 장점으로, 지하철역까지의 거리를 고려할 점으로 봤습니다."
+    },
+    {
+      "neighborhood": "가락동",
+      "region": "11710",
+      "aliases": [
+        "가락쌍용1차",
+        "쌍용1차"
+      ],
+      "name": "가락쌍용1차",
+      "district": "서울 송파구",
+      "videoId": "TL_WqYQsUJw",
+      "time": 131,
+      "note": "송파·강남 생활권과 학군을 가격과 함께 비교했습니다."
+    },
+    {
+      "neighborhood": "원문동",
+      "region": "41290",
+      "aliases": [
+        "래미안슈르"
+      ],
+      "name": "래미안슈르",
+      "district": "경기 과천시",
+      "videoId": "TL_WqYQsUJw",
+      "time": 82,
+      "note": "비교 대상 구축보다 주차와 거주 여건을 높게 봤습니다."
+    },
+    {
+      "neighborhood": "광장동",
+      "region": "11215",
+      "aliases": [
+        "현대3",
+        "광장현대3단지"
+      ],
+      "name": "광장현대3단지",
+      "district": "서울 광진구",
+      "videoId": "TL_WqYQsUJw",
+      "time": 33,
+      "note": "광나루·강변역 접근과 학원가를 강점으로, 주차를 제약으로 봤습니다."
+    },
+    {
+      "neighborhood": "고덕동",
+      "region": "11740",
+      "aliases": [
+        "고덕아이파크"
+      ],
+      "name": "고덕 아이파크",
+      "district": "서울 강동구",
+      "videoId": "TL_WqYQsUJw",
+      "time": 230,
+      "note": "고덕역과 학원가 접근성을 강점으로 봤습니다."
+    },
+    {
+      "neighborhood": "청량리동",
+      "region": "11230",
+      "aliases": [
+        "한신",
+        "청량리한신"
+      ],
+      "name": "청량리한신",
+      "district": "서울 동대문구",
+      "videoId": "9f7SKimLzQA",
+      "time": 62,
+      "note": "지하철역까지 거리와 주변 주거환경을 감안해 이문·월계 단지와 비교했습니다."
+    }
+  ]
+}

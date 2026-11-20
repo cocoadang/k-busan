@@ -74,7 +74,7 @@ export default function ApartmentBudgetSearch() {
         {failed && <p role="status">현재 국토교통부 거래 정보를 조회할 수 없습니다. 잠시 후 다시 검색해 주세요.</p>}
         {feed?.incomplete && <p role="status">일부 지역의 거래를 조회하지 못했습니다. 조회된 지역의 후보를 표시합니다.</p>}
         {feed && <>
-        <h2 className="text-xl font-bold">{formatPrice(query.budget)} 이하 후보 {matches.length}곳</h2>
+        <h2 className="text-xl font-bold">{formatPrice(query.budget)} 이하 후보 {new Set(matches.map(apt => apt.name)).size}곳</h2>
         <p className="mt-1 text-sm text-slate-600">{[query.district || '전체 지역', query.size ? `전용 ${query.size}㎡대` : '전체 면적', '예산에 가까운 순'].join(' · ')}. 현재 매물이나 호가는 별도로 확인해야 합니다.</p>
         {!!feed.marketTrends?.length && <aside aria-label="지역 아파트 매매가격지수" className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
           <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2">

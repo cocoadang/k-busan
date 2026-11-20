@@ -16,6 +16,8 @@ Copy `.env.example` only into an isolated development environment. Never use pro
 
 ## Deployment workflow
 
+When an authorized apt.dsoom.com change is ready, complete validation, merge, run the production workflow, and verify the live site. The maintainer has authorized routine deployments without a separate pre-deployment confirmation. Report the outcome after production verification, including any blockers.
+
 Pushes and pull requests to `main` run type checking, all tests and the build (`.github/workflows/deploy.yml`). Production deploys only when **Run workflow** is pressed for `main` in the Actions tab:
 
 1. Docker image built from a clean checkout (`Dockerfile`, Node 22, no local `node_modules`), pushed to Artifact Registry `kbusan-images`.

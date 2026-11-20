@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import catalog from '../housing/songApartmentCatalog.json';
 
 type Listing = (typeof catalog.apartments)[number] & { area: number; price: number; date: string; floor: number; areaCategory: string };
-type PriceFeed = { results: Listing[]; incomplete: boolean; checkedAt: string };
+type PriceFeed = { results: Listing[]; incomplete: boolean; checkedAt: string; marketTrends?: { region: string; month: string; index: number; monthlyChange: number | null }[] };
 const districts = [...new Set(catalog.apartments.map(({ district }) => district))].sort();
 const formatPrice = (price: number) => {
   const eok = Math.floor(price / 10000);
@@ -76,6 +76,14 @@ export default function ApartmentBudgetSearch() {
         {feed && <>
         <h2 className="text-xl font-bold">{formatPrice(query.budget)} 이하 후보 {matches.length}곳</h2>
         <p className="mt-1 text-sm text-slate-600">{[query.district || '전체 지역', query.size ? `전용 ${query.size}㎡대` : '전체 면적', '예산에 가까운 순'].join(' · ')}. 현재 매물이나 호가는 별도로 확인해야 합니다.</p>
+        {!!feed.marketTrends?.length && <aside aria-label="지역 아파트 매매가격지수" className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
+          <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2">
+            <a className="font-semibold text-blue-800 underline" href="https://www.reb.or.kr/r-one/" target="_blank" rel="noreferrer">한국부동산원 R-ONE · 월간 아파트 매매가격지수</a>
+            {feed.marketTrends.map(({ region, month, index, monthlyChange }) => <span key={region}>
+              {region} {index.toFixed(2)} ({month.slice(0, 4)}.{month.slice(4)}{monthlyChange === null ? '' : ` · 전월 대비 ${monthlyChange >= 0 ? '+' : ''}${monthlyChange.toFixed(2)}%`})
+            </span>)}
+          </div>
+        </aside>}
         {matches.length === 0 && <p className="mt-4 rounded-xl bg-white p-5 text-slate-700">조회된 신고 거래에서 조건에 맞는 단지를 찾지 못했습니다. 지역이나 전용면적을 넓혀보세요.</p>}
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {matches.map((apt) => <article key={apt.name + apt.areaCategory} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5">

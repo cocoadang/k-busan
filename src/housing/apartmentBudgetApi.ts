@@ -9,7 +9,7 @@ const normalize = (value: unknown) => String(value ?? '').normalize('NFKC').repl
 const pad = (value: unknown) => String(value).padStart(2, '0');
 const regions = [...new Set(catalog.apartments.map(({ region }) => region))];
 type Sale = { area: number; price: number; date: string; floor: number };
-type Result = (typeof catalog.apartments)[number] & Sale & { areaCategory: '59' | '84' };
+type Result = (typeof catalog.apartments)[number] & Sale & { areaCategory: string };
 type ResponseData = { results: Result[]; marketTrends: MarketTrend[]; incomplete: boolean; checkedAt: string };
 
 async function monthTrades(key: string, region: string, month: string) {
@@ -78,10 +78,13 @@ async function loadPrices(): Promise<ResponseData> {
       if (!Number.isSafeInteger(price) || price <= 0 || !Number.isFinite(area) || !Number.isInteger(floor) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
       return [{ price, area, date, floor }];
     }).sort((a, b) => b.date.localeCompare(a.date) || b.price - a.price);
-    return (['59', '84'] as const).flatMap(areaCategory => {
-      const sale = rows.find(row => Math.floor(row.area) === Number(areaCategory));
-      return sale ? [{ ...apt, ...sale, areaCategory }] : [];
-    });
+    const latestByArea = new Map<string, Sale>();
+    for (const sale of rows) {
+      if (sale.area <= 0) continue;
+      const areaCategory = String(Math.floor(sale.area));
+      if (!latestByArea.has(areaCategory)) latestByArea.set(areaCategory, sale);
+    }
+    return [...latestByArea].map(([areaCategory, sale]) => ({ ...apt, ...sale, areaCategory }));
   });
   if (!byRegion.has('41290')) results.push(...await existingHousingPrices(months[2], months[0]));
   if (!byRegion.size && !results.length) throw new Error('MOLIT_UNAVAILABLE');

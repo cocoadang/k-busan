@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import { XMLParser } from 'fast-xml-parser';
+import { readRoneMarketTrends, type MarketTrend } from './roneMarketTrends.ts';
 import catalog from './songApartmentCatalog.json';
 
 const endpoint = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev';
@@ -9,7 +10,7 @@ const pad = (value: unknown) => String(value).padStart(2, '0');
 const regions = [...new Set(catalog.apartments.map(({ region }) => region))];
 type Sale = { area: number; price: number; date: string; floor: number };
 type Result = (typeof catalog.apartments)[number] & Sale & { areaCategory: '59' | '84' };
-type ResponseData = { results: Result[]; incomplete: boolean; checkedAt: string };
+type ResponseData = { results: Result[]; marketTrends: MarketTrend[]; incomplete: boolean; checkedAt: string };
 
 async function monthTrades(key: string, region: string, month: string) {
   const items: Record<string, string>[] = [];
@@ -60,6 +61,7 @@ async function loadPrices(): Promise<ResponseData> {
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1));
     return String(month.getUTCFullYear()) + pad(month.getUTCMonth() + 1);
   });
+  const marketTrends = readRoneMarketTrends();
   const feeds = key ? await Promise.allSettled(regions.map(async region => {
     const data = await Promise.all(months.map(month => monthTrades(key, region, month)));
     return [region, data.flat()] as const;
@@ -83,7 +85,7 @@ async function loadPrices(): Promise<ResponseData> {
   });
   if (!byRegion.has('41290')) results.push(...await existingHousingPrices(months[2], months[0]));
   if (!byRegion.size && !results.length) throw new Error('MOLIT_UNAVAILABLE');
-  return { results, incomplete: byRegion.size < regions.length, checkedAt: new Date().toISOString() };
+  return { results, marketTrends: await marketTrends, incomplete: byRegion.size < regions.length, checkedAt: new Date().toISOString() };
 }
 
 export function createApartmentBudgetHandler(): RequestHandler {

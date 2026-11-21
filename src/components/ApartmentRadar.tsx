@@ -85,7 +85,7 @@ const contractors: ReadonlyMap<string, [string, number]> = new Map([
 const terrainGrades = { 평탄: 5, 완만: 4, '일부 경사': 3, 언덕: 2, '가파른 언덕': 1 };
 const gradeBelow = (value: number, thresholds: number[]) => 5 - thresholds.filter(limit => value > limit).length;
 const gradeText = (grade: number | null) => grade === null ? '미확인' : `${grade}/5점`;
-const legend = '바깥쪽일수록 높은 점수입니다. 가장 안쪽의 빈 점은 미확인이며, 연결 점선은 위치를 안내합니다.';
+const legend = '바깥쪽일수록 높은 점수입니다. 빈 점과 점선은 점수 산정에 필요한 자료를 확인 중인 항목입니다.';
 
 function radarEntry(name: string) {
   const year = new Date(Date.now() + 9 * 3600_000).getUTCFullYear();
@@ -101,14 +101,18 @@ function radarEntry(name: string) {
     : null;
   const values = [
     { label: contractor ? `${contractor[0]} · ${contractor[1]}위` : p?.brand, grade: contractor ? gradeBelow(contractor[1], [3, 10, 20, 50]) : null },
-    { label: p?.stationRoute ? `${p.stationRoute.meters}m · ${p.stationRoute.description}` : walk(p?.station), grade: p?.stationRoute ? gradeBelow(p.stationRoute.meters, [300, 500, 750, 1000]) : null },
+    { label: p?.stationRoute ? `${p.stationRoute.meters}m · ${p.stationRoute.description}` : walk(p?.station), pending: p?.station ? '실제 보행 거리 필요' : undefined, grade: p?.stationRoute ? gradeBelow(p.stationRoute.meters, [300, 500, 750, 1000]) : null },
     { label: p?.homes ? `${p.homes.toLocaleString('ko-KR')}세대` : null, grade: p?.homes ? 1 + [500, 1000, 1500, 2000].filter(limit => p.homes! >= limit).length : null },
     { label: p?.year ? `${p.year}년 사용승인 · ${year - p.year}년 경과` : null, grade: p?.year ? gradeBelow(year - p.year, [5, 10, 15, 25]) : null },
     { label: p?.terrain ? p.terrain + ' · 공개 지형 자료' : null, grade: p?.terrain ? terrainGrades[p.terrain] : null },
-    { label: school ? `${school.description} · ${crossings ? `최대 ${widestCrossing}차선, ${crossings}회 횡단` : '차도 횡단 없음'}` : walk(p?.school), grade: schoolGrade },
+    { label: school ? `${school.description} · ${crossings ? `최대 ${widestCrossing}차선, ${crossings}회 횡단` : '차도 횡단 없음'}` : walk(p?.school), pending: p?.school ? '통학로·횡단 차선 확인 필요' : undefined, grade: schoolGrade },
   ];
   const sources = [...(p?.sources ?? []), ...(contractor ? [rankingSource] : [])];
   return { name, values, sources };
+}
+
+function axisStatus(value: { grade: number | null; pending?: string }) {
+  return value.grade === null && value.pending ? value.pending : gradeText(value.grade);
 }
 
 const linePatterns = [undefined, '7 4', '2 3'];
@@ -152,13 +156,15 @@ function RadarChart({ entries, compact = false }: { entries: ReturnType<typeof r
 
 export function ApartmentRadarPreview({ name }: { name: string }) {
   const entry = radarEntry(name);
-  const status = entry.values.map(value => gradeText(value.grade));
+  const status = entry.values.map(axisStatus);
+  const pending = entry.values.filter(value => value.grade === null).length;
   return (
     <figure className="mt-3 flex flex-wrap items-center gap-x-2 rounded-xl bg-slate-50 px-2 py-1">
       <RadarChart entries={[entry]} compact />
       <figcaption className="min-w-0 text-xs text-slate-600">
         <span className="font-semibold text-slate-900">브역대신평초</span>
-        <span className="mt-1 block">{status.filter(value => value !== '미확인').length}개 평가 · {status.filter(value => value === '미확인').length}개 미확인</span>
+        <span className="mt-1 block">{[entry.values[1].label, entry.values[5].label].filter(Boolean).join(" · ")}</span>
+        <span className="mt-1 block">{entry.values.length - pending}개 점수 산정{pending > 0 && ` · ${pending}개 산정 보류`}</span>
         <span className="sr-only">{axes.map(([, label], index) => `${label} ${status[index]}`).join(', ')}</span>
         <details className="mt-2">
           <summary className="cursor-pointer font-medium text-blue-800">육각형 기준 보기</summary>
@@ -190,7 +196,7 @@ export default function ApartmentRadar({ names }: { names: string[] }) {
             <tbody>
               {axes.map(([key, label, rule], i) => <tr key={key} className="border-t border-slate-200">
                 <th scope="row" className="p-2 align-top">{label}<span className="block text-xs font-normal text-slate-600">{rule}</span></th>
-                {entries.map(({ name, values }) => <td className="p-2 align-top" key={name}>{values[i].label}<span className="block text-xs text-slate-600">{gradeText(values[i].grade)}</span></td>)}
+                {entries.map(({ name, values }) => <td className="p-2 align-top" key={name}>{values[i].label}<span className="block text-xs text-slate-600">{axisStatus(values[i])}</span></td>)}
               </tr>)}
               <tr className="border-t border-slate-200"><th scope="row" className="p-2">출처</th>{entries.map(({ name, sources }) => <td className="p-2" key={name}>{sources.length ? sources.map((url, i) => <a className="mr-2 text-blue-800 underline" key={url} href={url} target="_blank" rel="noreferrer">자료 {i + 1}</a>) : '미확인'}</td>)}</tr>
             </tbody>

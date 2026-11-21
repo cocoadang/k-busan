@@ -41,44 +41,74 @@ const point = (axis: number, radius: number) => {
 const rings = [35, 75];
 const walk = (place?: [string, number]) => place ? `${place[0]} 도보 약 ${place[1]}분` : null;
 
-export default function ApartmentRadar({ names }: { names: string[] }) {
+function radarEntry(name: string) {
   const year = new Date(Date.now() + 9 * 3600_000).getUTCFullYear();
-  const entries = names.map((name, index) => {
-    const p = profiles.get(name);
-    const values = [
-      p?.brand ? { label: p.brand, pass: true } : null,
-      p?.station ? { label: walk(p.station), pass: p.station[1] <= 10 } : null,
-      p?.homes ? { label: `${p.homes.toLocaleString('ko-KR')}세대`, pass: p.homes >= 1000 } : null,
-      p?.year ? { label: `${p.year}년 사용승인`, pass: year - p.year <= 5 } : null,
-      p?.terrain ? { label: p.terrain + ' · 공개 지형 분석', pass: p.terrain === '평탄' || p.terrain === '완만' } : null,
-      p?.school ? { label: walk(p.school), pass: p.school[1] <= 5 } : null,
-    ];
-    return { name, color: colors[index], values, sources: p?.sources ?? [] };
-  });
+  const p = profiles.get(name);
+  const values = [
+    p?.brand ? { label: p.brand, pass: true } : null,
+    p?.station ? { label: walk(p.station), pass: p.station[1] <= 10 } : null,
+    p?.homes ? { label: `${p.homes.toLocaleString('ko-KR')}세대`, pass: p.homes >= 1000 } : null,
+    p?.year ? { label: `${p.year}년 사용승인`, pass: year - p.year <= 5 } : null,
+    p?.terrain ? { label: p.terrain + ' · 공개 지형 분석', pass: p.terrain === '평탄' || p.terrain === '완만' } : null,
+    p?.school ? { label: walk(p.school), pass: p.school[1] <= 5 } : null,
+  ];
+  return { name, values, sources: p?.sources ?? [] };
+}
 
+const linePatterns = [undefined, '7 4', '2 3'];
+
+function RadarChart({ entries, compact = false }: { entries: ReturnType<typeof radarEntry>[]; compact?: boolean }) {
   return (
-    <section className="mt-4 border-t border-slate-200 pt-4" aria-label="브역대신평초 비교">
-      <h4 className="font-semibold">브역대신평초 입지 비교</h4>
-      <p className="mt-1 text-sm text-slate-600">바깥쪽은 기준 충족, 안쪽은 기준 미달입니다. 점이 없는 축은 미확인입니다.</p>
-      <div className="mt-2 grid items-start gap-4 lg:grid-cols-[minmax(220px,320px)_1fr]">
-        <svg viewBox="0 0 300 250" className="mx-auto w-full max-w-xs" aria-hidden="true">
+    <svg viewBox="0 0 300 250" className={compact ? "h-28 w-32 shrink-0" : "mx-auto w-full max-w-xs"} aria-hidden="true">
           {rings.map(radius => <polygon key={radius} points={axes.map((_, i) => point(i, radius).join(',')).join(' ')} fill="none" stroke="#cbd5e1" />)}
           {axes.map(([key, label], i) => {
             const [x, y] = point(i, 75);
             const [lx, ly] = point(i, 106);
-            return <g key={key}><line x1={150} y1={125} x2={x} y2={y} stroke="#e2e8f0" /><text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#334155">{label}</text></g>;
+            return <g key={key}><line x1={150} y1={125} x2={x} y2={y} stroke="#e2e8f0" /><text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize={compact ? 25 : 12} fill="#334155">{compact ? key : label}</text></g>;
           })}
-          {entries.map(({ name, color, values }, index) => <g key={name}>
-            {values.map((value, i) => {
-              if (!value) return null;
-              const [x, y] = point(i, (value.pass ? 75 : 35) + (index - (entries.length - 1) / 2) * 7);
-              return <circle key={i} cx={x} cy={y} r={3.5} fill={color} stroke="white" strokeWidth={1} />;
-            })}
-          </g>)}
-        </svg>
+
+          {entries.map(({ name, values }, index) => {
+            const color = colors[index];
+            const positions = values.map((value, axis) => value ? point(axis, (value.pass ? 75 : 35) + (index - (entries.length - 1) / 2) * 5) : null);
+            return <g key={name}>
+              {positions.map((position, axis) => {
+                const next = positions[(axis + 1) % axes.length];
+                return position && next && <line key={axis} x1={position[0]} y1={position[1]} x2={next[0]} y2={next[1]} stroke={color} strokeWidth={compact ? 5 : 2} strokeDasharray={linePatterns[index]} strokeLinecap="round" />;
+              })}
+              {positions.map((position, axis) => position && <circle key={axis} cx={position[0]} cy={position[1]} r={compact ? 7 : 3.5} fill={color} stroke="white" strokeWidth={compact ? 2 : 1} />)}
+            </g>;
+          })}
+    </svg>
+  );
+}
+
+export function ApartmentRadarPreview({ name }: { name: string }) {
+  const entry = radarEntry(name);
+  const status = entry.values.map(value => value ? value.pass ? '충족' : '미달' : '미확인');
+  return (
+    <figure className="mt-3 flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1">
+      <RadarChart entries={[entry]} compact />
+      <figcaption className="min-w-0 text-xs text-slate-600">
+        <span className="font-semibold text-slate-900">브역대신평초</span>
+        <span className="mt-1 block">{status.filter(value => value === '충족').length}개 충족 · {status.filter(value => value === '미확인').length}개 미확인</span>
+        <span className="sr-only">{axes.map(([, label], index) => `${label} ${status[index]}`).join(', ')}</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+export default function ApartmentRadar({ names }: { names: string[] }) {
+  const entries = names.map((name, index) => ({ ...radarEntry(name), color: colors[index] }));
+
+  return (
+    <section className="mt-4 border-t border-slate-200 pt-4" aria-label="브역대신평초 비교">
+      <h4 className="font-semibold">브역대신평초 입지 비교</h4>
+      <p className="mt-1 text-sm text-slate-600">바깥쪽은 기준 충족, 안쪽은 기준 미달입니다. 미확인 축에는 점을 표시하지 않으며 양옆의 선도 끊어집니다.</p>
+      <div className="mt-2 grid items-start gap-4 lg:grid-cols-[minmax(220px,320px)_1fr]">
+        <RadarChart entries={entries} />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[18rem] text-left text-sm">
-            <thead><tr><th scope="col" className="p-2">비교 기준</th>{entries.map(({ name, color }) => <th scope="col" key={name} className="p-2"><span style={{ color }} aria-hidden="true">● </span>{name}</th>)}</tr></thead>
+            <thead><tr><th scope="col" className="p-2">비교 기준</th>{entries.map(({ name, color }, index) => <th scope="col" key={name} className="p-2"><svg className="mr-1 inline-block align-middle" width="22" height="10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke={color} strokeWidth="2" strokeDasharray={linePatterns[index]} /></svg>{name}</th>)}</tr></thead>
             <tbody>
               {axes.map(([key, label, rule], i) => <tr key={key} className="border-t border-slate-200">
                 <th scope="row" className="p-2 align-top">{label}<span className="block text-xs font-normal text-slate-600">{rule}</span></th>

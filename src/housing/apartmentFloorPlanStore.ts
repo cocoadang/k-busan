@@ -1,11 +1,13 @@
 import type { RequestHandler } from 'express';
 import { FirestoreService } from '../storage/firestoreService.ts';
 import catalog from './largeApartmentCatalog.json';
+import kbImages from './kbFloorPlanImages.json';
 import sources from './largeApartmentFloorPlans.json';
 
 type Plan = { label: string; area: string; image: string };
 type Source = { source: string; url: string };
 const sourceIndex: Record<string, Source | null> = sources;
+const kbPlans: Record<string, Plan[]> = kbImages;
 const storage = new FirestoreService();
 const collection = 'apartment_floor_plans_v1';
 
@@ -48,7 +50,7 @@ export async function refreshApartmentFloorPlans() {
   const results = await Promise.allSettled(catalog.apartments.map(async ({ name }) => {
     const ref = entries.doc(name);
     const source = sourceIndex[name];
-    const configured = published[name];
+    const configured = published[name]?.plans ?? kbPlans[name];
     const existing = (await ref.get()).data();
     if (existing?.plans?.length) return true;
     const sur = name === '과천래미안슈르';
@@ -56,7 +58,7 @@ export async function refreshApartmentFloorPlans() {
       await ref.set({ name, source, plans: [], status: 'image_source_pending' }, { merge: true });
       return false;
     }
-    const plans = sur ? await raemianPlans() : configured.plans;
+    const plans = sur ? await raemianPlans() : configured;
     const downloads = await Promise.allSettled(plans.map(async plan => {
       const response = await fetch(plan.image, { signal: AbortSignal.timeout(10000), redirect: 'error' });
       const mime = response.headers.get('content-type')?.split(';')[0];
@@ -65,18 +67,18 @@ export async function refreshApartmentFloorPlans() {
       if (!bytes.length || bytes.length > 8_000_000) throw new Error('FLOOR_PLAN_IMAGE_SIZE');
       return { plan, bytes, mime };
     }));
-    const batch = db.batch();
-    const stored = downloads.flatMap((result, index) => {
+    const stored = (await Promise.all(downloads.map(async (result, index) => {
       if (result.status !== 'fulfilled') return [];
       const { plan, bytes, mime } = result.value;
+      const batch = db.batch();
       const parts = Math.ceil(bytes.length / 650_000);
       for (let part = 0; part < parts; part++) {
         batch.set(ref.collection('images').doc(`${index}_${part}`), { bytes: bytes.subarray(part * 650_000, (part + 1) * 650_000) });
       }
+      await batch.commit();
       return [{ id: String(index), label: plan.label, area: plan.area, mime, parts }];
-    });
-    batch.set(ref, { name, source, plans: stored, status: stored.length ? 'available' : 'image_source_pending' });
-    await batch.commit();
+    }))).flat();
+    await ref.set({ name, source, plans: stored, status: stored.length ? 'available' : 'image_source_pending' });
     return Boolean(stored.length);
   }));
   return { total: results.length, available: results.filter(result => result.status === 'fulfilled' && result.value).length };

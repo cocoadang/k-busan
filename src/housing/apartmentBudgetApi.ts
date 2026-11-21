@@ -51,7 +51,7 @@ function storedMonth(key: string | null, region: string, month: string) {
     const ref = db?.collection('apartment_trade_months_v1').doc(id);
     const saved = (await ref?.get().catch(() => undefined))?.data() as StoredMonth | undefined;
     if (saved && Date.now() - saved.fetchedAt < maxAge) return { rows: saved.rows, stale: false };
-    try {
+    const refresh = async () => {
       if (!key) throw new Error('MOLIT_KEY_UNAVAILABLE');
       const names = acceptedNames.get(region);
       const rows = (await monthTrades(key, region, month))
@@ -63,11 +63,15 @@ function storedMonth(key: string | null, region: string, month: string) {
         await ref.set({ rows, fetchedAt }).catch(() => console.warn('[housing] trade snapshot write failed', id));
       }
       return { rows, stale: false };
-    } catch (error) {
-      if (saved) return { rows: saved.rows, stale: true };
-      throw error;
+    };
+    if (!saved) return refresh();
+    if (key) {
+      const latest = refresh();
+      pendingMonths.set(id, latest);
+      void latest.catch(() => {}).finally(() => { if (pendingMonths.get(id) === latest) pendingMonths.delete(id); });
     }
-  })().finally(() => pendingMonths.delete(id));
+    return { rows: saved.rows, stale: true };
+  })().finally(() => { if (pendingMonths.get(id) === request) pendingMonths.delete(id); });
   pendingMonths.set(id, request);
   return request;
 }
@@ -152,7 +156,7 @@ export function createApartmentBudgetHandler(): RequestHandler {
       const request = loadPrices();
       cache = { request, until: Date.now() + 3600_000 };
       void request.then(data => {
-        if (cache?.request === request && data.incomplete) cache.until = Date.now() + 60_000;
+        if (cache?.request === request && (data.incomplete || data.stale)) cache.until = Date.now() + 60_000;
       }, () => {
         if (cache?.request === request) cache.until = Date.now() + 30_000;
       });

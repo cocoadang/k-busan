@@ -167,16 +167,6 @@ export default function ApartmentBudgetSearch() {
 
   const [rangeError, setRangeError] = useState(false);
   const listingKey = (apt: Listing) => `${apt.name}:${apt.areaCategory}`;
-  function compareNearby(anchor: Listing) {
-    const closest = new Map<string, Listing>();
-    for (const candidate of matches.filter(apt => apt.name !== anchor.name && apt.district === anchor.district && apt.areaCategory === anchor.areaCategory)
-      .sort((a, b) => Number(b.neighborhood === anchor.neighborhood) - Number(a.neighborhood === anchor.neighborhood) ||
-        Math.abs(a.price - anchor.price) - Math.abs(b.price - anchor.price))) {
-      if (!closest.has(candidate.name)) closest.set(candidate.name, candidate);
-    }
-    setSelected([anchor, ...[...closest.values()].slice(0, 2)]);
-  }
-
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const amount = Math.round(Number(budget) * 10000);
@@ -202,9 +192,9 @@ export default function ApartmentBudgetSearch() {
     }
   }
 
-  function renderCards(listings: Listing[]) {
+  function renderCards(listings: Listing[], grouped = false) {
     return (
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={`mt-4 grid gap-4 ${grouped ? "" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
           {listings.map((apt) => {
             const checked = selected.some(a => listingKey(a) === listingKey(apt));
             const unavailable = !checked && (selected.length >= 3 || selected.some(a => a.areaCategory !== apt.areaCategory || a.name === apt.name));
@@ -220,9 +210,7 @@ export default function ApartmentBudgetSearch() {
             </dl>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-3 text-sm font-semibold text-blue-800">
               <button type="button" disabled={unavailable} aria-pressed={checked} className="underline disabled:opacity-40" onClick={() => setSelected(current => checked ? current.filter(a => listingKey(a) !== listingKey(apt)) : [...current, apt])}>{checked ? '비교에서 빼기' : '비교에 추가'}</button>
-              {matches.some(a => a.name !== apt.name && a.district === apt.district && a.areaCategory === apt.areaCategory) && <button type="button" className="underline" onClick={() => compareNearby(apt)}>비슷한 후보 비교</button>}
               <a className="underline" href={videoUrl(apt.videoId, apt.time)} target="_blank" rel="noreferrer">입지 분석 영상</a>
-              <a className="underline" href="https://rt.molit.go.kr/" target="_blank" rel="noreferrer">신고 거래 확인</a>
             </div>
           </article>;
           })}
@@ -291,7 +279,6 @@ export default function ApartmentBudgetSearch() {
             <h3 className="text-lg font-bold">전용 {selected[0].areaCategory}㎡대 단지 비교 ({selected.length}/3)</h3>
             <button type="button" onClick={() => setSelected([])} className="text-sm text-blue-800 underline">비교 초기화</button>
           </div>
-          <p className="mt-1 text-sm text-slate-600">비슷한 후보는 같은 시·군·구와 면적대에서 같은 법정동, 가격 차이 순으로 찾습니다.</p>
           {selected.length === 1 && <p className="mt-1 text-sm text-slate-600">아래 결과에서 같은 면적대의 단지를 추가해 비교할 수 있습니다.</p>}
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[28rem] text-left text-sm">
@@ -346,7 +333,7 @@ export default function ApartmentBudgetSearch() {
                         })}
                       </span>
                     </summary>
-                    {renderCards(listings)}
+                    {renderCards(listings, true)}
                   </details>
                 );
               })}

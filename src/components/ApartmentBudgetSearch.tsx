@@ -1,3 +1,4 @@
+import floorPlans from '../housing/largeApartmentFloorPlans.json';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -196,6 +197,8 @@ export default function ApartmentBudgetSearch() {
     return (
       <div className={`mt-4 grid gap-4 ${grouped ? "" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
           {listings.map((apt) => {
+            const planName = apt.name === '대치 은마' ? '은마' : apt.name === '래미안슈르' ? '과천래미안슈르' : apt.name;
+            const plan = (floorPlans as Record<string, { url: string; source: string } | null>)[planName];
             const checked = selected.some(a => listingKey(a) === listingKey(apt));
             const unavailable = !checked && (selected.length >= 3 || selected.some(a => a.areaCategory !== apt.areaCategory || a.name === apt.name));
             return <article key={listingKey(apt)} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5">
@@ -210,6 +213,7 @@ export default function ApartmentBudgetSearch() {
             </dl>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-3 text-sm font-semibold text-blue-800">
               <button type="button" disabled={unavailable} aria-pressed={checked} className="underline disabled:opacity-40" onClick={() => setSelected(current => checked ? current.filter(a => listingKey(a) !== listingKey(apt)) : [...current, apt])}>{checked ? '비교에서 빼기' : '비교에 추가'}</button>
+              {plan && <a className="underline" href={plan.url} target="_blank" rel="noreferrer">평면도 원본</a>}
               <a className="underline" href={videoUrl(apt.videoId, apt.time)} target="_blank" rel="noreferrer">입지 분석 영상</a>
             </div>
           </article>;

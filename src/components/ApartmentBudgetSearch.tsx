@@ -1,3 +1,4 @@
+import { RaemianSurFloorPlans } from './RaemianSurFloorPlans';
 import floorPlans from '../housing/largeApartmentFloorPlans.json';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -213,9 +214,10 @@ export default function ApartmentBudgetSearch() {
             </dl>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-3 text-sm font-semibold text-blue-800">
               <button type="button" disabled={unavailable} aria-pressed={checked} className="underline disabled:opacity-40" onClick={() => setSelected(current => checked ? current.filter(a => listingKey(a) !== listingKey(apt)) : [...current, apt])}>{checked ? '비교에서 빼기' : '비교에 추가'}</button>
-              {plan && <a className="underline" href={plan.url} target="_blank" rel="noreferrer">평면도 원본</a>}
+              {plan && apt.name !== '래미안슈르' && <a className="underline" href={plan.url} target="_blank" rel="noreferrer">평면도 원본</a>}
               <a className="underline" href={videoUrl(apt.videoId, apt.time)} target="_blank" rel="noreferrer">입지 분석 영상</a>
             </div>
+            {apt.name === '래미안슈르' && <RaemianSurFloorPlans area={apt.areaCategory} />}
           </article>;
           })}
         </div>

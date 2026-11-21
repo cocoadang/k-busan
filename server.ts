@@ -104,6 +104,37 @@ app.get('/api/official/diagnostics', async (req, res) => {
 app.get('/api/housing/busan-prices', createBusanPriceHandler());
 app.get('/api/housing/apartment-budget', createApartmentBudgetHandler());
 
+let surFloorPlans: { expiresAt: number; data: { label: string; area: string; image: string }[] } | undefined;
+app.get('/api/housing/floor-plans/raemian-sur', async (_req, res) => {
+  try {
+    if (!surFloorPlans || surFloorPlans.expiresAt <= Date.now()) {
+      const origin = await fetch('https://khu0927.tistory.com/1327', { signal: AbortSignal.timeout(8000), redirect: 'error' });
+      if (!origin.ok) throw new Error('FLOOR_PLAN_SOURCE_UNAVAILABLE');
+      const { load } = await import('cheerio');
+      const page = load(await origin.text());
+      const data: { label: string; area: string; image: string }[] = [];
+      let heading: { label: string; area: string } | undefined;
+      page('.contents_style').first().children().each((_, element) => {
+        const node = page(element);
+        const match = node.is('p') && node.text().match(/^\s*\*\s*(\d+평)\s*전용\s*(\d{2,3})([A-Z]*)\s*\*\s*$/);
+        if (match) heading = { label: `${match[1]} · 전용 ${match[2]}㎡${match[3] ? ` ${match[3]}` : ''}`, area: match[2] };
+        if (!heading || !node.is('figure')) return;
+        const image = node.find('img').attr('src');
+        if (image && /^https:\/\/blog\.kakaocdn\.net\/dna\//.test(image)) data.push({ ...heading, image });
+        heading = undefined;
+      });
+      if (!data.length) throw new Error('FLOOR_PLAN_SOURCE_EMPTY');
+      surFloorPlans = { data, expiresAt: Date.now() + 10 * 60_000 };
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(surFloorPlans.data);
+  } catch {
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(503).json({ error: 'FLOOR_PLAN_SOURCE_UNAVAILABLE' });
+  }
+});
+
+
 // Optional development preview: proxies public reads to PREVIEW_UPSTREAM_ORIGIN, blocks writes.
 // Opt-in via PREVIEW_MODE=true (never active when NODE_ENV=production).
 const previewConfig = resolvePreviewConfig();

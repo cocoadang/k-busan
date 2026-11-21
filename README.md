@@ -98,3 +98,7 @@ Active text analysis uses OpenAI Responses, `gpt-6-luna`, reasoning none, no too
 GPT-6 Luna의 실제 문서·운영 경로 검증 및 Gemini 재비교(2026-11-15): [검증 보고서](docs/validation/LUNA_COMPARISON.md). 공고 표본 정확도와 운영 뉴스의 확인·재시도 상태를 구분해 기록했습니다.
 
 뉴스 확인·재시도 16건의 원문 검토·운영 정리 결과: [건별 처리와 검증 기록](docs/validation/NEWS_REVIEW16.md).
+
+## Housing changes in production
+
+Carry authorized work through data import, deployment, and verification of the actual page and assets before reporting completion. If an external source prevents completion, report the exact remaining coverage. A deployed viewer or an empty catalog does not count as a completed data import.

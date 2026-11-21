@@ -3,15 +3,17 @@ type Profile = {
   homes?: number;
   year?: number;
   station?: [string, number];
+  stationRoute?: { meters: number; description: string };
   school?: [string, number];
-  terrain?: '평탄' | '완만' | '언덕' | '가파른 언덕';
+  schoolRoute?: { adjacent: boolean; crossingLanes: number[]; description: string };
+  terrain?: '평탄' | '완만' | '일부 경사' | '언덕' | '가파른 언덕';
   sources: string[];
 };
 
 const profiles: ReadonlyMap<string, Profile> = new Map([
   ['힐스테이트 e편한세상 문정', { brand: '힐스테이트·e편한세상', year: 2024, homes: 1265, station: ['문정역', 13], school: ['서울문정초', 7], terrain: '언덕', sources: ['https://home.114.ai.kr/apt/47407', 'https://imjangmap.co.kr/gu/송파구', 'https://statnorth.kr/apt/서울/송파구/문정동-힐스테이트e편한세상문정-9123fa3af660', 'https://www.khba.or.kr/user/isale/isaleInfo.do?busiResuSeq=10&memSeq=2004-0048'] }],
   ['가락쌍용1차', { brand: '쌍용', homes: 2064, year: 1997, station: ['경찰병원역', 5], school: ['서울가주초', 1], terrain: '언덕', sources: ['https://imjangmap.co.kr/gu/송파구', 'https://www.songpa.go.kr/www/contents.do?key=5847', 'https://realty.daangn.com/complexes/10667566'] }],
-  ['래미안슈르', { brand: '래미안', homes: 2899, year: 2008, station: ['정부과천청사역', 8], school: ['문원초', 5], sources: ['https://realty.daangn.com/complexes/14787855/topics/school-district', 'https://bigvalue.ai/dashboard/apartment/경기도/과천시/원문동/c01906547'] }],
+  ['래미안슈르', { brand: '래미안', homes: 2899, year: 2008, station: ['정부과천청사역', 8], school: ['문원초', 5], terrain: '평탄', sources: ['https://cdn.zippoom.com/부동산/경기-과천시-원문동-래미안슈르/wg7y0h', 'https://realty.daangn.com/complexes/14787855/topics/school-district', 'https://bigvalue.ai/dashboard/apartment/경기도/과천시/원문동/c01906547'] }],
   ['광장현대3단지', { brand: '현대', homes: 1056, year: 1990, station: ['강변역', 10], school: ['서울광남초', 3], sources: ['https://realty.daangn.com/complexes/11100626', 'https://openapt.seoul.go.kr/openApt/index.do?aptCode=A14381415'] }],
   ['고덕 아이파크', { brand: '아이파크', station: ['고덕역', 7], school: ['서울묘곡초', 3], homes: 1142, year: 2011, terrain: '완만', sources: ['https://imjangmap.co.kr/apt/A13408003', 'https://realty.daangn.com/complexes/10654556'] }],
   ['청량리한신', { brand: '한신', homes: 960, year: 1997, station: ['청량리역', 14], terrain: '가파른 언덕', sources: ['https://imjangmap.co.kr/gu/동대문구', 'https://www.k-apt.go.kr/cmmn/introMmentPop.do?bjdCode=11&searchOccuDate=201606'] }],
@@ -26,12 +28,36 @@ const profiles: ReadonlyMap<string, Profile> = new Map([
 ]);
 
 const axes = [
-  ['브', '브랜드', '출처에서 확인한 브랜드 표기'],
-  ['역', '역세권', '현재 운영역까지 출처에 표시된 도보 10분 이내'],
-  ['대', '대단지', '기존 단지 기준 1,000세대 이상'],
-  ['신', '신축', '사용승인 연도와 현재 한국시간 연도의 차이가 5년 이내'],
-  ['평', '평지', '공개 지형 분석에서 평탄·완만으로 분류되면 충족'],
-  ['초', '초등학교', '출처에 표시된 인근 초등학교까지 도보 5분 이내'],
+  [
+    "브",
+    "브랜드",
+    "2026년 국토부 토목건축 시공능력평가 순위. 1–3위 5점, 4–10위 4점, 11–20위 3점, 21–50위 2점, 51위 이하 1점. 순위가 확인된 공동 시공사는 가장 높은 순위 적용."
+  ],
+  [
+    "역",
+    "역세권",
+    "대표 단지 출입구에서 운영 중인 역 출입구까지 실제 보행 경로. 300m 이하 5점, 500m 이하 4점, 750m 이하 3점, 1,000m 이하 2점, 그 초과 1점."
+  ],
+  [
+    "대",
+    "대단지",
+    "기존 단지 기준 2,000세대 이상 5점, 1,500 이상 4점, 1,000 이상 3점, 500 이상 2점, 500 미만 1점."
+  ],
+  [
+    "신",
+    "신축",
+    "현재 한국 연도와 사용승인 연도 차이. 5년 이하 5점, 10년 이하 4점, 15년 이하 3점, 25년 이하 2점, 그 초과 1점."
+  ],
+  [
+    "평",
+    "평지",
+    "공개 지형 자료 분류 기준. 평탄 5점, 완만 4점, 일부 경사 3점, 언덕 2점, 가파른 언덕 1점."
+  ],
+  [
+    "초",
+    "초등학교",
+    "배정 학교까지 대표 통학로 기준. 단지 인접·차도 횡단 없음 5점, 비인접·횡단 없음 4점, 1~2차선 차도 1회 횡단 3점, 3~4차선 차도 1회 또는 1~2차선 차도 2회 이상 2점, 5차선 이상 또는 3~4차선 차도를 포함해 2회 이상 횡단 1점."
+  ]
 ] as const;
 const colors = ['#087e8b', '#1d4ed8', '#a21caf'];
 const point = (axis: number, radius: number) => {
@@ -43,18 +69,43 @@ const innerRadius = 34;
 const rings = [17, innerRadius, 51, 68, outerRadius];
 const walk = (place?: [string, number]) => place ? `${place[0]} 도보 약 ${place[1]}분` : null;
 
+const rankingSource = 'https://www.molit.go.kr/USR/NEWS/dtl.jsp?id=95092271';
+const contractors: ReadonlyMap<string, [string, number]> = new Map([
+  ['래미안슈르', ['삼성물산', 1]],
+  ['힐스테이트 e편한세상 문정', ['현대건설', 2]],
+  ['가락쌍용1차', ['쌍용건설', 19]],
+  ['청량리한신', ['한신공영', 29]],
+  ['길음 롯데캐슬클라시아', ['롯데건설', 7]],
+  ['인덕원센트럴푸르지오', ['대우건설', 5]],
+  ['관악푸르지오', ['대우건설', 5]],
+]);
+const terrainGrades = { 평탄: 5, 완만: 4, '일부 경사': 3, 언덕: 2, '가파른 언덕': 1 };
+const gradeBelow = (value: number, thresholds: number[]) => 5 - thresholds.filter(limit => value > limit).length;
+const gradeText = (grade: number | null) => grade === null ? '미확인' : `${grade}/5점`;
+const legend = '바깥쪽일수록 높은 점수입니다. 가장 안쪽의 빈 점은 미확인이며, 연결 점선은 위치를 안내합니다.';
+
 function radarEntry(name: string) {
   const year = new Date(Date.now() + 9 * 3600_000).getUTCFullYear();
   const p = profiles.get(name);
+  const contractor = contractors.get(name);
+  const school = p?.schoolRoute;
+  const widestCrossing = Math.max(0, ...(school?.crossingLanes ?? []));
+  const crossings = school?.crossingLanes.length ?? 0;
+  const schoolGrade = school
+    ? widestCrossing >= 5 || (widestCrossing >= 3 && crossings > 1) ? 1
+      : widestCrossing >= 3 || crossings > 1 ? 2
+      : crossings === 1 ? 3 : school.adjacent ? 5 : 4
+    : null;
   const values = [
-    p?.brand ? { label: p.brand, pass: true } : null,
-    p?.station ? { label: walk(p.station), pass: p.station[1] <= 10 } : null,
-    p?.homes ? { label: `${p.homes.toLocaleString('ko-KR')}세대`, pass: p.homes >= 1000 } : null,
-    p?.year ? { label: `${p.year}년 사용승인`, pass: year - p.year <= 5 } : null,
-    p?.terrain ? { label: p.terrain + ' · 공개 지형 분석', pass: p.terrain === '평탄' || p.terrain === '완만' } : null,
-    p?.school ? { label: walk(p.school), pass: p.school[1] <= 5 } : null,
+    { label: contractor ? `${contractor[0]} · ${contractor[1]}위` : p?.brand, grade: contractor ? gradeBelow(contractor[1], [3, 10, 20, 50]) : null },
+    { label: p?.stationRoute ? `${p.stationRoute.meters}m · ${p.stationRoute.description}` : walk(p?.station), grade: p?.stationRoute ? gradeBelow(p.stationRoute.meters, [300, 500, 750, 1000]) : null },
+    { label: p?.homes ? `${p.homes.toLocaleString('ko-KR')}세대` : null, grade: p?.homes ? 1 + [500, 1000, 1500, 2000].filter(limit => p.homes! >= limit).length : null },
+    { label: p?.year ? `${p.year}년 사용승인 · ${year - p.year}년 경과` : null, grade: p?.year ? gradeBelow(year - p.year, [5, 10, 15, 25]) : null },
+    { label: p?.terrain ? p.terrain + ' · 공개 지형 자료' : null, grade: p?.terrain ? terrainGrades[p.terrain] : null },
+    { label: school ? `${school.description} · ${crossings ? `최대 ${widestCrossing}차선, ${crossings}회 횡단` : '차도 횡단 없음'}` : walk(p?.school), grade: schoolGrade },
   ];
-  return { name, values, sources: p?.sources ?? [] };
+  const sources = [...(p?.sources ?? []), ...(contractor ? [rankingSource] : [])];
+  return { name, values, sources };
 }
 
 const linePatterns = [undefined, '7 4', '2 3'];
@@ -75,20 +126,20 @@ function RadarChart({ entries, compact = false }: { entries: ReturnType<typeof r
         </g>;
       })}
       {entries.map(({ name, values }, index) => {
-        const positions = values.map((value, axis) => point(axis, value === null ? rings[0] : value.pass ? outerRadius : innerRadius));
+        const positions = values.map((value, axis) => point(axis, value.grade === null ? 8 : rings[value.grade - 1]));
         const color = colors[index];
         const outline = { stroke: color, strokeWidth: compact ? 3 : 2.5, strokeDasharray: linePatterns[index] };
         return <g key={name}>
           <polygon points={positions.map(position => position.join(',')).join(' ')} fill={color} fillOpacity={compact ? 0.24 : 0.13} />
           {positions.map(([x, y], axis) => {
             const next = (axis + 1) % axes.length;
-            const unknown = values[axis] === null || values[next] === null;
+            const unknown = values[axis].grade === null || values[next].grade === null;
             return <line key={axis} x1={x} y1={y} x2={positions[next][0]} y2={positions[next][1]}
               {...outline} strokeDasharray={unknown ? '1 5' : outline.strokeDasharray} strokeLinecap="round" />;
           })}
           {positions.map(([x, y], axis) => (
             <circle key={axis} cx={x} cy={y} r={compact ? 3.5 : 3}
-              fill={values[axis] === null ? 'white' : color} stroke={values[axis] === null ? color : 'white'} strokeWidth={1.5} />
+              fill={values[axis].grade === null ? 'white' : color} stroke={values[axis].grade === null ? color : 'white'} strokeWidth={1.5} />
           ))}
         </g>;
       })}
@@ -98,21 +149,21 @@ function RadarChart({ entries, compact = false }: { entries: ReturnType<typeof r
 
 export function ApartmentRadarPreview({ name }: { name: string }) {
   const entry = radarEntry(name);
-  const status = entry.values.map(value => value ? value.pass ? '충족' : '미달' : '미확인');
+  const status = entry.values.map(value => gradeText(value.grade));
   return (
     <figure className="mt-3 flex flex-wrap items-center gap-x-2 rounded-xl bg-slate-50 px-2 py-1">
       <RadarChart entries={[entry]} compact />
       <figcaption className="min-w-0 text-xs text-slate-600">
         <span className="font-semibold text-slate-900">브역대신평초</span>
-        <span className="mt-1 block">{status.filter(value => value === '충족').length}개 충족 · {status.filter(value => value === '미확인').length}개 미확인</span>
+        <span className="mt-1 block">{status.filter(value => value !== '미확인').length}개 평가 · {status.filter(value => value === '미확인').length}개 미확인</span>
         <span className="sr-only">{axes.map(([, label], index) => `${label} ${status[index]}`).join(', ')}</span>
         <details className="mt-2">
           <summary className="cursor-pointer font-medium text-blue-800">육각형 기준 보기</summary>
-          <p className="mt-1">바깥쪽은 충족, 안쪽은 미달입니다. 가장 안쪽의 빈 점과 짧은 점선은 미확인입니다.</p>
+          <p className="mt-1">{legend}</p>
           <dl className="mt-2 space-y-1">
             {axes.map(([key, label, rule], index) => <div key={key}>
               <dt className="inline font-semibold">{label} · {status[index]}</dt>
-              <dd>{rule}</dd>
+              <dd>{entry.values[index].label && <span className="block">{entry.values[index].label}</span>}{rule}</dd>
             </div>)}
           </dl>
         </details>
@@ -127,7 +178,7 @@ export default function ApartmentRadar({ names }: { names: string[] }) {
   return (
     <section className="mt-4 border-t border-slate-200 pt-4" aria-label="브역대신평초 비교">
       <h4 className="font-semibold">브역대신평초 입지 비교</h4>
-      <p className="mt-1 text-sm text-slate-600">바깥쪽은 충족, 안쪽은 미달입니다. 가장 안쪽의 빈 점과 짧은 점선은 미확인입니다.</p>
+      <p className="mt-1 text-sm text-slate-600">{legend}</p>
       <div className="mt-2 grid items-start gap-4 lg:grid-cols-[minmax(220px,320px)_1fr]">
         <RadarChart entries={entries} />
         <div className="overflow-x-auto">
@@ -136,14 +187,14 @@ export default function ApartmentRadar({ names }: { names: string[] }) {
             <tbody>
               {axes.map(([key, label, rule], i) => <tr key={key} className="border-t border-slate-200">
                 <th scope="row" className="p-2 align-top">{label}<span className="block text-xs font-normal text-slate-600">{rule}</span></th>
-                {entries.map(({ name, values }) => <td className="p-2 align-top" key={name}>{values[i] ? <>{values[i]?.label}<span className="block text-xs text-slate-600">{values[i]?.pass ? '충족' : '미달'}</span></> : <span className="text-slate-500">미확인</span>}</td>)}
+                {entries.map(({ name, values }) => <td className="p-2 align-top" key={name}>{values[i].label}<span className="block text-xs text-slate-600">{gradeText(values[i].grade)}</span></td>)}
               </tr>)}
               <tr className="border-t border-slate-200"><th scope="row" className="p-2">출처</th>{entries.map(({ name, sources }) => <td className="p-2" key={name}>{sources.length ? sources.map((url, i) => <a className="mr-2 text-blue-800 underline" key={url} href={url} target="_blank" rel="noreferrer">자료 {i + 1}</a>) : '미확인'}</td>)}</tr>
             </tbody>
           </table>
         </div>
       </div>
-      <p className="text-xs text-slate-600">도보 시간은 출처의 추정치로 일부는 직선거리 환산값입니다. 출입구와 실제 경로에 따라 달라집니다. 평지는 공개 지형 분석의 분류를 사용합니다. 초등학교 배정은 주소별로 확인해야 합니다.</p>
+      <p className="text-xs text-slate-600">참고 도보 시간은 일부 직선거리 환산값이며 역·학교 점수에는 반영하지 않습니다. 역 출입구, 통학로와 배정 학교는 단지 주소와 동에 따라 달라질 수 있습니다.</p>
     </section>
   );
 }

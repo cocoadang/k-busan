@@ -33,12 +33,14 @@ const axes = [
   ['평', '평지', '공개 지형 분석에서 평탄·완만으로 분류되면 충족'],
   ['초', '초등학교', '출처에 표시된 인근 초등학교까지 도보 5분 이내'],
 ] as const;
-const colors = ['#1d4ed8', '#047857', '#a21caf'];
+const colors = ['#087e8b', '#1d4ed8', '#a21caf'];
 const point = (axis: number, radius: number) => {
   const angle = (axis * 60 - 90) * Math.PI / 180;
   return [150 + Math.cos(angle) * radius, 125 + Math.sin(angle) * radius] as const;
 };
-const rings = [35, 75];
+const outerRadius = 85;
+const innerRadius = 34;
+const rings = [17, innerRadius, 51, 68, outerRadius];
 const walk = (place?: [string, number]) => place ? `${place[0]} 도보 약 ${place[1]}분` : null;
 
 function radarEntry(name: string) {
@@ -59,25 +61,39 @@ const linePatterns = [undefined, '7 4', '2 3'];
 
 function RadarChart({ entries, compact = false }: { entries: ReturnType<typeof radarEntry>[]; compact?: boolean }) {
   return (
-    <svg viewBox="0 0 300 250" className={compact ? "h-28 w-32 shrink-0" : "mx-auto w-full max-w-xs"} aria-hidden="true">
-          {rings.map(radius => <polygon key={radius} points={axes.map((_, i) => point(i, radius).join(',')).join(' ')} fill="none" stroke="#cbd5e1" />)}
-          {axes.map(([key, label], i) => {
-            const [x, y] = point(i, 75);
-            const [lx, ly] = point(i, 106);
-            return <g key={key}><line x1={150} y1={125} x2={x} y2={y} stroke="#e2e8f0" /><text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize={compact ? 25 : 12} fill="#334155">{compact ? key : label}</text></g>;
-          })}
-
-          {entries.map(({ name, values }, index) => {
-            const color = colors[index];
-            const positions = values.map((value, axis) => value ? point(axis, (value.pass ? 75 : 35) + (index - (entries.length - 1) / 2) * 5) : null);
-            return <g key={name}>
-              {positions.map((position, axis) => {
-                const next = positions[(axis + 1) % axes.length];
-                return position && next && <line key={axis} x1={position[0]} y1={position[1]} x2={next[0]} y2={next[1]} stroke={color} strokeWidth={compact ? 5 : 2} strokeDasharray={linePatterns[index]} strokeLinecap="round" />;
-              })}
-              {positions.map((position, axis) => position && <circle key={axis} cx={position[0]} cy={position[1]} r={compact ? 7 : 3.5} fill={color} stroke="white" strokeWidth={compact ? 2 : 1} />)}
-            </g>;
-          })}
+    <svg viewBox="0 0 280 244" className={compact ? "h-40 w-44 max-w-full shrink-0" : "mx-auto w-full max-w-xs"} aria-hidden="true">
+      {rings.map(radius => (
+        <polygon key={radius} points={axes.map((_, axis) => point(axis, radius).join(',')).join(' ')}
+          fill="none" stroke={radius === outerRadius ? '#8799ab' : '#c2cdd7'} />
+      ))}
+      {axes.map(([key, label], axis) => {
+        const [x, y] = point(axis, outerRadius);
+        const [labelX, labelY] = point(axis, compact ? 106 : 109);
+        return <g key={key}>
+          <line x1={150} y1={125} x2={x} y2={y} stroke="#c2cdd7" />
+          <text x={labelX} y={labelY} textAnchor="middle" dominantBaseline="middle" fontSize={compact ? 20 : 13} fontWeight="600" fill="#334155">{compact ? key : label}</text>
+        </g>;
+      })}
+      {entries.map(({ name, values }, index) => {
+        const positions = values.map((value, axis) => value ? point(axis, value.pass ? outerRadius : innerRadius) : null);
+        const edges = positions.flatMap((from, axis) => {
+          const to = positions[(axis + 1) % axes.length];
+          return from && to ? [{ axis, from, to }] : [];
+        });
+        const complete = positions.every(position => position !== null);
+        const color = colors[index];
+        const outline = { stroke: color, strokeWidth: compact ? 3 : 2.5, strokeDasharray: linePatterns[index], strokeLinejoin: 'round' as const };
+        return <g key={name}>
+          {complete
+            ? <polygon points={positions.map(position => position?.join(',')).join(' ')} fill={color} fillOpacity={compact ? 0.24 : 0.13} {...outline} />
+            : <>
+              <path d={edges.map(({ from, to }) => `M 150,125 L ${from.join(',')} L ${to.join(',')} Z`).join(' ')}
+                fill={color} fillOpacity={compact ? 0.24 : 0.13} />
+              {edges.map(({ axis, from, to }) => <line key={axis} x1={from[0]} y1={from[1]} x2={to[0]} y2={to[1]} {...outline} />)}
+            </>}
+          {positions.map((position, axis) => position && <circle key={axis} cx={position[0]} cy={position[1]} r={compact ? 3.5 : 3} fill={color} stroke="white" strokeWidth={1} />)}
+        </g>;
+      })}
     </svg>
   );
 }
@@ -86,7 +102,7 @@ export function ApartmentRadarPreview({ name }: { name: string }) {
   const entry = radarEntry(name);
   const status = entry.values.map(value => value ? value.pass ? '충족' : '미달' : '미확인');
   return (
-    <figure className="mt-3 flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1">
+    <figure className="mt-3 flex flex-wrap items-center gap-x-2 rounded-xl bg-slate-50 px-2 py-1">
       <RadarChart entries={[entry]} compact />
       <figcaption className="min-w-0 text-xs text-slate-600">
         <span className="font-semibold text-slate-900">브역대신평초</span>
@@ -103,7 +119,7 @@ export default function ApartmentRadar({ names }: { names: string[] }) {
   return (
     <section className="mt-4 border-t border-slate-200 pt-4" aria-label="브역대신평초 비교">
       <h4 className="font-semibold">브역대신평초 입지 비교</h4>
-      <p className="mt-1 text-sm text-slate-600">바깥쪽은 기준 충족, 안쪽은 기준 미달입니다. 미확인 축에는 점을 표시하지 않으며 양옆의 선도 끊어집니다.</p>
+      <p className="mt-1 text-sm text-slate-600">바깥쪽은 기준 충족, 안쪽은 기준 미달입니다. 미확인 축 주변은 선과 색을 비워 둡니다.</p>
       <div className="mt-2 grid items-start gap-4 lg:grid-cols-[minmax(220px,320px)_1fr]">
         <RadarChart entries={entries} />
         <div className="overflow-x-auto">

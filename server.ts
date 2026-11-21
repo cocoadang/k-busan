@@ -978,6 +978,9 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
+    if (process.env.IMPORT_FLOOR_PLANS_ON_START === 'true') {
+      void refreshApartmentFloorPlans().then(result => console.info('[housing] startup floor plan import', result), error => console.warn('[housing] startup floor plan import failed', error instanceof Error ? error.message : 'unknown'));
+    }
     console.log(`[Busan Redevelopment News Monitor] Server running on http://0.0.0.0:${PORT}`);
   });
 }

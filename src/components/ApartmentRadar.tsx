@@ -12,19 +12,19 @@ type Profile = {
 
 const profiles: ReadonlyMap<string, Profile> = new Map([
   ['힐스테이트 e편한세상 문정', { brand: '힐스테이트·e편한세상', year: 2024, homes: 1265, station: ['문정역', 13], school: ['서울문정초', 7], terrain: '언덕', sources: ['https://home.114.ai.kr/apt/47407', 'https://imjangmap.co.kr/gu/송파구', 'https://statnorth.kr/apt/서울/송파구/문정동-힐스테이트e편한세상문정-9123fa3af660', 'https://www.khba.or.kr/user/isale/isaleInfo.do?busiResuSeq=10&memSeq=2004-0048'] }],
-  ['가락쌍용1차', { brand: '쌍용', homes: 2064, year: 1997, station: ['경찰병원역', 5], school: ['서울가주초', 1], terrain: '언덕', sources: ['https://imjangmap.co.kr/gu/송파구', 'https://www.songpa.go.kr/www/contents.do?key=5847', 'https://realty.daangn.com/complexes/10667566'] }],
+  ['가락쌍용1차', { brand: '쌍용', homes: 2064, year: 1997, station: ['경찰병원역', 5], school: ['서울가주초', 1], terrain: '언덕', schoolRoute: { adjacent: true, crossingLanes: [], description: '서울가주초 후문 통학로 · 공개 단지 자료 기준' }, sources: ['https://www.geummaecatch.com/complex/598/review', 'https://d.namu.moe/w/가락쌍용1차아파트', 'https://imjangmap.co.kr/gu/송파구', 'https://www.songpa.go.kr/www/contents.do?key=5847', 'https://realty.daangn.com/complexes/10667566'] }],
   ['래미안슈르', { brand: '래미안', homes: 2899, year: 2008, station: ['정부과천청사역', 8], school: ['문원초', 5], schoolRoute: { adjacent: true, crossingLanes: [], description: '문원초 인접 통학로 · 공개 단지 자료 기준' }, terrain: '평탄', sources: ['https://www.geummaecatch.com/complex/22781/review', 'https://cdn.zippoom.com/부동산/경기-과천시-원문동-래미안슈르/wg7y0h', 'https://realty.daangn.com/complexes/14787855/topics/school-district', 'https://bigvalue.ai/dashboard/apartment/경기도/과천시/원문동/c01906547'] }],
   ['광장현대3단지', { brand: '현대', homes: 1056, year: 1990, station: ['강변역', 10], school: ['서울광남초', 3], terrain: '평탄', sources: ['https://juso.zzxxccvv.com/a/서울/광진구/광나루로/635', 'https://kbland.kr/se/c/735', 'https://realty.daangn.com/complexes/11100626', 'https://openapt.seoul.go.kr/openApt/index.do?aptCode=A14381415'] }],
   ['고덕 아이파크', { brand: '아이파크', station: ['고덕역', 7], school: ['서울묘곡초', 3], homes: 1142, year: 2011, terrain: '완만', schoolRoute: { adjacent: true, crossingLanes: [], description: '서울묘곡초 인접 통학로 · 공개 기사 기준' }, sources: ['https://realty.chosun.com/m/article.amp.html?contid=2017112701870', 'https://imjangmap.co.kr/apt/A13408003', 'https://realty.daangn.com/complexes/10654556'] }],
   ['청량리한신', { brand: '한신', homes: 960, year: 1997, station: ['청량리역', 14], terrain: '가파른 언덕', sources: ['https://imjangmap.co.kr/gu/동대문구', 'https://www.k-apt.go.kr/cmmn/introMmentPop.do?bjdCode=11&searchOccuDate=201606'] }],
-  ['평촌 공작부영', { brand: '부영', year: 1993, homes: 1710, station: ['평촌역', 9], school: ['부림초', 4], sources: ['https://realty.daangn.com/complexes/15076981', 'https://chungyakalji.com/complex/A43181406'] }],
-  ['철산주공 12단지', { brand: '주공', homes: 1800, year: 1986, station: ['철산역', 3], school: ['광명광성초', 2], sources: ['https://realty.daangn.com/complexes/15028901/topics/transportation', 'https://realty.chosun.com/site/data/html_dir/2026/09/06/2026090600874.html'] }],
+  ['평촌 공작부영', { brand: '부영', year: 1993, homes: 1710, station: ['평촌역', 9], school: ['부림초', 4], terrain: '평탄', sources: ['https://realty.daangn.com/complexes/15076981/reviews/600969', 'https://realty.daangn.com/complexes/15076981', 'https://chungyakalji.com/complex/A43181406'] }],
+  ['철산주공 12단지', { brand: '주공', homes: 1800, year: 1986, station: ['철산역', 3], school: ['광명광성초', 2], terrain: '평탄', sources: ['https://cdn.zippoom.com/부동산/경기-광명시-철산동-주공12단지/ov085k', 'https://realty.daangn.com/complexes/15028901/topics/transportation', 'https://realty.chosun.com/site/data/html_dir/2026/09/06/2026090600874.html'] }],
   ['철산주공 13단지', { brand: '주공', year: 1986, station: ['철산역', 2], school: ['광명광성초', 1], homes: 2460, sources: ['https://www.gm.go.kr/pt/partInfo/ud/newtown/gm_rebuild.jsp', 'https://realty.daangn.com/complexes/15028452'] }],
-  ['대치 은마', { year: 1979, station: ['대치역', 1], homes: 4424, school: ['서울대곡초', 5], brand: '한보주택', sources: ['https://www.modueapt.com/subpage/info.php?idx=4349', 'https://openapt.seoul.go.kr/openApt/index.do?aptCode=A13583507', 'https://realty.daangn.com/complexes/10689421/topics/transportation', 'https://realty.daangn.com/complexes/10689421/topics/school-district'] }],
-  ['길음 롯데캐슬클라시아', { brand: '롯데캐슬', homes: 2033, year: 2022, station: ['길음역', 10], school: ['서울미아초', 9], sources: ['https://zipsaja.com/complexes/15567-길음동-롯데캐슬클라시아', 'https://www.mk.co.kr/news/realestate/12157064'] }],
+  ['대치 은마', { year: 1979, station: ['대치역', 1], homes: 4424, school: ['서울대곡초', 5], brand: '한보주택', terrain: '평탄', sources: ['https://heyzip.kr/building/1168010600103160000', 'https://www.modueapt.com/subpage/info.php?idx=4349', 'https://openapt.seoul.go.kr/openApt/index.do?aptCode=A13583507', 'https://realty.daangn.com/complexes/10689421/topics/transportation', 'https://realty.daangn.com/complexes/10689421/topics/school-district'] }],
+  ['길음 롯데캐슬클라시아', { brand: '롯데캐슬', homes: 2033, year: 2022, station: ['길음역', 10], school: ['서울미아초', 9], terrain: '평탄', sources: ['https://zippoom.com/부동산/서울-성북구-길음동-롯데캐슬클라시아/uvbtlb', 'https://zipsaja.com/complexes/15567-길음동-롯데캐슬클라시아', 'https://www.mk.co.kr/news/realestate/12157064'] }],
   ['인덕원센트럴푸르지오', { brand: '푸르지오', homes: 408, year: 2001, station: ['인덕원역', 11], school: ['벌말초', 1], sources: ['https://realty.daangn.com/complexes/15075173', 'https://www.aptfit.co.kr/complex/A43783103'] }],
-  ['관악푸르지오', { brand: '푸르지오', homes: 2104, year: 2004, station: ['서울대입구역', 19], school: ['서울신남성초', 7], sources: ['https://zipsaja.com/complexes/7206-봉천동-관악푸르지오?area=85', 'https://statnorth.kr/apt/서울/관악구/봉천동-관악푸르지오-f27bf1e7fd70'] }],
-  ['관악현대', { brand: '현대', homes: 1729, year: 1992, sources: ['https://statnorth.kr/apt/서울/관악구/봉천동-현대(관악)-9f8d847d6259'] }],
+  ['관악푸르지오', { brand: '푸르지오', homes: 2104, year: 2004, station: ['서울대입구역', 19], school: ['서울신남성초', 7], terrain: '가파른 언덕', sources: ['https://imjangmap.co.kr/apt/A15105302', 'https://zipsaja.com/complexes/7206-봉천동-관악푸르지오?area=85', 'https://statnorth.kr/apt/서울/관악구/봉천동-관악푸르지오-f27bf1e7fd70'] }],
+  ['관악현대', { brand: '현대', homes: 1729, year: 1992, sources: ['https://부동산계산기.com/실거래/서울특별시_관악구_봉천동/현대(관악)', 'https://statnorth.kr/apt/서울/관악구/봉천동-현대(관악)-9f8d847d6259'] }],
 ]);
 
 const axes = [
@@ -75,6 +75,7 @@ const contractors: ReadonlyMap<string, [string, number]> = new Map([
   ['힐스테이트 e편한세상 문정', ['현대엔지니어링', 4]],
   ['가락쌍용1차', ['쌍용건설', 19]],
   ['광장현대3단지', ['현대건설', 2]],
+  ['관악현대', ['현대건설', 2]],
   ['고덕 아이파크', ['아이파크현대산업개발', 10]],
   ['청량리한신', ['한신공영', 29]],
   ['길음 롯데캐슬클라시아', ['롯데건설', 7]],

@@ -11,7 +11,9 @@
     "Gm9WV25i08A",
     "XZF4lUnY1GY",
     "XzpH1WcvQSo",
-    "k77oE9hz4pY"
+    "k77oE9hz4pY",
+    "aB-JqTJAm_U",
+    "IAf0_3jfPVA"
   ],
   "apartments": [
     {
@@ -193,6 +195,54 @@
       "videoId": "Gm9WV25i08A",
       "time": 191,
       "note": "관악푸르지오와의 가정상 가격 차이를 비교하고, 개별 매물의 층·동 위치·경사·수리 상태를 함께 보는 편이 낫다고 설명했습니다."
+    },
+    {
+      "name": "이문아이파크자이",
+      "district": "서울 동대문구",
+      "region": "11230",
+      "neighborhood": "이문동",
+      "aliases": [
+        "이문아이파크자이"
+      ],
+      "videoId": "XzpH1WcvQSo",
+      "time": 8,
+      "note": "영상 도입에서 길음 롯데캐슬클라시아와 함께 비교 대상으로 거론했습니다."
+    },
+    {
+      "name": "올림픽파크포레온",
+      "district": "서울 강동구",
+      "region": "11740",
+      "neighborhood": "둔촌동",
+      "aliases": [
+        "올림픽파크포레온"
+      ],
+      "videoId": "aB-JqTJAm_U",
+      "time": 52,
+      "note": "고덕·상일·명일의 가격 흐름을 설명하면서 비교 기준으로 들었습니다."
+    },
+    {
+      "name": "관악드림타운",
+      "district": "서울 관악구",
+      "region": "11620",
+      "neighborhood": "봉천동",
+      "aliases": [
+        "관악드림타운"
+      ],
+      "videoId": "Gm9WV25i08A",
+      "time": 179,
+      "note": "관악푸르지오와 관악현대 등과 함께 관악 지역의 비교 대상으로 들었습니다."
+    },
+    {
+      "name": "공덕파크자이",
+      "district": "서울 마포구",
+      "region": "11440",
+      "neighborhood": "공덕동",
+      "aliases": [
+        "공덕파크자이"
+      ],
+      "videoId": "IAf0_3jfPVA",
+      "time": 83,
+      "note": "충정로역 분양을 검토하는 영상에서 기존 단지 비교 사례로 살펴봤습니다."
     }
   ]
 }

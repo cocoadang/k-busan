@@ -23,7 +23,6 @@ const principles = [
   { title: '리모델링 비용과 일정을 함께 검토', note: '매매가와 함께 예상 추가분담금, 이주·공사 일정을 확인합니다.', links: [{ id: '9f7SKimLzQA', time: 137 }, { id: 'iwO_jSjdRaI', time: 190 }] },
 ];
 const videoUrl = (id: string, time: number) => `https://www.youtube.com/watch?v=${id}&t=${time}s`;
-const districts = [...new Set(catalog.apartments.map(({ district }) => district))].sort();
 const formatPrice = (price: number) => {
   const eok = Math.floor(price / 10000);
   const remainder = price % 10000;
@@ -108,22 +107,44 @@ function groupBy<K>(listings: Listing[], key: (listing: Listing) => K) {
   return groups;
 }
 
+function PriceRange({ minimum, budget, onMinimum, onBudget }: {
+  minimum: string; budget: string; onMinimum: (value: string) => void; onBudget: (value: string) => void;
+}) {
+  const upper = Math.max(50, Math.ceil(Math.max(Number(minimum), Number(budget)) / 10) * 10);
+  const high = budget === '' ? upper : Number(budget);
+  const low = Math.min(Number(minimum), high);
+  const thumb = 'pointer-events-none absolute inset-x-0 top-0 m-0 h-8 w-full appearance-none bg-transparent focus-visible:outline-2 focus-visible:outline-blue-500 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-blue-700 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-blue-700';
+  return (
+    <fieldset className="col-span-full min-w-0 rounded-xl bg-slate-50 px-4 py-2">
+      <legend className="text-sm font-semibold">매매가 범위</legend>
+      <div className="relative h-8">
+        <div className="absolute inset-x-2.5 top-3 h-2 rounded-full bg-slate-200" aria-hidden="true">
+          <div className="absolute h-full rounded-full bg-blue-600" style={{ left: `${low / upper * 100}%`, right: `${(1 - high / upper) * 100}%` }} />
+        </div>
+        <input type="range" aria-label="최소 매매가 범위 (억 원)" min={0} max={upper} step="0.1" value={low}
+          className={thumb} onChange={event => onMinimum(String(Math.min(Number(event.target.value), high)))} />
+        <input type="range" aria-label="최대 매매가 범위 (억 원)" min={0} max={upper} step="0.1" value={high}
+          className={thumb} onChange={event => onBudget(String(Math.max(Number(event.target.value), Number(minimum), 0.1)))} />
+      </div>
+      <div className="flex justify-between text-xs text-slate-600" aria-hidden="true"><span>0억 원</span><span>{upper}억 원</span></div>
+    </fieldset>
+  );
+}
+
 export default function ApartmentBudgetSearch() {
   const [budget, setBudget] = useState('');
   const [minimum, setMinimum] = useState('');
   const [view, setView] = useState<'neighborhood' | 'apartments'>('neighborhood');
   const [selected, setSelected] = useState<Listing[]>([]);
-  const [district, setDistrict] = useState('');
-  const [size, setSize] = useState('');
+  const [size, setSize] = useState('59');
   const [priority, setPriority] = useState<Priority>('budget');
-  const [query, setQuery] = useState<{ budget: number; minimum: number; district: string; size: string; priority: Priority } | null>(null);
+  const [query, setQuery] = useState<{ budget: number; minimum: number; size: string; priority: Priority } | null>(null);
   const [feed, setFeed] = useState<PriceFeed | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const matchEvidence = (apt: Listing) => query && query.priority !== 'budget' ? strengths[apt.name]?.[query.priority] : undefined;
   const matches = query ? (feed?.results ?? []).filter((apt) =>
     apt.price >= query.minimum && apt.price <= query.budget &&
-    (!query.district || apt.district === query.district) &&
     (!query.size || apt.areaCategory === query.size)
   ).sort((first, second) => Number(Boolean(matchEvidence(second))) - Number(Boolean(matchEvidence(first))) || second.price - first.price) : [];
 
@@ -165,8 +186,8 @@ export default function ApartmentBudgetSearch() {
     setRangeError(invalid);
     if (invalid) return;
     setSelected([]);
-    setView(district ? 'apartments' : 'neighborhood');
-    setQuery({ budget: amount, minimum: lower, district, size, priority });
+    setView('neighborhood');
+    setQuery({ budget: amount, minimum: lower, size, priority });
     setLoading(true);
     setFailed(false);
     setFeed(null);
@@ -195,7 +216,7 @@ export default function ApartmentBudgetSearch() {
             <ApartmentRadarPreview name={apt.name} />
             <dl className="mt-4 flex-1 space-y-2 text-sm text-slate-700">
               <div><dt className="font-semibold text-slate-900">작가가 분석한 내용</dt><dd>{apt.note}</dd></div>
-              <div><dt className="font-semibold text-slate-900">내 조건에 맞는 이유</dt><dd>{query?.district ? '선택 지역 · ' : ''}{query?.size ? '선택 전용면적 · ' : ''}{query?.minimum ? '입력 가격대 내 신고 거래' : '예산 이내 신고 거래'}{matchEvidence(apt) ? ` · ${matchEvidence(apt)}` : ''}</dd></div>
+              <div><dt className="font-semibold text-slate-900">내 조건에 맞는 이유</dt><dd>{query?.size ? '선택 전용면적 · ' : ''}{query?.minimum ? '입력 가격대 내 신고 거래' : '예산 이내 신고 거래'}{matchEvidence(apt) ? ` · ${matchEvidence(apt)}` : ''}</dd></div>
             </dl>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-3 text-sm font-semibold text-blue-800">
               <button type="button" disabled={unavailable} aria-pressed={checked} className="underline disabled:opacity-40" onClick={() => setSelected(current => checked ? current.filter(a => listingKey(a) !== listingKey(apt)) : [...current, apt])}>{checked ? '비교에서 빼기' : '비교에 추가'}</button>
@@ -215,18 +236,12 @@ export default function ApartmentBudgetSearch() {
         <p className="mb-3 text-sm font-semibold text-sky-300">아파트 예산 검색</p>
         <h1 id="budget-title" className="text-3xl font-bold tracking-tight sm:text-5xl">내 예산으로 어디에 살 수 있을까?</h1>
         <p className="mt-4 max-w-xl text-base text-slate-200">송희구 작가가 입지를 분석한 단지에서 매매 예산에 맞는 후보를 찾아보세요.</p>
-        <form onSubmit={search} className="mt-8 grid gap-3 rounded-2xl bg-white p-4 text-slate-900 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 sm:items-end">
+        <form onSubmit={search} className="mt-8 grid gap-3 rounded-2xl bg-white p-4 text-slate-900 sm:grid-cols-2 lg:grid-cols-4 sm:items-end">
           <label className="grid gap-1 text-sm font-semibold">최대 매매가 (억 원)
             <input className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" type="number" min="0.0001" step="0.0001" required placeholder="예: 19" value={budget} onChange={(event) => setBudget(event.target.value)} />
           </label>
           <label className="grid gap-1 text-sm font-semibold">최소 매매가 (억 원)
             <input className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" type="number" min="0" step="0.0001" placeholder="선택" value={minimum} onChange={event => { setMinimum(event.target.value); setRangeError(false); }} />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold">지역
-            <select className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" value={district} onChange={(event) => setDistrict(event.target.value)}>
-              <option value="">전체 지역</option>
-              {districts.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
           </label>
           <label className="grid gap-1 text-sm font-semibold">전용면적
             <select className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" value={size} onChange={(event) => setSize(event.target.value)}>
@@ -239,6 +254,8 @@ export default function ApartmentBudgetSearch() {
             </select>
           </label>
           <button type="submit" disabled={loading} className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800">아파트 찾기</button>
+          <PriceRange minimum={minimum} budget={budget} onMinimum={value => { setMinimum(value); setRangeError(false); }}
+            onBudget={value => { setBudget(value); setRangeError(false); }} />
           {rangeError && <p role="alert" className="text-sm text-red-700 sm:col-span-full">최소 매매가를 최대 매매가 이하로 입력하세요.</p>}
         </form>
         <p className="mt-4 text-sm text-slate-300">영상 자막 검토 {catalog.reviewedVideoIds.length}편 · 분석 단지 {catalog.apartments.length}곳 · 최근 3개 계약월의 국토교통부 신고 거래 기준</p>
@@ -259,7 +276,7 @@ export default function ApartmentBudgetSearch() {
         {feed?.incomplete && <p role="status">일부 지역의 거래를 조회하지 못했습니다. 조회된 지역의 후보를 표시합니다.</p>}
         {feed && <>
         <h2 className="text-xl font-bold">{query.minimum ? `${formatPrice(query.minimum)}~${formatPrice(query.budget)}` : `${formatPrice(query.budget)} 이하`} 후보 {new Set(matches.map(apt => apt.name)).size}곳</h2>
-        <p className="mt-1 text-sm text-slate-600">{[query.district || '전체 지역', query.size ? `전용 ${query.size}㎡대` : '전체 면적', query.priority === 'budget' ? priorities.budget : `${priorities[query.priority]} 관련 영상 근거 우선`].join(' · ')}. 현재 매물이나 호가는 별도로 확인해야 합니다.</p>
+        <p className="mt-1 text-sm text-slate-600">{['전체 지역', query.size ? `전용 ${query.size}㎡대` : '전체 면적', query.priority === 'budget' ? priorities.budget : `${priorities[query.priority]} 관련 영상 근거 우선`].join(' · ')}. 현재 매물이나 호가는 별도로 확인해야 합니다.</p>
         {!!feed.marketTrends?.length && <aside aria-label="지역 아파트 매매가격지수" className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
           <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2">
             <a className="font-semibold text-blue-800 underline" href="https://www.reb.or.kr/r-one/" target="_blank" rel="noreferrer">한국부동산원 R-ONE · 월간 아파트 매매가격지수</a>

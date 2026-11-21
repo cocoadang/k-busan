@@ -16,7 +16,7 @@ Copy `.env.example` only into an isolated development environment. Never use pro
 
 ## Deployment workflow
 
-When an authorized apt.dsoom.com change is ready, complete validation, merge, run the production workflow, and verify the live site. The maintainer has authorized routine deployments without a separate pre-deployment confirmation. Report the outcome after production verification, including any blockers.
+When an authorized apt.dsoom.com change is ready, complete validation, merge, run the production workflow, and verify the live site. The maintainer has authorized routine deployments without a separate pre-deployment confirmation. For routine changes requested for apt.dsoom.com, the task includes production deployment. Do not stop after pushing source or passing CI. Start the production workflow on `main` and wait for its terminal result. Then verify the live revision and exercise the changed feature on apt.dsoom.com. Send a single final report with the outcome, live verification, and the workflow link. Send interim updates only for a blocker that requires maintainer action.
 
 Pushes and pull requests to `main` run type checking, all tests and the build (`.github/workflows/deploy.yml`). Production deploys only when **Run workflow** is pressed for `main` in the Actions tab:
 

@@ -72,8 +72,9 @@ const walk = (place?: [string, number]) => place ? `${place[0]} 도보 약 ${pla
 const rankingSource = 'https://www.molit.go.kr/USR/NEWS/dtl.jsp?id=95092271';
 const contractors: ReadonlyMap<string, [string, number]> = new Map([
   ['래미안슈르', ['삼성물산', 1]],
-  ['힐스테이트 e편한세상 문정', ['현대건설', 2]],
+  ['힐스테이트 e편한세상 문정', ['현대엔지니어링', 4]],
   ['가락쌍용1차', ['쌍용건설', 19]],
+  ['고덕 아이파크', ['아이파크현대산업개발', 10]],
   ['청량리한신', ['한신공영', 29]],
   ['길음 롯데캐슬클라시아', ['롯데건설', 7]],
   ['인덕원센트럴푸르지오', ['대우건설', 5]],

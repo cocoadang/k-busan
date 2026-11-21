@@ -1,0 +1,399 @@
+{
+  "checkedOn": "2026-11-21",
+  "minimumHouseholds": 3000,
+  "scope": [
+    "서울특별시",
+    "광명시",
+    "과천시",
+    "성남시 분당구"
+  ],
+  "collectionBasis": "공개 단지 목록에서 단지 등록·관리 범위별 총세대수 기준으로 추출. 준공 확인 자료가 없는 행은 예정 입주월만 기록. 재개발 계획 물량과 인접 단지 간 임의 합산 제외.",
+  "areasWithoutMatches": [
+    {
+      "area": "성남시 분당구",
+      "source": "bundang"
+    }
+  ],
+  "sources": {
+    "seoulDirectory": "https://wooaapt.wooahouse.com/large/1000/서울/",
+    "gwangmyeongKb": "https://cdn.weolbu.com/data_file/4c22218e-c126-4a47-b528-213f7b89ff91.pdf",
+    "triUs": "https://www.lottecastle.co.kr/APT/AT00402/14470/summary/view.do",
+    "sur": "https://aptchu.com/apt/41290-181",
+    "bundang": "https://dokdokinfo.kr/housing/gyeonggi-do/bundang-gu/"
+  },
+  "apartments": [
+    {
+      "name": "올림픽파크포레온",
+      "district": "강동구",
+      "neighborhood": "둔촌동",
+      "households": 12032,
+      "completionYear": 2024,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "헬리오시티아파트",
+      "district": "송파구",
+      "neighborhood": "가락동",
+      "households": 9510,
+      "completionYear": 2018,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "잠실파크리오",
+      "district": "송파구",
+      "neighborhood": "신천동",
+      "households": 6864,
+      "completionYear": 2008,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "디에이치퍼스티어아이파크",
+      "district": "강남구",
+      "neighborhood": "개포동",
+      "households": 6702,
+      "completionYear": 2023,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "잠실엘스아파트",
+      "district": "송파구",
+      "neighborhood": "잠실동",
+      "households": 5678,
+      "completionYear": 2008,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "잠실리센츠",
+      "district": "송파구",
+      "neighborhood": "잠실동",
+      "households": 5563,
+      "completionYear": 2008,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "올림픽선수기자촌아파트",
+      "district": "송파구",
+      "neighborhood": "방이동",
+      "households": 5540,
+      "completionYear": 1988,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "고덕 그라시움 아파트",
+      "district": "강동구",
+      "neighborhood": "고덕동",
+      "households": 4935,
+      "completionYear": 2019,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "올림픽훼밀리타운",
+      "district": "송파구",
+      "neighborhood": "문정동",
+      "households": 4494,
+      "completionYear": 1988,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "은마",
+      "district": "강남구",
+      "neighborhood": "대치동",
+      "households": 4424,
+      "completionYear": 1979,
+      "city": "서울특별시",
+      "source": "seoulDirectory",
+      "recommendationName": "대치 은마"
+    },
+    {
+      "name": "DMC파크뷰자이아파트",
+      "district": "서대문구",
+      "neighborhood": "남가좌동",
+      "households": 4300,
+      "completionYear": 2015,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "이문아이파크자이",
+      "district": "동대문구",
+      "neighborhood": "이문동",
+      "households": 4169,
+      "completionYear": 2025,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "고덕 아르테온 아파트",
+      "district": "강동구",
+      "neighborhood": "상일동",
+      "households": 4066,
+      "completionYear": 2020,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "월계시영고층",
+      "district": "노원구",
+      "neighborhood": "월계동",
+      "households": 3930,
+      "completionYear": 1986,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "잠실5단지아파트",
+      "district": "송파구",
+      "neighborhood": "잠실동",
+      "households": 3930,
+      "completionYear": 1978,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "돈암한신한진아파트",
+      "district": "성북구",
+      "neighborhood": "돈암동",
+      "households": 3929,
+      "completionYear": 1998,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "마포래미안푸르지오",
+      "district": "마포구",
+      "neighborhood": "아현동",
+      "households": 3885,
+      "completionYear": 2014,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "SK북한산시티아파트",
+      "district": "강북구",
+      "neighborhood": "미아동",
+      "households": 3830,
+      "completionYear": 2004,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "성산시영아파트",
+      "district": "마포구",
+      "neighborhood": "성산동",
+      "households": 3710,
+      "completionYear": 1986,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "잠실동트리지움",
+      "district": "송파구",
+      "neighborhood": "잠실동",
+      "households": 3696,
+      "completionYear": 2007,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "래미안힐스테이트 고덕",
+      "district": "강동구",
+      "neighborhood": "고덕동",
+      "households": 3658,
+      "completionYear": 2016,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "관악드림타운",
+      "district": "관악구",
+      "neighborhood": "봉천동",
+      "households": 3544,
+      "completionYear": 2003,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "중계그린",
+      "district": "노원구",
+      "neighborhood": "중계동",
+      "households": 3481,
+      "completionYear": 1990,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "반포자이",
+      "district": "서초구",
+      "neighborhood": "반포동",
+      "households": 3410,
+      "completionYear": 2009,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "신천장미1차2차",
+      "district": "송파구",
+      "neighborhood": "신천동",
+      "households": 3402,
+      "completionYear": 1979,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "개포자이프레지던스",
+      "district": "강남구",
+      "neighborhood": "개포동",
+      "households": 3375,
+      "completionYear": 2023,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "상계보람",
+      "district": "노원구",
+      "neighborhood": "상계동",
+      "households": 3315,
+      "completionYear": 1988,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "메이플자이",
+      "district": "서초구",
+      "neighborhood": "잠원동",
+      "households": 3307,
+      "completionYear": 2025,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "DMC래미안e편한세상",
+      "district": "서대문구",
+      "neighborhood": "북가좌동",
+      "households": 3297,
+      "completionYear": 2012,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "강동롯데캐슬퍼스트아파트",
+      "district": "강동구",
+      "neighborhood": "암사동",
+      "households": 3226,
+      "completionYear": 2008,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "방학신동아1단지",
+      "district": "도봉구",
+      "neighborhood": "방학동",
+      "households": 3169,
+      "completionYear": 1986,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "압구정현대아파트",
+      "district": "강남구",
+      "neighborhood": "압구정동",
+      "households": 3130,
+      "completionYear": 1976,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "신당남산타운(분양)",
+      "district": "중구",
+      "neighborhood": "신당동",
+      "households": 3116,
+      "completionYear": 2002,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "목동14단지",
+      "district": "양천구",
+      "neighborhood": "신정동",
+      "households": 3100,
+      "completionYear": 1987,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "래미안라그란데",
+      "district": "동대문구",
+      "neighborhood": "이문동",
+      "households": 3069,
+      "completionYear": 2025,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "목동 센트럴 아이파크위브 아파트",
+      "district": "양천구",
+      "neighborhood": "신월동",
+      "households": 3045,
+      "completionYear": 2020,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "그랑빌",
+      "district": "노원구",
+      "neighborhood": "월계동",
+      "households": 3003,
+      "completionYear": 2002,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "도곡렉슬",
+      "district": "강남구",
+      "neighborhood": "도곡동",
+      "households": 3002,
+      "completionYear": 2006,
+      "city": "서울특별시",
+      "source": "seoulDirectory"
+    },
+    {
+      "name": "광명자이더샵포레나",
+      "city": "광명시",
+      "district": null,
+      "neighborhood": "광명동",
+      "households": 3585,
+      "completionYear": null,
+      "expectedMoveIn": "2025-12",
+      "source": "gwangmyeongKb"
+    },
+    {
+      "name": "트리우스 광명",
+      "city": "광명시",
+      "district": null,
+      "neighborhood": "광명동",
+      "households": 3344,
+      "completionYear": null,
+      "expectedMoveIn": "2024-12",
+      "source": "triUs"
+    },
+    {
+      "name": "과천래미안슈르",
+      "city": "과천시",
+      "district": null,
+      "neighborhood": "원문동",
+      "households": 3143,
+      "completionYear": 2008,
+      "source": "sur",
+      "recommendationName": "래미안슈르"
+    }
+  ]
+}

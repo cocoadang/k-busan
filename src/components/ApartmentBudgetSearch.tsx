@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 
-import ApartmentRadar from './ApartmentRadar';
+import ApartmentRadar, { ApartmentRadarPreview } from './ApartmentRadar';
 import catalog from '../housing/songApartmentCatalog.json';
 
 type Listing = (typeof catalog.apartments)[number] & { area: number; price: number; date: string; floor: number; areaCategory: string; tradeSummary?: { count: number; min: number; max: number } };
@@ -176,6 +176,7 @@ export default function ApartmentBudgetSearch() {
             <h3 className="mt-1 text-xl font-bold">{apt.name}</h3>
             <p className="mt-3 text-lg font-bold text-blue-800">{formatPrice(apt.price)}</p>
             <p className="text-sm text-slate-600">{apt.date} 계약 · {apt.floor}층</p>
+            <ApartmentRadarPreview name={apt.name} />
             <dl className="mt-4 flex-1 space-y-2 text-sm text-slate-700">
               <div><dt className="font-semibold text-slate-900">작가가 분석한 내용</dt><dd>{apt.note}</dd></div>
               <div><dt className="font-semibold text-slate-900">내 조건에 맞는 이유</dt><dd>{query.district ? '선택 지역 · ' : ''}{query.size ? '선택 전용면적 · ' : ''}{query.minimum ? '입력 가격대 내 신고 거래' : '예산 이내 신고 거래'}{matchEvidence(apt) ? ` · ${matchEvidence(apt)}` : ''}</dd></div>

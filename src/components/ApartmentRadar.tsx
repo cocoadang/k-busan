@@ -75,23 +75,21 @@ function RadarChart({ entries, compact = false }: { entries: ReturnType<typeof r
         </g>;
       })}
       {entries.map(({ name, values }, index) => {
-        const positions = values.map((value, axis) => value ? point(axis, value.pass ? outerRadius : innerRadius) : null);
-        const edges = positions.flatMap((from, axis) => {
-          const to = positions[(axis + 1) % axes.length];
-          return from && to ? [{ axis, from, to }] : [];
-        });
-        const complete = positions.every(position => position !== null);
+        const positions = values.map((value, axis) => point(axis, value === null ? rings[0] : value.pass ? outerRadius : innerRadius));
         const color = colors[index];
-        const outline = { stroke: color, strokeWidth: compact ? 3 : 2.5, strokeDasharray: linePatterns[index], strokeLinejoin: 'round' as const };
+        const outline = { stroke: color, strokeWidth: compact ? 3 : 2.5, strokeDasharray: linePatterns[index] };
         return <g key={name}>
-          {complete
-            ? <polygon points={positions.map(position => position?.join(',')).join(' ')} fill={color} fillOpacity={compact ? 0.24 : 0.13} {...outline} />
-            : <>
-              <path d={edges.map(({ from, to }) => `M 150,125 L ${from.join(',')} L ${to.join(',')} Z`).join(' ')}
-                fill={color} fillOpacity={compact ? 0.24 : 0.13} />
-              {edges.map(({ axis, from, to }) => <line key={axis} x1={from[0]} y1={from[1]} x2={to[0]} y2={to[1]} {...outline} />)}
-            </>}
-          {positions.map((position, axis) => position && <circle key={axis} cx={position[0]} cy={position[1]} r={compact ? 3.5 : 3} fill={color} stroke="white" strokeWidth={1} />)}
+          <polygon points={positions.map(position => position.join(',')).join(' ')} fill={color} fillOpacity={compact ? 0.24 : 0.13} />
+          {positions.map(([x, y], axis) => {
+            const next = (axis + 1) % axes.length;
+            const unknown = values[axis] === null || values[next] === null;
+            return <line key={axis} x1={x} y1={y} x2={positions[next][0]} y2={positions[next][1]}
+              {...outline} strokeDasharray={unknown ? '1 5' : outline.strokeDasharray} strokeLinecap="round" />;
+          })}
+          {positions.map(([x, y], axis) => (
+            <circle key={axis} cx={x} cy={y} r={compact ? 3.5 : 3}
+              fill={values[axis] === null ? 'white' : color} stroke={values[axis] === null ? color : 'white'} strokeWidth={1.5} />
+          ))}
         </g>;
       })}
     </svg>
@@ -108,6 +106,16 @@ export function ApartmentRadarPreview({ name }: { name: string }) {
         <span className="font-semibold text-slate-900">브역대신평초</span>
         <span className="mt-1 block">{status.filter(value => value === '충족').length}개 충족 · {status.filter(value => value === '미확인').length}개 미확인</span>
         <span className="sr-only">{axes.map(([, label], index) => `${label} ${status[index]}`).join(', ')}</span>
+        <details className="mt-2">
+          <summary className="cursor-pointer font-medium text-blue-800">육각형 기준 보기</summary>
+          <p className="mt-1">바깥쪽은 충족, 안쪽은 미달입니다. 가장 안쪽의 빈 점과 짧은 점선은 미확인입니다.</p>
+          <dl className="mt-2 space-y-1">
+            {axes.map(([key, label, rule], index) => <div key={key}>
+              <dt className="inline font-semibold">{label} · {status[index]}</dt>
+              <dd>{rule}</dd>
+            </div>)}
+          </dl>
+        </details>
       </figcaption>
     </figure>
   );
@@ -119,7 +127,7 @@ export default function ApartmentRadar({ names }: { names: string[] }) {
   return (
     <section className="mt-4 border-t border-slate-200 pt-4" aria-label="브역대신평초 비교">
       <h4 className="font-semibold">브역대신평초 입지 비교</h4>
-      <p className="mt-1 text-sm text-slate-600">바깥쪽은 기준 충족, 안쪽은 기준 미달입니다. 미확인 축 주변은 선과 색을 비워 둡니다.</p>
+      <p className="mt-1 text-sm text-slate-600">바깥쪽은 충족, 안쪽은 미달입니다. 가장 안쪽의 빈 점과 짧은 점선은 미확인입니다.</p>
       <div className="mt-2 grid items-start gap-4 lg:grid-cols-[minmax(220px,320px)_1fr]">
         <RadarChart entries={entries} />
         <div className="overflow-x-auto">

@@ -108,7 +108,7 @@ let surFloorPlans: { expiresAt: number; data: { label: string; area: string; ima
 app.get('/api/housing/floor-plans/raemian-sur', async (_req, res) => {
   try {
     if (!surFloorPlans || surFloorPlans.expiresAt <= Date.now()) {
-      const origin = await fetch('https://khu0927.tistory.com/1327', { signal: AbortSignal.timeout(8000), redirect: 'error' });
+      const origin = await fetch('https://khu0927.tistory.com/1327', { signal: AbortSignal.timeout(8000), headers: { Accept: 'text/html', 'User-Agent': 'Mozilla/5.0 (compatible; DsoomFloorPlans/1.0)' } });
       if (!origin.ok) throw new Error('FLOOR_PLAN_SOURCE_UNAVAILABLE');
       const { load } = await import('cheerio');
       const page = load(await origin.text());
@@ -119,7 +119,7 @@ app.get('/api/housing/floor-plans/raemian-sur', async (_req, res) => {
         const match = node.is('p') && node.text().match(/^\s*\*\s*(\d+평)\s*전용\s*(\d{2,3})([A-Z]*)\s*\*\s*$/);
         if (match) heading = { label: `${match[1]} · 전용 ${match[2]}㎡${match[3] ? ` ${match[3]}` : ''}`, area: match[2] };
         if (!heading || !node.is('figure')) return;
-        const image = node.find('img').attr('src');
+        const image = node.find('span[data-url]').attr('data-url') ?? node.find('img').attr('src');
         if (image && /^https:\/\/blog\.kakaocdn\.net\/dna\//.test(image)) data.push({ ...heading, image });
         heading = undefined;
       });
@@ -128,7 +128,8 @@ app.get('/api/housing/floor-plans/raemian-sur', async (_req, res) => {
     }
     res.setHeader('Cache-Control', 'no-store');
     res.json(surFloorPlans.data);
-  } catch {
+  } catch (error) {
+    console.warn('[housing] Raemian Sur floor plans:', error instanceof Error ? error.message : 'unknown error');
     res.setHeader('Cache-Control', 'no-store');
     res.status(503).json({ error: 'FLOOR_PLAN_SOURCE_UNAVAILABLE' });
   }

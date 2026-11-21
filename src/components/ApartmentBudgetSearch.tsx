@@ -1,4 +1,4 @@
-import { RaemianSurFloorPlans } from './RaemianSurFloorPlans';
+import { RaemianSurFloorPlans, hasInlineFloorPlans } from './RaemianSurFloorPlans';
 import floorPlans from '../housing/largeApartmentFloorPlans.json';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -182,7 +182,10 @@ export default function ApartmentBudgetSearch() {
     setQuery({ budget: amount, minimum: lower, size, priority });
     setLoading(true);
     setFailed(false);
-    setFeed(null);
+    if (feed && !feed.incomplete && !feed.stale) {
+      setLoading(false);
+      return;
+    }
     try {
       const response = await fetch('/api/housing/apartment-budget', { signal: AbortSignal.timeout(25000) });
       if (!response.ok) throw new Error('PRICE_UNAVAILABLE');
@@ -214,10 +217,10 @@ export default function ApartmentBudgetSearch() {
             </dl>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-3 text-sm font-semibold text-blue-800">
               <button type="button" disabled={unavailable} aria-pressed={checked} className="underline disabled:opacity-40" onClick={() => setSelected(current => checked ? current.filter(a => listingKey(a) !== listingKey(apt)) : [...current, apt])}>{checked ? '비교에서 빼기' : '비교에 추가'}</button>
-              {plan && apt.name !== '래미안슈르' && <a className="underline" href={plan.url} target="_blank" rel="noreferrer">평면도 원본</a>}
+              {plan && !hasInlineFloorPlans(apt.name, apt.areaCategory) && <a className="underline" href={plan.url} target="_blank" rel="noreferrer">평면도 원본</a>}
               <a className="underline" href={videoUrl(apt.videoId, apt.time)} target="_blank" rel="noreferrer">입지 분석 영상</a>
             </div>
-            {apt.name === '래미안슈르' && <RaemianSurFloorPlans area={apt.areaCategory} />}
+            {hasInlineFloorPlans(apt.name, apt.areaCategory) && <RaemianSurFloorPlans name={apt.name} area={apt.areaCategory} />}
           </article>;
           })}
         </div>
@@ -265,7 +268,7 @@ export default function ApartmentBudgetSearch() {
         </ul>
       </details>
       {query && <div className="mt-6" aria-live="polite">
-        {loading && <p role="status">국토교통부 신고 거래를 확인하고 있습니다.</p>}
+        {loading && <p role="status">저장된 실거래 자료에서 후보를 불러오고 있습니다.</p>}
         {failed && <p role="status">현재 국토교통부 거래 정보를 조회할 수 없습니다. 잠시 후 다시 검색해 주세요.</p>}
         {feed?.stale && <p role="status">최신 조회가 지연된 일부 계약월은 서버에 저장된 마지막 정상 자료를 표시합니다.</p>}
         {feed?.incomplete && <p role="status">일부 지역의 거래를 조회하지 못했습니다. 조회된 지역의 후보를 표시합니다.</p>}

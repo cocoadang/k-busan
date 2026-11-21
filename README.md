@@ -26,6 +26,19 @@ Pushes and pull requests to `main` run type checking, all tests and the build (`
 
 GitHub authenticates to Google Cloud through Workload Identity Federation limited to this repository's `main` branch; no key is stored. One-time setup: run `ops/setup-github-deploy.sh` in Cloud Shell and put the printed values in the workflow `env`. Collection and Telegram are never triggered by a deploy.
 
+### Housing floor plan verification
+
+Normal production workflow explicitly turns off both `IMPORT_FLOOR_PLANS_ON_START` and
+`IMPORT_FLOOR_PLANS_ON_POLL`. App pages keep reading already stored images, and scheduled
+trades and news are unchanged. The two switches apply only to external floor-plan collection;
+explicitly set one to `true` only in a separately approved ingestion run after verifying
+the relevant source and image use rights. The normal deploy resets both to `false`.
+
+For a read-only on-screen coverage report, use Python Playwright with Chromium and run
+`python3 ops/audit_floor_plans.py https://apt.dsoom.com --output /tmp/floor-plan-audit.json --require-gap-notes`.
+Use `--require-complete` when checking whether all catalog cards display at least one plan.
+Every stored type exposed by the viewer is selected and tested, not just each first image.
+
 ## Editing with Claude
 
 Use the official GitHub integration and grant access only to this private repository after reviewing its permission request. Make changes on a branch, run checks, and submit a pull request. Do not share cloud credentials, logs, private data or database exports. Production deploys only through the manual **Run workflow** described above; no cloud key is stored in the repository.

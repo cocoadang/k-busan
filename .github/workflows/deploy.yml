@@ -118,11 +118,13 @@ jobs:
           assert len(containers) == 1, 'expected a single container'
           containers[0]['image'] = os.environ['IMAGE']
           env = containers[0].setdefault('env', [])
-          env[:] = [e for e in env if e['name'] not in ('OPENAI_API_KEY', 'OPENAI_MODEL', 'IMPORT_FLOOR_PLANS_ON_START')]
+          env[:] = [e for e in env if e['name'] not in ('OPENAI_API_KEY', 'OPENAI_MODEL', 'IMPORT_FLOOR_PLANS_ON_START', 'IMPORT_FLOOR_PLANS_ON_POLL')]
           env.extend([
               {'name': 'OPENAI_API_KEY', 'valueFrom': {'secretKeyRef': {'name': 'apt-openai-api-key', 'key': 'latest'}}},
               {'name': 'OPENAI_MODEL', 'value': 'gpt-6-luna'},
-              {'name': 'IMPORT_FLOOR_PLANS_ON_START', 'value': 'true'},
+              # Normal deployments consume saved floor plans only. Collection is a separately authorized job.
+              {'name': 'IMPORT_FLOOR_PLANS_ON_START', 'value': 'false'},
+              {'name': 'IMPORT_FLOOR_PLANS_ON_POLL', 'value': 'false'},
           ])
           svc['spec']['traffic'] = [
               {'revisionName': os.environ['CURRENT'], 'percent': 100},

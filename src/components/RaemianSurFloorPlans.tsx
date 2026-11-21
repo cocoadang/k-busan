@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import gapData from '../housing/largeApartmentFloorPlanGaps.json';
+
+export const floorPlanGaps: Readonly<Record<string, { reason: string; source: { source: string; url: string } } | undefined>> = gapData;
 
 type Plan = { label: string; area: string; image: string };
 
@@ -11,9 +14,11 @@ export function RaemianSurFloorPlans({ area, name = '래미안슈르' }: { area?
   const catalogName = name === '래미안슈르' ? '과천래미안슈르' : name;
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selected, setSelected] = useState(0);
+  const [failedImage, setFailedImage] = useState<string>();
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const options = plans.filter(plan => !area || plan.area === area);
-  const plan = options[selected];
+  const plan = options[selected] ?? options[0];
+  const gap = floorPlanGaps[catalogName];
 
   async function open() {
     if (status === 'loading' || status === 'ready') return;
@@ -32,13 +37,18 @@ export function RaemianSurFloorPlans({ area, name = '래미안슈르' }: { area?
     <summary className="cursor-pointer font-semibold text-blue-800">평면도 보기</summary>
     {status === 'loading' && <p role="status" className="mt-2 text-sm">평면도 불러오는 중</p>}
     {status === 'error' && <p role="status" className="mt-2 text-sm">평면도를 불러오지 못했습니다. 닫았다가 다시 열어 주세요.</p>}
-    {status === 'ready' && !plan && <p className="mt-2 text-sm">{area && plans.length ? '해당 전용면적의 도면이 아직 등록되지 않았습니다.' : '확인된 평면도 이미지가 아직 등록되지 않았습니다.'}</p>}
+    {status === 'ready' && !plan && <div className="mt-2 space-y-1 text-sm" role="status">
+      <p>{area && plans.length ? '해당 전용면적에 저장된 도면이 없습니다.' : '저장된 도면이 없습니다.'}</p>
+      {!plans.length && gap && <p className="text-slate-600">{gap.reason}</p>}
+    </div>}
     {plan && <figure className="mt-3 space-y-2">
-      <label className="block text-sm">타입 <select className="ml-2 max-w-full rounded border border-slate-300 bg-white p-1" value={selected} onChange={event => setSelected(Number(event.target.value))}>
+      <label className="block text-sm">타입 <select className="ml-2 max-w-full rounded border border-slate-300 bg-white p-1" value={options[selected] ? selected : 0} onChange={event => { setFailedImage(undefined); setSelected(Number(event.target.value)); }}>
         {options.map((option, index) => <option key={option.label} value={index}>{option.label}</option>)}
       </select></label>
-      <img className="mx-auto w-full max-w-xl rounded bg-white object-contain" alt={`${name} ${plan.label} 평면도`} loading="lazy" src={plan.image} referrerPolicy="no-referrer" />
-      <figcaption className="text-xs text-slate-600">서버에 저장된 평면도</figcaption>
+      {failedImage === plan.image
+        ? <p className="text-sm text-slate-600" role="status">등록된 도면 이미지를 불러오지 못했습니다. 다른 타입을 선택하거나 페이지를 다시 열어 주세요.</p>
+        : <><img className="mx-auto w-full max-w-xl rounded bg-white object-contain" alt={`${name} ${plan.label} 평면도`} loading="lazy" src={plan.image} referrerPolicy="no-referrer" onError={() => setFailedImage(plan.image)} />
+          <figcaption className="text-xs text-slate-600">서버에 저장된 평면도</figcaption></>}
     </figure>}
   </details>;
 }

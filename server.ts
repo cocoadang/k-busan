@@ -108,7 +108,11 @@ app.get('/api/housing/apartment-budget', createApartmentBudgetHandler());
 app.get('/api/housing/floor-plans/raemian-sur', readApartmentFloorPlans);
 
 async function refreshHousingData() {
-  return Promise.allSettled([refreshApartmentTrades(), refreshApartmentFloorPlans()]);
+  const trades = refreshApartmentTrades();
+  const floorPlans = process.env.IMPORT_FLOOR_PLANS_ON_POLL === 'true'
+    ? refreshApartmentFloorPlans()
+    : Promise.resolve({ skipped: true, reason: 'FLOOR_PLAN_IMPORT_DISABLED' });
+  return Promise.allSettled([trades, floorPlans]);
 }
 
 // Optional development preview: proxies public reads to PREVIEW_UPSTREAM_ORIGIN, blocks writes.

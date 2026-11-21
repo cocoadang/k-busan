@@ -74,7 +74,7 @@ async function loadPrices(): Promise<ResponseData> {
   const received = feeds.flatMap(feed => feed.status === 'fulfilled' ? [feed.value] : []);
   const byRegion = new Map(received.filter(feed => feed.missingMonths < months.length).map(feed => [feed.region, feed.rows]));
   const incomplete = byRegion.size < regions.length || received.some(feed => feed.missingMonths > 0);
-  const results = catalog.apartments.flatMap(apt => {
+  const results = catalog.apartments.flatMap<Result>(apt => {
     const rows = (byRegion.get(apt.region) ?? []).flatMap(row => {
       if (normalize(row.umdNm) !== normalize(apt.neighborhood) || !apt.aliases.some(alias => normalize(alias) === normalize(row.aptNm))) return [];
       if (String(row.cdealDay ?? '').replace(/[-\s]/g, '') || String(row.cdealType ?? '').trim() === 'O') return [];

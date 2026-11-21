@@ -1,3 +1,4 @@
+import { RaemianSurFloorPlans } from './components/RaemianSurFloorPlans';
 import largeApartments from './housing/largeApartmentCatalog.json';
 import floorPlans from './housing/largeApartmentFloorPlans.json';
 
@@ -12,7 +13,7 @@ function FloorPlanCatalog() {
         return <article key={apt.name} className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="font-bold">{apt.name}</h2>
           <p className="mt-1 text-sm text-slate-600">{[apt.city, apt.district, apt.neighborhood].filter(Boolean).join(' ')} · {apt.households.toLocaleString('ko-KR')}세대</p>
-          {plan ? <a className="mt-3 inline-block text-sm font-semibold text-blue-800 underline" href={plan.url} target="_blank" rel="noreferrer">평면도 보기 · {plan.source}</a>
+          {apt.name === '과천래미안슈르' ? <RaemianSurFloorPlans /> : plan ? <a className="mt-3 inline-block text-sm font-semibold text-blue-800 underline" href={plan.url} target="_blank" rel="noreferrer">평면도 보기 · {plan.source}</a>
             : <p className="mt-3 text-sm text-slate-500">기존 단지 평면도 출처 확인 중</p>}
         </article>;
       })}

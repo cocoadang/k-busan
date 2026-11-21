@@ -1,4 +1,4 @@
-import { RaemianSurFloorPlans } from './components/RaemianSurFloorPlans';
+import { floorPlanGaps, RaemianSurFloorPlans } from './components/RaemianSurFloorPlans';
 import largeApartments from './housing/largeApartmentCatalog.json';
 import floorPlans from './housing/largeApartmentFloorPlans.json';
 
@@ -9,7 +9,7 @@ function FloorPlanCatalog() {
     <p className="mt-2 text-sm text-slate-600">서울·광명·과천·분당 3,000세대 이상 조사 목록. 원본에서 전용면적과 타입을 확인할 수 있습니다.</p>
     <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {largeApartments.apartments.map(apt => {
-        const plan = sources[apt.name];
+        const plan = floorPlanGaps[apt.name]?.source ?? sources[apt.name];
         return <article key={apt.name} className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="font-bold">{apt.name}</h2>
           <p className="mt-1 text-sm text-slate-600">{[apt.city, apt.district, apt.neighborhood].filter(Boolean).join(' ')} · {apt.households.toLocaleString('ko-KR')}세대</p>

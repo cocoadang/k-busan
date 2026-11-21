@@ -1,4 +1,5 @@
-import { createApartmentBudgetHandler } from './src/housing/apartmentBudgetApi.ts';
+import { refreshApartmentFloorPlans, readApartmentFloorPlans } from './src/housing/apartmentFloorPlanStore.ts';
+import { createApartmentBudgetHandler, refreshApartmentTrades } from './src/housing/apartmentBudgetApi.ts';
 import { createBusanPriceHandler } from './src/housing/busanPriceApi.ts';
 import {costHttpTelemetry} from './src/utils/costTelemetry';
 import {NewsBodyReader,firestoreNewsBodyCache} from './src/news/newsBodyReader';
@@ -104,37 +105,11 @@ app.get('/api/official/diagnostics', async (req, res) => {
 app.get('/api/housing/busan-prices', createBusanPriceHandler());
 app.get('/api/housing/apartment-budget', createApartmentBudgetHandler());
 
-let surFloorPlans: { expiresAt: number; data: { label: string; area: string; image: string }[] } | undefined;
-app.get('/api/housing/floor-plans/raemian-sur', async (_req, res) => {
-  try {
-    if (!surFloorPlans || surFloorPlans.expiresAt <= Date.now()) {
-      const origin = await fetch('https://khu0927.tistory.com/1327', { signal: AbortSignal.timeout(8000), headers: { Accept: 'text/html', 'User-Agent': 'Mozilla/5.0 (compatible; DsoomFloorPlans/1.0)' } });
-      if (!origin.ok) throw new Error('FLOOR_PLAN_SOURCE_UNAVAILABLE');
-      const { load } = await import('cheerio');
-      const page = load(await origin.text());
-      const data: { label: string; area: string; image: string }[] = [];
-      let heading: { label: string; area: string } | undefined;
-      page('.contents_style').first().children().each((_, element) => {
-        const node = page(element);
-        const match = node.is('p') && node.text().match(/^\s*\*\s*(\d+평)\s*전용\s*(\d{2,3})([A-Z]*)\s*\*\s*$/);
-        if (match) heading = { label: `${match[1]} · 전용 ${match[2]}㎡${match[3] ? ` ${match[3]}` : ''}`, area: match[2] };
-        if (!heading || !node.is('figure')) return;
-        const image = node.find('span[data-url]').attr('data-url') ?? node.find('img').attr('src');
-        if (image && /^https:\/\/blog\.kakaocdn\.net\/dna\//.test(image)) data.push({ ...heading, image });
-        heading = undefined;
-      });
-      if (!data.length) throw new Error('FLOOR_PLAN_SOURCE_EMPTY');
-      surFloorPlans = { data, expiresAt: Date.now() + 10 * 60_000 };
-    }
-    res.setHeader('Cache-Control', 'no-store');
-    res.json(surFloorPlans.data);
-  } catch (error) {
-    console.warn('[housing] Raemian Sur floor plans:', error instanceof Error ? error.message : 'unknown error');
-    res.setHeader('Cache-Control', 'no-store');
-    res.status(503).json({ error: 'FLOOR_PLAN_SOURCE_UNAVAILABLE' });
-  }
-});
+app.get('/api/housing/floor-plans/raemian-sur', readApartmentFloorPlans);
 
+async function refreshHousingData() {
+  return Promise.allSettled([refreshApartmentTrades(), refreshApartmentFloorPlans()]);
+}
 
 // Optional development preview: proxies public reads to PREVIEW_UPSTREAM_ORIGIN, blocks writes.
 // Opt-in via PREVIEW_MODE=true (never active when NODE_ENV=production).
@@ -831,6 +806,9 @@ app.all('/api/jobs/poll', async (req, res) => {
       eventsCreated: 0,
     });
   }
+
+  const housing = await refreshHousingData();
+  console.info('[housing] scheduled refresh', housing.map(result => result.status === 'fulfilled' ? result.value : 'failed'));
 
   // C. Internal scheduler disabled check
   const internalSchedulerEnabled = process.env.ENABLE_INTERNAL_SCHEDULER === 'true';

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 
+import ApartmentRadar from './ApartmentRadar';
 import catalog from '../housing/songApartmentCatalog.json';
 
 type Listing = (typeof catalog.apartments)[number] & { area: number; price: number; date: string; floor: number; areaCategory: string; tradeSummary?: { count: number; min: number; max: number } };
@@ -164,6 +165,7 @@ export default function ApartmentBudgetSearch() {
               </tbody>
             </table>
           </div>
+          <ApartmentRadar names={selected.map(apt => apt.name)} />
         </section>}
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {matches.map((apt) => {

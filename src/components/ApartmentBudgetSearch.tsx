@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import ApartmentRadar, { ApartmentRadarPreview } from './ApartmentRadar';
 import catalog from '../housing/songApartmentCatalog.json';
@@ -43,6 +45,58 @@ const livingAreas: Record<string, readonly [string, string]> = {
   '서울 관악구/봉천동': ['봉천', '서울대입구역'],
 };
 
+// Approximate neighborhood reference points, not apartment entrances or boundaries.
+const neighborhoodPoints: Record<string, L.LatLngTuple> = {
+  '경기 과천시/원문동': [37.423, 126.991],
+  '경기 안양시 동안구/관양동': [37.396, 126.965],
+  '경기 의왕시/포일동': [37.388, 126.981],
+  '경기 광명시/철산동': [37.477, 126.871],
+  '서울 송파구/문정동': [37.488, 127.124],
+  '서울 송파구/가락동': [37.499, 127.125],
+  '서울 광진구/광장동': [37.542, 127.100],
+  '서울 강동구/고덕동': [37.556, 127.153],
+  '서울 동대문구/청량리동': [37.585, 127.048],
+  '서울 강남구/대치동': [37.494, 127.062],
+  '서울 성북구/길음동': [37.609, 127.024],
+  '서울 관악구/봉천동': [37.482, 126.953],
+};
+
+type NeighborhoodPin = { key: string; name: string; count: number; position: L.LatLngTuple };
+
+function NeighborhoodMap({ pins, onPick }: { pins: NeighborhoodPin[]; onPick: (key: string) => void }) {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!container.current || !pins.length) return;
+    const map = L.map(container.current, { scrollWheelZoom: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+    map.fitBounds(L.latLngBounds(pins.map(pin => pin.position)), { padding: [40, 40], maxZoom: 14 });
+    for (const pin of pins) {
+      const icon = L.divIcon({
+        className: '',
+        html: `<span class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-700 text-xs font-bold text-white shadow-lg">${pin.count}</span>`,
+        iconSize: [32, 32],
+      });
+      const label = document.createElement('span');
+      label.textContent = `${pin.name} · 단지 ${pin.count}곳`;
+      L.marker(pin.position, { icon, title: label.textContent, alt: label.textContent })
+        .bindTooltip(label)
+        .on('click', () => onPick(pin.key))
+        .addTo(map);
+    }
+    return () => { map.remove(); };
+  }, [pins, onPick]);
+  if (!pins.length) return null;
+  return (
+    <figure className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div ref={container} role="region" aria-label="검색된 생활권 지도" className="relative isolate h-72 bg-slate-100 lg:h-[28rem]" />
+      <figcaption className="px-3 py-2 text-xs text-slate-600">핀은 생활권의 대략적인 위치이며, 숫자는 조건에 맞는 단지 수입니다.</figcaption>
+    </figure>
+  );
+}
+
 function groupBy<K>(listings: Listing[], key: (listing: Listing) => K) {
   const groups = new Map<K, Listing[]>();
   for (const listing of listings) {
@@ -72,6 +126,23 @@ export default function ApartmentBudgetSearch() {
     (!query.district || apt.district === query.district) &&
     (!query.size || apt.areaCategory === query.size)
   ).sort((first, second) => Number(Boolean(matchEvidence(second))) - Number(Boolean(matchEvidence(first))) || second.price - first.price) : [];
+
+  const neighborhoods = [...groupBy(matches, apt => `${apt.district}/${apt.neighborhood}`)];
+  const pins = neighborhoods.flatMap(([key, listings]) => {
+    const position = neighborhoodPoints[key];
+    if (!position) return [];
+    const name = livingAreas[key]?.[0] ?? listings[0].neighborhood;
+    return [{ key, name, count: new Set(listings.map(apt => apt.name)).size, position }];
+  });
+  const neighborhoodCards = useRef(new Map<string, HTMLDetailsElement>());
+
+  function openNeighborhood(key: string) {
+    const details = neighborhoodCards.current.get(key);
+    if (!details) return;
+    details.open = true;
+    details.querySelector('summary')?.focus({ preventScroll: true });
+    details.scrollIntoView({ block: 'nearest' });
+  }
 
   const [rangeError, setRangeError] = useState(false);
   const listingKey = (apt: Listing) => `${apt.name}:${apt.areaCategory}`;
@@ -234,14 +305,17 @@ export default function ApartmentBudgetSearch() {
           {view === 'apartments' ? renderCards(matches) : (
             <div className="mt-4 space-y-3">
               <p className="text-sm text-slate-600">면적대별 가격은 검색 조건에 맞는 단지의 최신 신고 거래 기준입니다.</p>
-              {[...groupBy(matches, apt => `${apt.district}/${apt.neighborhood}`)].map(([key, listings]) => {
+              <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+              <NeighborhoodMap pins={pins} onPick={openNeighborhood} />
+              <div className="min-w-0 space-y-3">
+              {neighborhoods.map(([key, listings]) => {
                 const { district, neighborhood } = listings[0];
                 const area = livingAreas[key]?.[0] ?? neighborhood;
                 const stations = livingAreas[key]?.[1];
                 const count = new Set(listings.map(apt => apt.name)).size;
                 const sizeGroups = [...groupBy(listings, apt => apt.areaCategory)].sort(([a], [b]) => Number(a) - Number(b));
                 return (
-                  <details key={key} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <details key={key} ref={element => { if (element) neighborhoodCards.current.set(key, element); else neighborhoodCards.current.delete(key); }} className="rounded-xl border border-slate-200 bg-white p-4">
                     <summary className="cursor-pointer text-slate-900">
                       <span className="font-bold">{area} 생활권</span>
                       <span className="ml-2 text-sm font-semibold text-blue-800">단지 {count}곳</span>
@@ -259,6 +333,8 @@ export default function ApartmentBudgetSearch() {
                   </details>
                 );
               })}
+              </div>
+              </div>
             </div>
           )}
         </>}

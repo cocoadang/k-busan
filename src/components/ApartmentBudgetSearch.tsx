@@ -6,7 +6,7 @@ import ApartmentRadar, { ApartmentRadarPreview } from './ApartmentRadar';
 import catalog from '../housing/songApartmentCatalog.json';
 
 type Listing = (typeof catalog.apartments)[number] & { area: number; price: number; date: string; floor: number; areaCategory: string; tradeSummary?: { count: number; min: number; max: number } };
-type PriceFeed = { results: Listing[]; incomplete: boolean; checkedAt: string; marketTrends?: { region: string; month: string; index: number; monthlyChange: number | null }[] };
+type PriceFeed = { results: Listing[]; incomplete: boolean; stale?: boolean; checkedAt: string; marketTrends?: { region: string; month: string; index: number; monthlyChange: number | null }[] };
 const priorities = { budget: '예산에 가까운 순', transit: '교통', schools: '학군', living: '주거환경' };
 type Priority = keyof typeof priorities;
 const strengths: Record<string, Partial<Record<Exclude<Priority, 'budget'>, string>>> = {
@@ -261,6 +261,7 @@ export default function ApartmentBudgetSearch() {
       {query && <div className="mt-6" aria-live="polite">
         {loading && <p role="status">국토교통부 신고 거래를 확인하고 있습니다.</p>}
         {failed && <p role="status">현재 국토교통부 거래 정보를 조회할 수 없습니다. 잠시 후 다시 검색해 주세요.</p>}
+        {feed?.stale && <p role="status">최신 조회가 지연된 일부 계약월은 서버에 저장된 마지막 정상 자료를 표시합니다.</p>}
         {feed?.incomplete && <p role="status">일부 지역의 거래를 조회하지 못했습니다. 조회된 지역의 후보를 표시합니다.</p>}
         {feed && <>
         <h2 className="text-xl font-bold">{query.minimum ? `${formatPrice(query.minimum)}~${formatPrice(query.budget)}` : `${formatPrice(query.budget)} 이하`} 후보 {new Set(matches.map(apt => apt.name)).size}곳</h2>

@@ -42,15 +42,19 @@ const acceptedNames = new Map(regions.map(region => [region, new Set(catalog.apa
   .flatMap(apt => apt.aliases.map(alias => `${normalize(apt.neighborhood)}/${normalize(alias)}`)))]));
 const pendingMonths = new Map<string, Promise<{ rows: StoredMonth['rows']; stale: boolean }>>();
 
-function storedMonth(key: string | null, region: string, month: string) {
+function storedMonth(key: string | null, region: string, month: string, refreshAllowed: boolean) {
   const id = `${region}_${month}`;
-  const active = pendingMonths.get(id);
+  const active = refreshAllowed ? pendingMonths.get(id) : undefined;
   if (active) return active;
   const request = (async () => {
     const db = await storage.getClient().catch(() => null);
     const ref = db?.collection('apartment_trade_months_v1').doc(id);
     const saved = (await ref?.get().catch(() => undefined))?.data() as StoredMonth | undefined;
     if (saved && Date.now() - saved.fetchedAt < maxAge) return { rows: saved.rows, stale: false };
+    if (!refreshAllowed) {
+      if (!saved) throw new Error('TRADE_SNAPSHOT_MISSING');
+      return { rows: saved.rows, stale: true };
+    }
     const refresh = async () => {
       if (!key) throw new Error('MOLIT_KEY_UNAVAILABLE');
       const names = acceptedNames.get(region);
@@ -64,15 +68,14 @@ function storedMonth(key: string | null, region: string, month: string) {
       }
       return { rows, stale: false };
     };
-    if (!saved) return refresh();
-    if (key) {
-      const latest = refresh();
-      pendingMonths.set(id, latest);
-      void latest.catch(() => {}).finally(() => { if (pendingMonths.get(id) === latest) pendingMonths.delete(id); });
+    try {
+      return await refresh();
+    } catch (error) {
+      if (!saved) throw error;
+      return { rows: saved.rows, stale: true };
     }
-    return { rows: saved.rows, stale: true };
   })().finally(() => { if (pendingMonths.get(id) === request) pendingMonths.delete(id); });
-  pendingMonths.set(id, request);
+  if (refreshAllowed) pendingMonths.set(id, request);
   return request;
 }
 
@@ -97,7 +100,7 @@ async function existingHousingPrices(startYmd: string, endYmd: string): Promise<
   return results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
 }
 
-async function loadPrices(): Promise<ResponseData> {
+async function loadPrices(refresh = false): Promise<ResponseData> {
   const raw = process.env.MOLIT_API_KEY?.trim() || process.env.DATA_GO_KR_API_KEY?.trim();
   const key = raw ? decodeURIComponent(raw) : null;
   const now = new Date(Date.now() + 9 * 3600_000);
@@ -107,7 +110,7 @@ async function loadPrices(): Promise<ResponseData> {
   });
   const marketTrends = readRoneMarketTrends();
   const feeds = await Promise.allSettled(regions.map(async region => {
-    const data = await Promise.allSettled(months.map(month => storedMonth(key, region, month)));
+    const data = await Promise.allSettled(months.map(month => storedMonth(key, region, month, refresh)));
     return {
       region,
       missingMonths: data.filter(month => month.status === 'rejected').length,
@@ -144,9 +147,23 @@ async function loadPrices(): Promise<ResponseData> {
     }
     return [...byArea].map(([areaCategory, { latest, summary }]) => ({ ...apt, ...latest, areaCategory, tradeSummary: summary }));
   });
-  if (!byRegion.has('41290')) results.push(...await existingHousingPrices(months[2], months[0]));
+  if (refresh && !byRegion.has('41290')) {
+    const fallback = await existingHousingPrices(months[2], months[0]);
+    const db = await storage.getClient();
+    if (fallback.length && db) await db.collection('apartment_trade_fallback').doc(months[0]).set({ results: fallback });
+  }
+  if (!byRegion.has('41290')) {
+    const db = await storage.getClient();
+    const saved = await db?.collection('apartment_trade_fallback').doc(months[0]).get();
+    results.push(...(saved?.data()?.results as Result[] | undefined ?? []));
+  }
   if (!byRegion.size && !results.length) throw new Error('MOLIT_UNAVAILABLE');
   return { results, marketTrends: await marketTrends, incomplete, stale: received.some(feed => feed.stale), checkedAt: new Date().toISOString() };
+}
+
+export async function refreshApartmentTrades() {
+  const data = await loadPrices(true);
+  return { count: data.results.length, incomplete: data.incomplete };
 }
 
 export function createApartmentBudgetHandler(): RequestHandler {
@@ -154,7 +171,7 @@ export function createApartmentBudgetHandler(): RequestHandler {
   return async (_req, res) => {
     if (!cache || cache.until <= Date.now()) {
       const request = loadPrices();
-      cache = { request, until: Date.now() + 3600_000 };
+      cache = { request, until: Date.now() + 60_000 };
       void request.then(data => {
         if (cache?.request === request && (data.incomplete || data.stale)) cache.until = Date.now() + 60_000;
       }, () => {

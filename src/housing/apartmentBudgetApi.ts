@@ -147,15 +147,26 @@ async function loadPrices(refresh = false): Promise<ResponseData> {
     }
     return [...byArea].map(([areaCategory, { latest, summary }]) => ({ ...apt, ...latest, areaCategory, tradeSummary: summary }));
   });
-  if (refresh && !byRegion.has('41290')) {
-    const fallback = await existingHousingPrices(months[2], months[0]);
-    const db = await storage.getClient();
-    if (fallback.length && db) await db.collection('apartment_trade_fallback').doc(months[0]).set({ results: fallback });
-  }
-  if (!byRegion.has('41290')) {
-    const db = await storage.getClient();
-    const saved = await db?.collection('apartment_trade_fallback').doc(months[0]).get();
-    results.push(...(saved?.data()?.results as Result[] | undefined ?? []));
+  const hasRaemianSurArea = (areaCategory: string) => results.some(result =>
+    result.region === '41290' && result.name === '래미안슈르' && result.areaCategory === areaCategory
+  );
+  if (['59', '84'].some(areaCategory => !hasRaemianSurArea(areaCategory))) {
+    const db = await storage.getClient().catch(() => null);
+    const ref = db?.collection('apartment_trade_fallback').doc(months[0]);
+    if (refresh && ref) {
+      const fallback = await existingHousingPrices(months[2], months[0]);
+      if (fallback.length) {
+        await ref.set({ results: fallback }).catch(() => console.warn('[housing] Gwacheon fallback snapshot write failed'));
+      } else {
+        console.warn('[housing] Gwacheon fallback refresh returned no verified trades');
+      }
+    }
+    const saved = await ref?.get().catch(() => undefined);
+    const fallback = (saved?.data()?.results as Result[] | undefined) ?? [];
+    for (const result of fallback) {
+      const month = result.date.slice(0, 7).replace('-', '');
+      if (months.includes(month) && !hasRaemianSurArea(result.areaCategory)) results.push(result);
+    }
   }
   if (!byRegion.size && !results.length) throw new Error('MOLIT_UNAVAILABLE');
   return { results, marketTrends: await marketTrends, incomplete, stale: received.some(feed => feed.stale), checkedAt: new Date().toISOString() };

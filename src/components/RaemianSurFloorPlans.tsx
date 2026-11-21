@@ -32,7 +32,7 @@ export function RaemianSurFloorPlans({ area, name = '래미안슈르' }: { area?
     <summary className="cursor-pointer font-semibold text-blue-800">평면도 보기</summary>
     {status === 'loading' && <p role="status" className="mt-2 text-sm">평면도 불러오는 중</p>}
     {status === 'error' && <p role="status" className="mt-2 text-sm">평면도를 불러오지 못했습니다. 닫았다가 다시 열어 주세요.</p>}
-    {status === 'ready' && !plan && <p className="mt-2 text-sm">이 면적의 평면도가 아직 없습니다.</p>}
+    {status === 'ready' && !plan && <p className="mt-2 text-sm">{area && plans.length ? '해당 전용면적의 도면이 아직 등록되지 않았습니다.' : '확인된 평면도 이미지가 아직 등록되지 않았습니다.'}</p>}
     {plan && <figure className="mt-3 space-y-2">
       <label className="block text-sm">타입 <select className="ml-2 max-w-full rounded border border-slate-300 bg-white p-1" value={selected} onChange={event => setSelected(Number(event.target.value))}>
         {options.map((option, index) => <option key={option.label} value={index}>{option.label}</option>)}

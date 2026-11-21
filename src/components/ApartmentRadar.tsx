@@ -87,6 +87,17 @@ const gradeBelow = (value: number, thresholds: number[]) => 5 - thresholds.filte
 const gradeText = (grade: number | null) => grade === null ? '미확인' : `${grade}/5점`;
 const legend = '바깥쪽일수록 높은 점수입니다. 빈 점과 점선은 점수 산정에 필요한 자료를 확인 중인 항목입니다.';
 
+function naverPlace(name: string) {
+  return `https://map.naver.com/p/search/${encodeURIComponent(name)}`;
+}
+
+function WalkingMapLinks({ apartment, destination }: { apartment: string; destination: string }) {
+  return <span className="mt-1 flex flex-wrap gap-x-2 text-xs">
+    <a className="text-blue-800 underline" href={naverPlace(apartment)} target="_blank" rel="noreferrer">네이버지도 단지</a>
+    <a className="text-blue-800 underline" href={naverPlace(destination)} target="_blank" rel="noreferrer">목적지</a>
+  </span>;
+}
+
 function radarEntry(name: string) {
   const year = new Date(Date.now() + 9 * 3600_000).getUTCFullYear();
   const p = profiles.get(name);
@@ -108,7 +119,7 @@ function radarEntry(name: string) {
     { label: school ? `${school.description} · ${crossings ? `최대 ${widestCrossing}차선, ${crossings}회 횡단` : '차도 횡단 없음'}` : walk(p?.school), pending: p?.school ? '통학로·횡단 차선 확인 필요' : undefined, grade: schoolGrade },
   ];
   const sources = [...(p?.sources ?? []), ...(contractor ? [rankingSource] : [])];
-  return { name, values, sources };
+  return { name, values, sources, walkingDestinations: [p?.station?.[0], p?.school?.[0]] as const };
 }
 
 function axisStatus(value: { grade: number | null; pending?: string }) {
@@ -172,7 +183,7 @@ export function ApartmentRadarPreview({ name }: { name: string }) {
           <dl className="mt-2 space-y-1">
             {axes.map(([key, label, rule], index) => <div key={key}>
               <dt className="inline font-semibold">{label} · {status[index]}</dt>
-              <dd>{entry.values[index].label && <span className="block">{entry.values[index].label}</span>}{rule}</dd>
+              <dd>{entry.values[index].label && <span className="block">{entry.values[index].label}</span>}{rule}{(index === 1 || index === 5) && entry.walkingDestinations[index === 1 ? 0 : 1] && <WalkingMapLinks apartment={name} destination={entry.walkingDestinations[index === 1 ? 0 : 1]!} />}</dd>
             </div>)}
           </dl>
         </details>
@@ -196,7 +207,7 @@ export default function ApartmentRadar({ names }: { names: string[] }) {
             <tbody>
               {axes.map(([key, label, rule], i) => <tr key={key} className="border-t border-slate-200">
                 <th scope="row" className="p-2 align-top">{label}<span className="block text-xs font-normal text-slate-600">{rule}</span></th>
-                {entries.map(({ name, values }) => <td className="p-2 align-top" key={name}>{values[i].label}<span className="block text-xs text-slate-600">{axisStatus(values[i])}</span></td>)}
+                {entries.map(({ name, values, walkingDestinations }) => <td className="p-2 align-top" key={name}>{values[i].label}<span className="block text-xs text-slate-600">{axisStatus(values[i])}</span>{(i === 1 || i === 5) && walkingDestinations[i === 1 ? 0 : 1] && <WalkingMapLinks apartment={name} destination={walkingDestinations[i === 1 ? 0 : 1]!} />}</td>)}
               </tr>)}
               <tr className="border-t border-slate-200"><th scope="row" className="p-2">출처</th>{entries.map(({ name, sources }) => <td className="p-2" key={name}>{sources.length ? sources.map((url, i) => <a className="mr-2 text-blue-800 underline" key={url} href={url} target="_blank" rel="noreferrer">자료 {i + 1}</a>) : '미확인'}</td>)}</tr>
             </tbody>

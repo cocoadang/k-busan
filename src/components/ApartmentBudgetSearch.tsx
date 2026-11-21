@@ -28,9 +28,36 @@ const formatPrice = (price: number) => {
   return [eok ? `${eok}억` : '', remainder ? `${remainder.toLocaleString('ko-KR')}만` : ''].filter(Boolean).join(' ') + ' 원';
 };
 
+const livingAreas: Record<string, readonly [string, string]> = {
+  '경기 과천시/원문동': ['과천 원문·별양', '정부과천청사역'],
+  '경기 안양시 동안구/관양동': ['평촌', '평촌역'],
+  '경기 의왕시/포일동': ['인덕원', '인덕원역'],
+  '경기 광명시/철산동': ['철산', '철산역'],
+  '서울 송파구/문정동': ['문정', '문정역'],
+  '서울 송파구/가락동': ['가락', '경찰병원역'],
+  '서울 광진구/광장동': ['광장', '강변역·광나루역'],
+  '서울 강동구/고덕동': ['고덕', '고덕역'],
+  '서울 동대문구/청량리동': ['청량리', '청량리역'],
+  '서울 강남구/대치동': ['대치', '대치역'],
+  '서울 성북구/길음동': ['길음', '길음역'],
+  '서울 관악구/봉천동': ['봉천', '서울대입구역'],
+};
+
+function groupBy<K>(listings: Listing[], key: (listing: Listing) => K) {
+  const groups = new Map<K, Listing[]>();
+  for (const listing of listings) {
+    const id = key(listing);
+    const group = groups.get(id);
+    if (group) group.push(listing);
+    else groups.set(id, [listing]);
+  }
+  return groups;
+}
+
 export default function ApartmentBudgetSearch() {
   const [budget, setBudget] = useState('');
   const [minimum, setMinimum] = useState('');
+  const [view, setView] = useState<'neighborhood' | 'apartments'>('neighborhood');
   const [selected, setSelected] = useState<Listing[]>([]);
   const [district, setDistrict] = useState('');
   const [size, setSize] = useState('');
@@ -67,6 +94,7 @@ export default function ApartmentBudgetSearch() {
     setRangeError(invalid);
     if (invalid) return;
     setSelected([]);
+    setView(district ? 'apartments' : 'neighborhood');
     setQuery({ budget: amount, minimum: lower, district, size, priority });
     setLoading(true);
     setFailed(false);
@@ -80,6 +108,34 @@ export default function ApartmentBudgetSearch() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function renderCards(listings: Listing[]) {
+    return (
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {listings.map((apt) => {
+            const checked = selected.some(a => listingKey(a) === listingKey(apt));
+            const unavailable = !checked && (selected.length >= 3 || selected.some(a => a.areaCategory !== apt.areaCategory || a.name === apt.name));
+            return <article key={listingKey(apt)} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5">
+            <p className="text-sm font-medium text-slate-600">{apt.district} {apt.neighborhood} · 전용 {apt.area}㎡</p>
+            <h3 className="mt-1 text-xl font-bold">{apt.name}</h3>
+            <p className="mt-3 text-lg font-bold text-blue-800">{formatPrice(apt.price)}</p>
+            <p className="text-sm text-slate-600">{apt.date} 계약 · {apt.floor}층</p>
+            <ApartmentRadarPreview name={apt.name} />
+            <dl className="mt-4 flex-1 space-y-2 text-sm text-slate-700">
+              <div><dt className="font-semibold text-slate-900">작가가 분석한 내용</dt><dd>{apt.note}</dd></div>
+              <div><dt className="font-semibold text-slate-900">내 조건에 맞는 이유</dt><dd>{query?.district ? '선택 지역 · ' : ''}{query?.size ? '선택 전용면적 · ' : ''}{query?.minimum ? '입력 가격대 내 신고 거래' : '예산 이내 신고 거래'}{matchEvidence(apt) ? ` · ${matchEvidence(apt)}` : ''}</dd></div>
+            </dl>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-3 text-sm font-semibold text-blue-800">
+              <button type="button" disabled={unavailable} aria-pressed={checked} className="underline disabled:opacity-40" onClick={() => setSelected(current => checked ? current.filter(a => listingKey(a) !== listingKey(apt)) : [...current, apt])}>{checked ? '비교에서 빼기' : '비교에 추가'}</button>
+              {matches.some(a => a.name !== apt.name && a.district === apt.district && a.areaCategory === apt.areaCategory) && <button type="button" className="underline" onClick={() => compareNearby(apt)}>비슷한 후보 비교</button>}
+              <a className="underline" href={videoUrl(apt.videoId, apt.time)} target="_blank" rel="noreferrer">입지 분석 영상</a>
+              <a className="underline" href="https://rt.molit.go.kr/" target="_blank" rel="noreferrer">신고 거래 확인</a>
+            </div>
+          </article>;
+          })}
+        </div>
+    );
   }
 
   return (
@@ -167,29 +223,45 @@ export default function ApartmentBudgetSearch() {
           </div>
           <ApartmentRadar names={selected.map(apt => apt.name)} />
         </section>}
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {matches.map((apt) => {
-            const checked = selected.some(a => listingKey(a) === listingKey(apt));
-            const unavailable = !checked && (selected.length >= 3 || selected.some(a => a.areaCategory !== apt.areaCategory || a.name === apt.name));
-            return <article key={listingKey(apt)} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm font-medium text-slate-600">{apt.district} · 전용 {apt.area}㎡</p>
-            <h3 className="mt-1 text-xl font-bold">{apt.name}</h3>
-            <p className="mt-3 text-lg font-bold text-blue-800">{formatPrice(apt.price)}</p>
-            <p className="text-sm text-slate-600">{apt.date} 계약 · {apt.floor}층</p>
-            <ApartmentRadarPreview name={apt.name} />
-            <dl className="mt-4 flex-1 space-y-2 text-sm text-slate-700">
-              <div><dt className="font-semibold text-slate-900">작가가 분석한 내용</dt><dd>{apt.note}</dd></div>
-              <div><dt className="font-semibold text-slate-900">내 조건에 맞는 이유</dt><dd>{query.district ? '선택 지역 · ' : ''}{query.size ? '선택 전용면적 · ' : ''}{query.minimum ? '입력 가격대 내 신고 거래' : '예산 이내 신고 거래'}{matchEvidence(apt) ? ` · ${matchEvidence(apt)}` : ''}</dd></div>
-            </dl>
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-3 text-sm font-semibold text-blue-800">
-              <button type="button" disabled={unavailable} aria-pressed={checked} className="underline disabled:opacity-40" onClick={() => setSelected(current => checked ? current.filter(a => listingKey(a) !== listingKey(apt)) : [...current, apt])}>{checked ? '비교에서 빼기' : '비교에 추가'}</button>
-              {matches.some(a => a.name !== apt.name && a.district === apt.district && a.areaCategory === apt.areaCategory) && <button type="button" className="underline" onClick={() => compareNearby(apt)}>비슷한 후보 비교</button>}
-              <a className="underline" href={videoUrl(apt.videoId, apt.time)} target="_blank" rel="noreferrer">입지 분석 영상</a>
-              <a className="underline" href="https://rt.molit.go.kr/" target="_blank" rel="noreferrer">신고 거래 확인</a>
+        {matches.length > 0 && <>
+          <div role="group" aria-label="검색 결과 보기" className="mt-4 inline-flex gap-1 rounded-lg bg-slate-200 p-1">
+            {([['neighborhood', '동네별 보기'], ['apartments', '단지 바로 보기']] as const).map(([mode, label]) => (
+              <button type="button" key={mode} aria-pressed={view === mode}
+                className={view === mode ? 'rounded-md bg-white px-3 py-2 text-sm font-semibold text-blue-800 shadow-sm' : 'rounded-md px-3 py-2 text-sm text-slate-700'}
+                onClick={() => setView(mode)}>{label}</button>
+            ))}
+          </div>
+          {view === 'apartments' ? renderCards(matches) : (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-slate-600">면적대별 가격은 검색 조건에 맞는 단지의 최신 신고 거래 기준입니다.</p>
+              {[...groupBy(matches, apt => `${apt.district}/${apt.neighborhood}`)].map(([key, listings]) => {
+                const { district, neighborhood } = listings[0];
+                const area = livingAreas[key]?.[0] ?? neighborhood;
+                const stations = livingAreas[key]?.[1];
+                const count = new Set(listings.map(apt => apt.name)).size;
+                const sizeGroups = [...groupBy(listings, apt => apt.areaCategory)].sort(([a], [b]) => Number(a) - Number(b));
+                return (
+                  <details key={key} className="rounded-xl border border-slate-200 bg-white p-4">
+                    <summary className="cursor-pointer text-slate-900">
+                      <span className="font-bold">{area} 생활권</span>
+                      <span className="ml-2 text-sm font-semibold text-blue-800">단지 {count}곳</span>
+                      <span className="mt-1 block text-sm text-slate-600">{district} {neighborhood}{stations ? ` · 주요 역 ${stations}` : ''}</span>
+                      <span className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">
+                        {sizeGroups.map(([size, candidates]) => {
+                          const prices = candidates.map(apt => apt.price);
+                          const low = Math.min(...prices);
+                          const high = Math.max(...prices);
+                          return <span key={size}>전용 {size}㎡대 · {low === high ? formatPrice(low) : `${formatPrice(low)}~${formatPrice(high)}`}</span>;
+                        })}
+                      </span>
+                    </summary>
+                    {renderCards(listings)}
+                  </details>
+                );
+              })}
             </div>
-          </article>;
-          })}
-        </div>
+          )}
+        </>}
         </>}
       </div>}
     </section>

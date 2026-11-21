@@ -1,3 +1,4 @@
+import { FirestoreService } from '../storage/firestoreService.ts';
 import type { RequestHandler } from 'express';
 import { XMLParser } from 'fast-xml-parser';
 import { readRoneMarketTrends, type MarketTrend } from './roneMarketTrends.ts';
@@ -11,7 +12,7 @@ const regions = [...new Set(catalog.apartments.map(({ region }) => region))];
 type Sale = { area: number; price: number; date: string; floor: number };
 type TradeSummary = { count: number; min: number; max: number };
 type Result = (typeof catalog.apartments)[number] & Sale & { areaCategory: string; tradeSummary?: TradeSummary };
-type ResponseData = { results: Result[]; marketTrends: MarketTrend[]; incomplete: boolean; checkedAt: string };
+type ResponseData = { results: Result[]; marketTrends: MarketTrend[]; incomplete: boolean; stale?: boolean; checkedAt: string };
 
 async function monthTrades(key: string, region: string, month: string) {
   const items: Record<string, string>[] = [];
@@ -31,6 +32,44 @@ async function monthTrades(key: string, region: string, month: string) {
     if (!batch.length) break;
   }
   throw new Error('MOLIT_INCOMPLETE_MONTH');
+}
+
+const storage = new FirestoreService();
+const maxAge = 6 * 3600_000;
+type StoredMonth = { rows: Record<string, string>[]; fetchedAt: number };
+const acceptedNames = new Map(regions.map(region => [region, new Set(catalog.apartments
+  .filter(apt => apt.region === region)
+  .flatMap(apt => apt.aliases.map(alias => `${normalize(apt.neighborhood)}/${normalize(alias)}`)))]));
+const pendingMonths = new Map<string, Promise<{ rows: StoredMonth['rows']; stale: boolean }>>();
+
+function storedMonth(key: string | null, region: string, month: string) {
+  const id = `${region}_${month}`;
+  const active = pendingMonths.get(id);
+  if (active) return active;
+  const request = (async () => {
+    const db = await storage.getClient().catch(() => null);
+    const ref = db?.collection('apartment_trade_months_v1').doc(id);
+    const saved = (await ref?.get().catch(() => undefined))?.data() as StoredMonth | undefined;
+    if (saved && Date.now() - saved.fetchedAt < maxAge) return { rows: saved.rows, stale: false };
+    try {
+      if (!key) throw new Error('MOLIT_KEY_UNAVAILABLE');
+      const names = acceptedNames.get(region);
+      const rows = (await monthTrades(key, region, month))
+        .filter(row => names?.has(`${normalize(row.umdNm)}/${normalize(row.aptNm)}`))
+        .map(row => Object.fromEntries(['umdNm', 'aptNm', 'cdealDay', 'cdealType', 'dealAmount', 'excluUseAr', 'floor', 'dealYear', 'dealMonth', 'dealDay']
+          .map(field => [field, String(row[field] ?? '')])));
+      if (ref) {
+        const fetchedAt = Date.now();
+        await ref.set({ rows, fetchedAt }).catch(() => console.warn('[housing] trade snapshot write failed', id));
+      }
+      return { rows, stale: false };
+    } catch (error) {
+      if (saved) return { rows: saved.rows, stale: true };
+      throw error;
+    }
+  })().finally(() => pendingMonths.delete(id));
+  pendingMonths.set(id, request);
+  return request;
 }
 
 async function existingHousingPrices(startYmd: string, endYmd: string): Promise<Result[]> {
@@ -63,14 +102,15 @@ async function loadPrices(): Promise<ResponseData> {
     return String(month.getUTCFullYear()) + pad(month.getUTCMonth() + 1);
   });
   const marketTrends = readRoneMarketTrends();
-  const feeds = key ? await Promise.allSettled(regions.map(async region => {
-    const data = await Promise.allSettled(months.map(month => monthTrades(key, region, month)));
+  const feeds = await Promise.allSettled(regions.map(async region => {
+    const data = await Promise.allSettled(months.map(month => storedMonth(key, region, month)));
     return {
       region,
       missingMonths: data.filter(month => month.status === 'rejected').length,
-      rows: data.flatMap(month => month.status === 'fulfilled' ? month.value : []),
+      stale: data.some(month => month.status === 'fulfilled' && month.value.stale),
+      rows: data.flatMap(month => month.status === 'fulfilled' ? month.value.rows : []),
     };
-  })) : [];
+  }));
   const received = feeds.flatMap(feed => feed.status === 'fulfilled' ? [feed.value] : []);
   const byRegion = new Map(received.filter(feed => feed.missingMonths < months.length).map(feed => [feed.region, feed.rows]));
   const incomplete = byRegion.size < regions.length || received.some(feed => feed.missingMonths > 0);
@@ -102,7 +142,7 @@ async function loadPrices(): Promise<ResponseData> {
   });
   if (!byRegion.has('41290')) results.push(...await existingHousingPrices(months[2], months[0]));
   if (!byRegion.size && !results.length) throw new Error('MOLIT_UNAVAILABLE');
-  return { results, marketTrends: await marketTrends, incomplete, checkedAt: new Date().toISOString() };
+  return { results, marketTrends: await marketTrends, incomplete, stale: received.some(feed => feed.stale), checkedAt: new Date().toISOString() };
 }
 
 export function createApartmentBudgetHandler(): RequestHandler {

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
+import { createApartmentTradeHistoryHandler } from '../housing/apartmentTradeHistoryApi.ts';
 import { createApiSecurity } from '../security/apiSecurity.ts';
 
 test('real HTTP routes block unauthenticated side effects, test endpoints and query secrets', async () => {
@@ -38,5 +39,33 @@ test('instance quotas distinguish public requests and authorized admin calls', a
   const limited=await fetch(base+'/api/status');assert.equal(limited.status,429);assert.equal(limited.headers.get('retry-after'),'60');
   assert.equal((await fetch(base+'/api/jobs/poll',{headers:{Authorization:'Bearer s'}})).status,200);
   assert.equal((await fetch(base+'/api/jobs/poll',{headers:{Authorization:'Bearer s','X-Forwarded-For':'different'}})).status,429);
+ } finally {await new Promise<void>(r=>server.close(()=>r()));}
+});
+
+test('Apt saved history exact GET and HEAD reach the handler; writes and other paths stay protected', async () => {
+ const app=express();
+ const path='/api/housing/apartment-trade-history';
+ app.use(createApiSecurity({production:true,secret:()=> 'test-secret',clientLimit:2}));
+ app.get(path,createApartmentTradeHistoryHandler());
+ const server=app.listen(0,'127.0.0.1'); await new Promise<void>(r=>server.once('listening',r));
+ const base='http://127.0.0.1:'+(server.address() as {port:number}).port;
+ try {
+  // Invalid selection goes through the real handler (no upstream use).
+  const invalid=await fetch(base+path+'?complex=not-in-the-catalog');
+  assert.equal(invalid.status,400);
+  assert.deepEqual(await invalid.json(),{error:'TRADE_HISTORY_INVALID_SELECTION'});
+  assert.equal(invalid.headers.get('cache-control'),'no-store');
+  const head=await fetch(base+path,{method:'HEAD'});
+  assert.equal(head.status,400);
+  assert.equal(head.headers.get('cache-control'),'no-store');
+  const limited=await fetch(base+path);
+  assert.equal(limited.status,429);
+  assert.equal(limited.headers.get('retry-after'),'60');
+  for (const method of ['POST','PUT','DELETE']) {
+   assert.equal((await fetch(base+path,{method})).status,401);
+  }
+  assert.equal((await fetch(base+path+'/unexpected')).status,401);
+  assert.equal((await fetch(base+path+'/')).status,401);
+  assert.equal((await fetch(base+'/api/jobs/poll')).status,401);
  } finally {await new Promise<void>(r=>server.close(()=>r()));}
 });

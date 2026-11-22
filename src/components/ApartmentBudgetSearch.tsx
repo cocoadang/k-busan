@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import ApartmentRadar, { ApartmentRadarPreview } from './ApartmentRadar';
 import catalog from '../housing/songApartmentCatalog.json';
+import { AdditionalSongEvidence, SongApartmentVideoEvidence, songVideoUrl as videoUrl } from './SongApartmentVideoEvidence';
 
 type Listing = (typeof catalog.apartments)[number] & { area: number; price: number; date: string; floor: number; areaCategory: string; tradeSummary?: { count: number; min: number; max: number } };
 type PriceFeed = { results: Listing[]; incomplete: boolean; stale?: boolean; checkedAt: string; marketTrends?: { region: string; month: string; index: number; monthlyChange: number | null }[] };
@@ -24,7 +25,6 @@ const principles = [
   { title: '교통·학군·거주 여건을 함께 확인', note: '역 접근성, 학원가, 주차처럼 실제 거주에 영향을 주는 조건을 비교합니다.', links: [{ id: 'TL_WqYQsUJw', time: 33 }, { id: '9f7SKimLzQA', time: 62 }] },
   { title: '리모델링 비용과 일정을 함께 검토', note: '매매가와 함께 예상 추가분담금, 이주·공사 일정을 확인합니다.', links: [{ id: '9f7SKimLzQA', time: 137 }, { id: 'iwO_jSjdRaI', time: 190 }] },
 ];
-const videoUrl = (id: string, time: number) => `https://www.youtube.com/watch?v=${id}&t=${time}s`;
 const formatPrice = (price: number) => {
   const eok = Math.floor(price / 10000);
   const remainder = price % 10000;
@@ -212,7 +212,7 @@ export default function ApartmentBudgetSearch() {
             <p className="text-sm text-slate-600">{apt.date} 계약 · {apt.floor}층</p>
             <ApartmentRadarPreview name={apt.name} />
             <dl className="mt-4 flex-1 space-y-2 text-sm text-slate-700">
-              <div><dt className="font-semibold text-slate-900">작가가 분석한 내용</dt><dd>{apt.note}</dd></div>
+              <div><dt className="font-semibold text-slate-900">작가가 분석한 내용</dt><dd>{apt.note}<AdditionalSongEvidence apartmentName={apt.name} /></dd></div>
               <div><dt className="font-semibold text-slate-900">내 조건에 맞는 이유</dt><dd>{query?.size ? '선택 전용면적 · ' : ''}{query?.minimum ? '입력 가격대 내 신고 거래' : '예산 이내 신고 거래'}{matchEvidence(apt) ? ` · ${matchEvidence(apt)}` : ''}</dd></div>
             </dl>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-3 text-sm font-semibold text-blue-800">
@@ -255,7 +255,7 @@ export default function ApartmentBudgetSearch() {
             onBudget={value => { setBudget(value); setRangeError(false); }} />
           {rangeError && <p role="alert" className="text-sm text-red-700 sm:col-span-full">최소 매매가를 최대 매매가 이하로 입력하세요.</p>}
         </form>
-        <p className="mt-4 text-sm text-slate-300">영상 자막 검토 {catalog.reviewedVideoIds.length}편 · 분석 단지 {catalog.apartments.length}곳 · 최근 3개 계약월의 국토교통부 신고 거래 기준</p>
+        <p className="mt-4 text-sm text-slate-300">실거래 검색 근거 영상 {catalog.reviewedVideoIds.length}편 · 검색 대상 단지 {catalog.apartments.length}곳 · 최근 3개 계약월의 국토교통부 신고 거래 기준</p>
       </div>
       <details className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
         <summary className="cursor-pointer font-semibold">검토한 영상에서 정리한 투자 판단 기준</summary>
@@ -298,7 +298,10 @@ export default function ApartmentBudgetSearch() {
                   ['위치·전용면적', (apt: Listing) => `${apt.district} ${apt.neighborhood} · ${apt.area}㎡`],
                   ['최신 신고 거래', (apt: Listing) => `${formatPrice(apt.price)} · ${apt.date} · ${apt.floor}층`],
                   ['최근 3개 계약월 조회 범위', (apt: Listing) => apt.tradeSummary ? `${formatPrice(apt.tradeSummary.min)} ~ ${formatPrice(apt.tradeSummary.max)} (${apt.tradeSummary.count}건)` : '범위·건수 미확인'],
-                  ['영상 분석', (apt: Listing) => <a className="text-blue-800 underline" href={videoUrl(apt.videoId, apt.time)} target="_blank" rel="noreferrer">{apt.note}</a>],
+                  ['영상 분석', (apt: Listing) => <>
+                    <a className="text-blue-800 underline" href={videoUrl(apt.videoId, apt.time)} target="_blank" rel="noreferrer">{apt.note}</a>
+                    <AdditionalSongEvidence apartmentName={apt.name} />
+                  </>],
                 ] as const).map(([label, value]) => <tr className="border-t border-slate-200" key={label}>
                   <th scope="row" className="p-2 font-semibold">{label}</th>
                   {selected.map(apt => <td key={listingKey(apt)} className="p-2 align-top">{value(apt)}</td>)}
@@ -354,6 +357,7 @@ export default function ApartmentBudgetSearch() {
         </>}
         </>}
       </div>}
+      <SongApartmentVideoEvidence />
     </section>
   );
 }

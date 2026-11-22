@@ -100,14 +100,35 @@ async function existingHousingPrices(startYmd: string, endYmd: string): Promise<
   return results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
 }
 
-async function loadPrices(refresh = false): Promise<ResponseData> {
-  const raw = process.env.MOLIT_API_KEY?.trim() || process.env.DATA_GO_KR_API_KEY?.trim();
-  const key = raw ? decodeURIComponent(raw) : null;
+function tradeMonths() {
   const now = new Date(Date.now() + 9 * 3600_000);
-  const months = [0, 1, 2].map(offset => {
+  return [0, 1, 2].map(offset => {
     const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1));
     return String(month.getUTCFullYear()) + pad(month.getUTCMonth() + 1);
   });
+}
+
+export async function refreshGwacheonFallback(months = tradeMonths()) {
+  const db = await storage.getClient();
+  if (!db) return;
+  const ref = db.collection('apartment_trade_fallback').doc(months[0]);
+  const saved = (await ref.get()).data();
+  if (saved?.results?.length === 2 && Date.now() - Number(saved.fetchedAt) < maxAge) return;
+  const rows = await existingHousingPrices(months[2], months[0]);
+  if (!rows.length) throw new Error('GWACHEON_FALLBACK_NO_VERIFIED_TRADES');
+  await db.runTransaction(async transaction => {
+    const snapshot = (await transaction.get(ref)).data();
+    const byArea = new Map<string, Result>(((snapshot?.results as Result[] | undefined) ?? [])
+      .map(row => [row.areaCategory, row]));
+    for (const row of rows) byArea.set(row.areaCategory, row);
+    transaction.set(ref, { results: [...byArea.values()], fetchedAt: rows.length === 2 ? Date.now() : 0 });
+  });
+}
+
+async function loadPrices(refresh = false): Promise<ResponseData> {
+  const raw = process.env.MOLIT_API_KEY?.trim() || process.env.DATA_GO_KR_API_KEY?.trim();
+  const key = raw ? decodeURIComponent(raw) : null;
+  const months = tradeMonths();
   const marketTrends = readRoneMarketTrends();
   const feeds = await Promise.allSettled(regions.map(async region => {
     const data = await Promise.allSettled(months.map(month => storedMonth(key, region, month, refresh)));
@@ -154,12 +175,7 @@ async function loadPrices(refresh = false): Promise<ResponseData> {
     const db = await storage.getClient().catch(() => null);
     const ref = db?.collection('apartment_trade_fallback').doc(months[0]);
     if (refresh && ref) {
-      const fallback = await existingHousingPrices(months[2], months[0]);
-      if (fallback.length) {
-        await ref.set({ results: fallback }).catch(() => console.warn('[housing] Gwacheon fallback snapshot write failed'));
-      } else {
-        console.warn('[housing] Gwacheon fallback refresh returned no verified trades');
-      }
+      await refreshGwacheonFallback(months).catch(error => console.warn('[housing] Gwacheon fallback refresh failed', error instanceof Error ? error.message : 'unknown'));
     }
     const saved = await ref?.get().catch(() => undefined);
     const fallback = (saved?.data()?.results as Result[] | undefined) ?? [];

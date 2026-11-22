@@ -1,3 +1,4 @@
+import { tradeHistoryLink } from '../housing/apartmentTradeHistory';
 import evidence from '../housing/songApartmentVideoEvidence.json';
 
 export const songVideoUrl = (id: string, time: number) => `https://www.youtube.com/watch?v=${id}&t=${time}s`;
@@ -30,8 +31,9 @@ export function SongApartmentVideoEvidence() {
       <div key={videoId} className="mt-5">
         <h3 className="text-sm font-semibold text-slate-700">{label}</h3>
         <ul className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {comparisons.map(({ name, topic, note, time, priceSearchName }) =>
-            <li key={name} className="min-w-0 rounded-xl bg-slate-50 p-4">
+          {comparisons.map(({ name, topic, note, time, priceSearchName }) => {
+            const history = tradeHistoryLink(name);
+            return <li key={name} className="min-w-0 rounded-xl bg-slate-50 p-4">
               <h4 className="break-words font-bold text-slate-900">{name}</h4>
               <p className="mt-1 text-xs font-medium text-slate-600">{priceSearchName ? '기존 검색 단지 · 추가 영상 근거' : '영상 근거 확인 · 실거래 검색 미반영'}</p>
               <p className="mt-2 text-sm text-slate-700"><strong>{topic}</strong> · {note}</p>
@@ -39,8 +41,9 @@ export function SongApartmentVideoEvidence() {
                 href={songVideoUrl(videoId, time)} target="_blank" rel="noreferrer">
                 {name} 발언 보기 ({formatTimestamp(time)})
               </a>
-            </li>
-          )}
+              {history && <a className="mt-2 block text-sm font-semibold text-blue-800 underline" href={history}>저장 실거래 이력 보기</a>}
+            </li>;
+          })}
         </ul>
       </div>
     )}

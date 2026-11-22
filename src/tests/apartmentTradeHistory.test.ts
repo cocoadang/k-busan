@@ -19,7 +19,7 @@ const snapshot = (items: unknown[], over = {}) => ({
 
 test('trade history allows only canonical complex/family pairs, exact bounded contracted months and pages', () => {
   assert.equal(tradeHistoryComplexes.length, 4);
-  assert.equal(tradeHistoryComplexes.flatMap(c => c.families).length, 20);
+  assert.equal(tradeHistoryComplexes.reduce((count, c) => count + c.families.length, 0), 20);
   assert.equal(exact.district, '41290');
   for (const change of [
     { url: 'https://example.org' }, { complex: ['gwacheon_raemian_sur'] },

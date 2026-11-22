@@ -8,6 +8,7 @@ const inputStyle = 'min-w-0 w-full rounded-lg border border-slate-300 bg-white p
 const actionStyle = 'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-45';
 const dateInput = (x: string) => x.slice(0, 4) + '-' + x.slice(4);
 const won = new Intl.NumberFormat('ko-KR');
+const checkedAtKst = new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Seoul' });
 const prettyPrice = (amount: number) => {
   const eok = Math.floor(amount / 10_000);
   const manwon = amount % 10_000;
@@ -35,7 +36,7 @@ export default function ApartmentTradeHistory({ initialComplex }: { initialCompl
         const value: TradeHistoryResponse = await response.json();
         if (value.coverage !== 'saved_snapshot_only' || value.source !== 'K_HOUSING_SAVED_MOLIT' ||
            value.complex !== query.complex || value.family !== query.family || value.page !== query.page ||
-           value.start !== query.start || value.end !== query.end || !Array.isArray(value.rows)) throw new Error('unavailable');
+           value.start !== query.start || value.end !== query.end || !Number.isFinite(Date.parse(value.checkedAt)) || !Array.isArray(value.rows)) throw new Error('unavailable');
         if (!request.signal.aborted) setDisplay({ selection: query, value, error: '' });
       } catch (error) {
         if (!request.signal.aborted) setDisplay({ selection: query, value: null, error: error instanceof Error && error.message === 'invalid'
@@ -102,6 +103,7 @@ export default function ApartmentTradeHistory({ initialComplex }: { initialCompl
         {resultComplex?.label} · {resultFamily?.area}㎡형 · {dateInput(data.start)}~{dateInput(data.end)} · 미해제 저장 {won.format(data.activeRows)}행
         {data.cancelledRows ? ' · 해제 ' + won.format(data.cancelledRows) + '행 별도 표시' : ''}
         {data.complex === 'mapo_raemian_prugio' ? ' · 차수 미제공' : ''}
+        {' '}<small className="mt-1 block text-slate-500">저장본 확인 시각: {checkedAtKst.format(new Date(data.checkedAt))} (한국시간)</small>
       </p>}
     </div>
     {data && (data.rows.length ? <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">

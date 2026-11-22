@@ -1,5 +1,6 @@
 import { refreshApartmentFloorPlans, readApartmentFloorPlans } from './src/housing/apartmentFloorPlanStore.ts';
 import { createApartmentBudgetHandler, refreshApartmentTrades, refreshGwacheonFallback } from './src/housing/apartmentBudgetApi.ts';
+import { createApartmentTradeHistoryHandler } from './src/housing/apartmentTradeHistoryApi.ts';
 import { createBusanPriceHandler } from './src/housing/busanPriceApi.ts';
 import {costHttpTelemetry} from './src/utils/costTelemetry';
 import {NewsBodyReader,firestoreNewsBodyCache} from './src/news/newsBodyReader';
@@ -104,6 +105,7 @@ app.get('/api/official/diagnostics', async (req, res) => {
 
 app.get('/api/housing/busan-prices', createBusanPriceHandler());
 app.get('/api/housing/apartment-budget', createApartmentBudgetHandler());
+app.get('/api/housing/apartment-trade-history', createApartmentTradeHistoryHandler());
 
 app.get('/api/housing/floor-plans/raemian-sur', readApartmentFloorPlans);
 

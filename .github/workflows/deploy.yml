@@ -174,6 +174,16 @@ jobs:
             if [ "$i" -eq 6 ]; then exit 1; fi
             sleep 5
           done
+          echo "Checking a known K-Housing saved sale history"
+          curl -fsS --max-time 15 "$URL/api/housing/apartment-trade-history?complex=gwacheon_raemian_sur&family=raemian_sur_59&start=202609&end=202611&page=1" | python3 -c '
+          import json,sys
+          p=json.load(sys.stdin)
+          assert p.get("source") == "K_HOUSING_SAVED_MOLIT" and p.get("coverage") == "saved_snapshot_only"
+          assert (p.get("complex"), p.get("family"), p.get("start"), p.get("end"), p.get("page")) == ("gwacheon_raemian_sur", "raemian_sur_59", "202609", "202611", 1)
+          assert p.get("activeRows", 0) > 0
+          assert any(r.get("cancelled") is False and r.get("exactArea",0)>0 and r.get("amountManwon",0)>0 for r in p.get("rows", []))
+          print("Saved trade history candidate verified")
+          '
       - name: Promote candidate to 100% traffic
         run: |
           gcloud run services update-traffic "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" \

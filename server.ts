@@ -985,13 +985,17 @@ async function startServer() {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       await Promise.race([
-        refreshGwacheonFallback(),
+        Promise.allSettled([refreshGwacheonFallback(), refreshApartmentTrades()]).then(results => {
+          const trades = results[1];
+          console.info('[housing] startup trade refresh', trades.status === 'fulfilled' ? trades.value : 'failed');
+          if (results[0].status === 'rejected') console.warn('[housing] startup Gwacheon backfill failed');
+        }),
         new Promise<never>((_, reject) => {
-          timeout = setTimeout(() => reject(new Error('GWACHEON_STARTUP_TIMEOUT')), 12_000);
+          timeout = setTimeout(() => reject(new Error('HOUSING_STARTUP_TIMEOUT')), 25_000);
         }),
       ]);
     } catch (error) {
-      console.warn('[housing] startup Gwacheon backfill failed', error instanceof Error ? error.message : 'unknown');
+      console.warn('[housing] startup trade refresh delayed', error instanceof Error ? error.message : 'unknown');
     } finally {
       clearTimeout(timeout);
     }

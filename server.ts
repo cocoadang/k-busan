@@ -1,5 +1,5 @@
 import { refreshApartmentFloorPlans, readApartmentFloorPlans } from './src/housing/apartmentFloorPlanStore.ts';
-import { createApartmentBudgetHandler, refreshApartmentTrades } from './src/housing/apartmentBudgetApi.ts';
+import { createApartmentBudgetHandler, refreshApartmentTrades, refreshGwacheonFallback } from './src/housing/apartmentBudgetApi.ts';
 import { createBusanPriceHandler } from './src/housing/busanPriceApi.ts';
 import {costHttpTelemetry} from './src/utils/costTelemetry';
 import {NewsBodyReader,firestoreNewsBodyCache} from './src/news/newsBodyReader';
@@ -979,6 +979,22 @@ async function startServer() {
       res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(distPath, 'index.html'));
     });
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        refreshGwacheonFallback(),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error('GWACHEON_STARTUP_TIMEOUT')), 12_000);
+        }),
+      ]);
+    } catch (error) {
+      console.warn('[housing] startup Gwacheon backfill failed', error instanceof Error ? error.message : 'unknown');
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   app.listen(PORT, '0.0.0.0', () => {

@@ -1,6 +1,12 @@
 name: Backfill Song Hee-gu captions
 on:
   workflow_dispatch:
+    inputs:
+      max_videos:
+        description: Maximum video attempts (use 1 for an access check)
+        type: choice
+        options: ['1', '3', '5', '10', '50']
+        default: '1'
 permissions:
   contents: read
 concurrency:
@@ -13,11 +19,13 @@ jobs:
     steps:
       - name: Collect public Korean captions
         timeout-minutes: 325
+        env:
+          MAX_VIDEOS: ${{ inputs.max_videos }}
         run: |
           python3 -m venv /tmp/song-caption-venv
           /tmp/song-caption-venv/bin/pip install 'yt-dlp==2026.10.26'
           /tmp/song-caption-venv/bin/python - <<'PY'
-          import csv, json, pathlib, subprocess, sys, time
+          import csv, json, os, pathlib, subprocess, sys, time
           out = pathlib.Path("caption-backfill")
           out.mkdir()
           yt = [sys.executable, "-m", "yt_dlp", "--ignore-config", "--socket-timeout", "15", "--retries", "0"]
@@ -37,15 +45,18 @@ jobs:
               pending.replace(out / "status.csv")
           save()
           seconds_between_attempts = 60 * 60 / 10
+          max_videos = int(os.environ['MAX_VIDEOS'])
+          attempts = 0
           stop_at = time.monotonic() + 310 * 60
           next_attempt_at = time.monotonic()
           for video in videos:
               if video in already:
                   continue
-              if max(time.monotonic(), next_attempt_at) + 75 >= stop_at:
+              if attempts >= max_videos or max(time.monotonic(), next_attempt_at) + 75 >= stop_at:
                   break
               time.sleep(max(0, next_attempt_at - time.monotonic()))
               next_attempt_at = time.monotonic() + seconds_between_attempts
+              attempts += 1
               url = "https://www.youtube.com/watch?v=" + video
               try:
                   result = subprocess.run(yt + ["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", "ko", "--sub-format", "vtt", "--sleep-requests", "1", "--sleep-subtitles", "2", "-o", str(out / "%(id)s.%(ext)s"), "--", url], capture_output=True, text=True, timeout=75)
@@ -56,7 +67,8 @@ jobs:
                   elif "http error 429" in log or "not a bot" in log:
                       state[video] = "provider_limit"
                       save()
-                      print("Provider restricted further access; retained verified checkpoint.", flush=True)
+                      reason = "HTTP 429" if "http error 429" in log else "bot verification required"
+                      print(f"Provider restricted further access ({reason}); retained verified checkpoint.", flush=True)
                       break
                   elif "no subtitles for the requested languages" in log or "there are no subtitles" in log:
                       state[video] = "no_korean_caption"
@@ -66,6 +78,7 @@ jobs:
                   state[video] = "timeout"
               save()
               print(video, state[video], flush=True)
+          print(f'Attempted {attempts} video(s); collected {sum(value == "collected" for value in state.values())}.', flush=True)
           PY
       - name: Preserve downloadable progress
         if: always()

@@ -36,12 +36,16 @@ jobs:
                   writer.writerows((video, entry.get("title"), entry.get("duration"), state[video]) for video, entry in videos.items())
               pending.replace(out / "status.csv")
           save()
+          seconds_between_attempts = 60 * 60 / 10
           stop_at = time.monotonic() + 310 * 60
+          next_attempt_at = time.monotonic()
           for video in videos:
               if video in already:
                   continue
-              if time.monotonic() >= stop_at:
+              if max(time.monotonic(), next_attempt_at) + 75 >= stop_at:
                   break
+              time.sleep(max(0, next_attempt_at - time.monotonic()))
+              next_attempt_at = time.monotonic() + seconds_between_attempts
               url = "https://www.youtube.com/watch?v=" + video
               try:
                   result = subprocess.run(yt + ["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", "ko", "--sub-format", "vtt", "--sleep-requests", "1", "--sleep-subtitles", "2", "-o", str(out / "%(id)s.%(ext)s"), "--", url], capture_output=True, text=True, timeout=75)
@@ -62,7 +66,6 @@ jobs:
                   state[video] = "timeout"
               save()
               print(video, state[video], flush=True)
-              time.sleep(1)
           PY
       - name: Preserve downloadable progress
         if: always()

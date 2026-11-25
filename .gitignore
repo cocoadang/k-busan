@@ -16,3 +16,14 @@ evidence/
 # Python operational validation
 __pycache__/
 *.pyc
+
+# Private caption input and checkpoint artifacts (keep outside Git as well)
+*.vtt
+*.srt
+**/caption-backfill/
+**/captions/
+**/video_inventory.csv
+*caption*resume*.zip
+*caption*checkpoint*.zip
+*.intake-lock/
+.caption-intake-*.zip

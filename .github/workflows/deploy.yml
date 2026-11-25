@@ -96,8 +96,10 @@ jobs:
           gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
             --format=export > /tmp/service.yaml
           CURRENT="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
-            --format='value(status.latestReadyRevisionName)')"
-          NEW_REV="${CLOUD_RUN_SERVICE}-${GITHUB_SHA::7}-${GITHUB_RUN_ATTEMPT}"
+            --format='json(status.traffic)' | python3 ops/cloud_run_traffic.py serving)"
+          NEW_REV="${CLOUD_RUN_SERVICE}-${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          echo "ACTIVE_REVISION_BEFORE=$CURRENT" >> "$GITHUB_ENV"
+          echo "CANDIDATE_REVISION=$NEW_REV" >> "$GITHUB_ENV"
           CURRENT="$CURRENT" NEW_REV="$NEW_REV" python3 - <<'PY'
           import os, sys, yaml
           sys.path.insert(0, "ops")
@@ -151,7 +153,7 @@ jobs:
       - name: Verify candidate (read-only)
         run: |
           URL="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
-            --format=json | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(t['url'] for t in d['status']['traffic'] if t.get('tag')=='candidate'))")"
+            --format='json(status.traffic)' | python3 ops/cloud_run_traffic.py candidate "$CANDIDATE_REVISION" "$ACTIVE_REVISION_BEFORE")"
           echo "candidate: $URL"
           for i in 1 2 3 4 5 6; do
             code="$(curl -s -o /tmp/health.json -w '%{http_code}' "$URL/api/health" || true)"
@@ -186,7 +188,12 @@ jobs:
           '
       - name: Promote candidate to 100% traffic
         run: |
-          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" \
-            --project "$GCP_PROJECT_ID" --to-tags candidate=100 --quiet
+          # A ready or tagged revision is not necessarily the one that passed this run's smoke.
           gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
-            --format='value(status.latestReadyRevisionName,status.url)'
+            --format='json(status.traffic)' | python3 ops/cloud_run_traffic.py candidate "$CANDIDATE_REVISION" "$ACTIVE_REVISION_BEFORE" > /dev/null
+          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" \
+            --project "$GCP_PROJECT_ID" --to-revisions "$CANDIDATE_REVISION=100" --quiet
+          LIVE="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
+            --format='json(status.traffic)' | python3 ops/cloud_run_traffic.py serving)"
+          [ "$LIVE" = "$CANDIDATE_REVISION" ] || { echo "::error::verified candidate is not serving 100%"; exit 1; }
+          echo "serving revision: $LIVE"

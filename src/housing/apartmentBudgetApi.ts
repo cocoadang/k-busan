@@ -3,6 +3,7 @@ import type { RequestHandler } from 'express';
 import { XMLParser } from 'fast-xml-parser';
 import { readRoneMarketTrends, type MarketTrend } from './roneMarketTrends.ts';
 import catalog from './songApartmentCatalog.json';
+import { canonicalApartmentIdentity, legacyApartmentTradeMode, readCanonicalApartmentTrades, runLegacyApartmentWriter, type ApartmentTradeMode } from './apartmentCanonicalReader';
 
 const endpoint = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev';
 const parser = new XMLParser({ parseTagValue: false });
@@ -12,7 +13,7 @@ const regions = [...new Set(catalog.apartments.map(({ region }) => region))];
 type Sale = { area: number; price: number; date: string; floor: number };
 type TradeSummary = { count: number; min: number; max: number };
 type Result = (typeof catalog.apartments)[number] & Sale & { areaCategory: string; tradeSummary?: TradeSummary };
-type ResponseData = { results: Result[]; marketTrends: MarketTrend[]; incomplete: boolean; stale?: boolean; checkedAt: string };
+type ResponseData = { results: Result[]; marketTrends: MarketTrend[]; incomplete: boolean; stale?: boolean; checkedAt: string; observedAt?:string; validUntil?:number; revision?:string };
 
 async function monthTrades(key: string, region: string, month: string) {
   const items: Record<string, string>[] = [];
@@ -108,7 +109,7 @@ function tradeMonths() {
   });
 }
 
-export async function refreshGwacheonFallback(months = tradeMonths()) {
+async function refreshGwacheonFallback(months = tradeMonths()) {
   const db = await storage.getClient();
   if (!db) return;
   const ref = db.collection('apartment_trade_fallback').doc(months[0]);
@@ -118,11 +119,58 @@ export async function refreshGwacheonFallback(months = tradeMonths()) {
   if (!rows.length) throw new Error('GWACHEON_FALLBACK_NO_VERIFIED_TRADES');
   await db.runTransaction(async transaction => {
     const snapshot = (await transaction.get(ref)).data();
-    const byArea = new Map<string, Result>(((snapshot?.results as Result[] | undefined) ?? [])
-      .map(row => [row.areaCategory, row]));
-    for (const row of rows) byArea.set(row.areaCategory, row);
-    transaction.set(ref, { results: [...byArea.values()], fetchedAt: rows.length === 2 ? Date.now() : 0 });
-  });
+  const byArea = new Map<string, Result>(((snapshot?.results as Result[] | undefined) ?? [])
+    .map(row => [row.areaCategory, row]));
+  for (const row of rows) byArea.set(row.areaCategory, row);
+  transaction.set(ref, { results: [...byArea.values()], fetchedAt: rows.length === 2 ? Date.now() : 0 });
+});
+}
+
+function summarizeTrades(apt: (typeof catalog.apartments)[number], rows: Sale[]): Result[] {
+  const byArea = new Map<string, { latest: Sale; summary: TradeSummary }>();
+  for (const sale of rows) {
+    if (sale.area <= 0) continue;
+    const areaCategory = String(Math.floor(sale.area));
+    const group = byArea.get(areaCategory);
+    if (!group) {
+      byArea.set(areaCategory, { latest: sale, summary: { count: 1, min: sale.price, max: sale.price } });
+    } else {
+      group.summary.count++;
+      group.summary.min = Math.min(group.summary.min, sale.price);
+      group.summary.max = Math.max(group.summary.max, sale.price);
+    }
+  }
+  return [...byArea].map(([areaCategory, { latest, summary }]) => ({ ...apt, ...latest, areaCategory, tradeSummary: summary }));
+}
+
+const canonicalIdentities = new Set(catalog.apartments.map(apt => canonicalApartmentIdentity(apt.region, apt.neighborhood, apt.name)));
+
+async function loadCanonicalPrices(mode: Extract<ApartmentTradeMode, { kind: 'canonical' }>, months: readonly string[]): Promise<ResponseData> {
+  if ('project' in mode) {
+    const projected = await mode.project(months);
+    if (projected.incomplete) throw Error('CANONICAL_TRADES_UNAVAILABLE');
+    const results = projected.results.map(row => {
+      const apt = catalog.apartments.find(apt => apt.region === row.region && apt.neighborhood === row.neighborhood && apt.name === row.name);
+      if (!apt) throw Error('CANONICAL_TRADES_UNAVAILABLE');
+      const { price, area, date, floor, areaCategory, tradeSummary } = row;
+      return { ...apt, price, area, date, floor, areaCategory, tradeSummary };
+    });
+    return { results, marketTrends: await readRoneMarketTrends(), incomplete: false, checkedAt: projected.checkedAt, observedAt:projected.observedAt, validUntil:projected.validUntil, revision:projected.revision };
+  }
+  const scopes = regions.flatMap(district => months.map(month => ({ district, month })));
+  const data = await readCanonicalApartmentTrades(mode, scopes, canonicalIdentities);
+  const groups = new Map<string, Sale[]>();
+  for (const { district, rows } of data.buckets) for (const row of rows) {
+    if (row.cancelled) continue;
+    const id = canonicalApartmentIdentity(district, row.neighborhood, row.complex);
+    const sales = groups.get(id) ?? [];
+    sales.push({ area: row.area, price: row.price, date: row.date, floor: row.floor });
+    groups.set(id, sales);
+  }
+  const results = catalog.apartments.flatMap(apt => summarizeTrades(apt,
+    (groups.get(canonicalApartmentIdentity(apt.region, apt.neighborhood, apt.name)) ?? [])
+      .sort((a, b) => b.date.localeCompare(a.date) || b.price - a.price)));
+  return { results, marketTrends: await readRoneMarketTrends(), incomplete: data.incomplete, checkedAt: data.checkedAt };
 }
 
 async function loadPrices(refresh = false): Promise<ResponseData> {
@@ -153,20 +201,7 @@ async function loadPrices(refresh = false): Promise<ResponseData> {
       if (!Number.isSafeInteger(price) || price <= 0 || !Number.isFinite(area) || !Number.isInteger(floor) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
       return [{ price, area, date, floor }];
     }).sort((a, b) => b.date.localeCompare(a.date) || b.price - a.price);
-    const byArea = new Map<string, { latest: Sale; summary: TradeSummary }>();
-    for (const sale of rows) {
-      if (sale.area <= 0) continue;
-      const areaCategory = String(Math.floor(sale.area));
-      const group = byArea.get(areaCategory);
-      if (!group) {
-        byArea.set(areaCategory, { latest: sale, summary: { count: 1, min: sale.price, max: sale.price } });
-      } else {
-        group.summary.count++;
-        group.summary.min = Math.min(group.summary.min, sale.price);
-        group.summary.max = Math.max(group.summary.max, sale.price);
-      }
-    }
-    return [...byArea].map(([areaCategory, { latest, summary }]) => ({ ...apt, ...latest, areaCategory, tradeSummary: summary }));
+    return summarizeTrades(apt, rows);
   });
   const hasRaemianSurArea = (areaCategory: string) => results.some(result =>
     result.region === '41290' && result.name === '래미안슈르' && result.areaCategory === areaCategory
@@ -188,30 +223,46 @@ async function loadPrices(refresh = false): Promise<ResponseData> {
   return { results, marketTrends: await marketTrends, incomplete, stale: received.some(feed => feed.stale), checkedAt: new Date().toISOString() };
 }
 
-export async function refreshApartmentTrades() {
+async function refreshApartmentTrades() {
   const data = await loadPrices(true);
   return { count: data.results.length, incomplete: data.incomplete };
 }
 
-export function createApartmentBudgetHandler(): RequestHandler {
-  let cache: { until: number; request: Promise<ResponseData> } | undefined;
+function createApartmentBudgetHandler(mode: ApartmentTradeMode): RequestHandler {
+  let cache: { until: number; scopeKey: string; request: Promise<ResponseData> } | undefined;
   return async (_req, res) => {
-    if (!cache || cache.until <= Date.now()) {
-      const request = loadPrices();
-      cache = { request, until: Date.now() + 60_000 };
+    // A valid prior-month cache cannot answer the new KST rolling window.
+    const months = mode.kind === 'canonical' ? tradeMonths() : [];
+    const scopeKey = months.join(',');
+    if (!cache || cache.scopeKey !== scopeKey || cache.until <= Date.now()) {
+      const request = mode.kind === 'legacy' ? loadPrices() : loadCanonicalPrices(mode, months);
+      cache = { request, scopeKey, until: Date.now() + 60_000 };
       void request.then(data => {
-        if (cache?.request === request && (data.incomplete || data.stale)) cache.until = Date.now() + 60_000;
+        if (cache?.request !== request) return;
+        if (data.incomplete || data.stale) cache.until = Date.now() + 60_000;
+        if (data.validUntil !== undefined) cache.until = Math.min(cache.until,data.validUntil);
       }, () => {
         if (cache?.request === request) cache.until = Date.now() + 30_000;
       });
     }
     try {
       const data = await cache.request;
-      res.setHeader('Cache-Control', data.incomplete ? 'no-store' : 'public, max-age=60, s-maxage=300');
-      res.json(data);
+      const {validUntil, ...payload} = data;
+      if (validUntil !== undefined && Date.now() >= validUntil) throw Error('CANONICAL_TRADES_UNAVAILABLE');
+      res.setHeader('Cache-Control', mode.kind === 'canonical' || data.incomplete ? 'no-store' : 'public, max-age=60, s-maxage=300');
+      res.json(payload);
     } catch {
       res.setHeader('Cache-Control', 'no-store');
-      res.status(503).json({ error: 'MOLIT_UNAVAILABLE' });
+      res.status(503).json({ error: mode.kind === 'legacy' ? 'MOLIT_UNAVAILABLE' : 'CANONICAL_TRADES_UNAVAILABLE' });
     }
+  };
+}
+
+export function createApartmentBudgetService(configuration: ApartmentTradeMode = legacyApartmentTradeMode) {
+  const mode = Object.freeze({ ...configuration });
+  return {
+    handle: createApartmentBudgetHandler(mode),
+    refreshTrades: () => runLegacyApartmentWriter(mode, refreshApartmentTrades),
+    refreshGwacheonFallback: () => runLegacyApartmentWriter(mode, refreshGwacheonFallback),
   };
 }

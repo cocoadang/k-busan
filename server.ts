@@ -1,5 +1,5 @@
 import { refreshApartmentFloorPlans, readApartmentFloorPlans } from './src/housing/apartmentFloorPlanStore.ts';
-import { createApartmentBudgetHandler, refreshApartmentTrades, refreshGwacheonFallback } from './src/housing/apartmentBudgetApi.ts';
+import { createRuntimeApartmentBudgetService } from './src/housing/apartmentBudgetRuntime.ts';
 import { createApartmentTradeHistoryHandler } from './src/housing/apartmentTradeHistoryApi.ts';
 import { createBusanPriceHandler } from './src/housing/busanPriceApi.ts';
 import {costHttpTelemetry} from './src/utils/costTelemetry';
@@ -104,13 +104,14 @@ app.get('/api/official/diagnostics', async (req, res) => {
 });
 
 app.get('/api/housing/busan-prices', createBusanPriceHandler());
-app.get('/api/housing/apartment-budget', createApartmentBudgetHandler());
+const apartmentBudget = createRuntimeApartmentBudgetService(process.env);
+app.get('/api/housing/apartment-budget', apartmentBudget.handle);
 app.get('/api/housing/apartment-trade-history', createApartmentTradeHistoryHandler());
 
 app.get('/api/housing/floor-plans/raemian-sur', readApartmentFloorPlans);
 
 async function refreshHousingData() {
-  const trades = refreshApartmentTrades();
+  const trades = apartmentBudget.refreshTrades();
   const floorPlans = process.env.IMPORT_FLOOR_PLANS_ON_POLL === 'true'
     ? refreshApartmentFloorPlans()
     : Promise.resolve({ skipped: true, reason: 'FLOOR_PLAN_IMPORT_DISABLED' });
@@ -987,7 +988,7 @@ async function startServer() {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       await Promise.race([
-        Promise.allSettled([refreshGwacheonFallback(), refreshApartmentTrades()]).then(results => {
+        Promise.allSettled([apartmentBudget.refreshGwacheonFallback(), apartmentBudget.refreshTrades()]).then(results => {
           const trades = results[1];
           console.info('[housing] startup trade refresh', trades.status === 'fulfilled' ? trades.value : 'failed');
           if (results[0].status === 'rejected') console.warn('[housing] startup Gwacheon backfill failed');

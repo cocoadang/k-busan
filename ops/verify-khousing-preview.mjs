@@ -58,6 +58,7 @@ export async function verifyPreview(config, fetchImpl = fetch) {
     Array.isArray(report.results) && report.results.length > 0, 'Missing or stale K-Housing preview results');
 
   const budget = await json(apt, '/api/housing/apartment-budget', 'Apt recommendations', fetchImpl);
+  assert(budget.revision === config.expectedRevision, 'Apt recommendations did not prove the expected preview revision');
   assert(budget.incomplete === false && budget.stale !== true &&
     Array.isArray(budget.results) && budget.results.length > 0, 'Apt recommendations returned incomplete or empty results');
 

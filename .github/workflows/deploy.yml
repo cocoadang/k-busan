@@ -1,6 +1,5 @@
 name: Validate and deploy K-busan
-# Validation runs on every push to main and every pull request.
-# Production deployment runs ONLY on "Run workflow" (workflow_dispatch) on main.
+# Pull requests validate only. Main pushes and manual main runs deploy after validation.
 on:
   push:
     branches: [main]
@@ -14,10 +13,7 @@ permissions:
 env:
   GCP_PROJECT_ID: busan-redevelopment
   GCP_PROJECT_NUMBER: '432348267432'
-  # Preferred region (Seoul). Until ops/migrate-to-seoul.sh has created the service there,
-  # deploys keep going to the original region (FALLBACK_REGION).
   GCP_REGION: asia-northeast3
-  FALLBACK_REGION: asia-south1
   CLOUD_RUN_SERVICE: busan-redevelopment-news-monitor
   AR_REPO: kbusan-images
 
@@ -42,7 +38,7 @@ jobs:
 
   deploy:
     needs: validate
-    if: github.repository == 'cocoadang/k-busan' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    if: github.repository == 'cocoadang/k-busan' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     concurrency:
@@ -60,6 +56,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Build image (clean Linux build, no local node_modules)
+        run: |
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO}/k-busan:${GITHUB_SHA}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          docker build -t "$IMAGE" .
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           workload_identity_provider: projects/${{ env.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/kbusan-github/providers/github-main
@@ -67,126 +68,14 @@ jobs:
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
       - name: Resolve deploy region
         run: |
-          if gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
-               --format='value(metadata.name)' >/dev/null 2>&1; then
-            REGION="$GCP_REGION"
-          else
-            REGION="$FALLBACK_REGION"
-            echo "::notice::Service not found in $GCP_REGION yet; deploying to $FALLBACK_REGION."
-          fi
-          echo "DEPLOY_REGION=$REGION" >> "$GITHUB_ENV"
-          echo "deploy region: $REGION"
-      - name: Build image (clean Linux build, no local node_modules)
-        run: |
-          IMAGE="${DEPLOY_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO}/k-busan:${GITHUB_SHA}"
-          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
-          docker build -t "$IMAGE" .
+          gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+            --format='value(metadata.name)' > /dev/null
+          echo "DEPLOY_REGION=$GCP_REGION" >> "$GITHUB_ENV"
       - name: Push image
         run: |
           gcloud auth configure-docker "${DEPLOY_REGION}-docker.pkg.dev" --quiet
           docker push "$IMAGE"
-      - name: Deploy candidate without traffic
-        # The service was first created from source (AI Studio), which left
-        # "run.googleapis.com/sources" style annotations that block an image-only deploy.
-        # Export the live spec, drop only those source/build annotations, swap the image,
-        # and pin the current revision at 100% while the new one gets the "candidate" tag.
-        # Env vars, secrets, service account, scaling, timeout and the requested shared egress are preserved.
-        # The exported spec may contain env values, so it is never printed.
-        run: |
-          gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
-            --format=export > /tmp/service.yaml
-          CURRENT="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
-            --format='value(status.latestReadyRevisionName)')"
-          NEW_REV="${CLOUD_RUN_SERVICE}-${GITHUB_SHA::7}-${GITHUB_RUN_ATTEMPT}"
-          CURRENT="$CURRENT" NEW_REV="$NEW_REV" python3 - <<'PY'
-          import os, sys, yaml
-          sys.path.insert(0, "ops")
-          from official_egress import validate_official_egress
-          path = '/tmp/service.yaml'
-          svc = yaml.safe_load(open(path))
-          def strip(meta):
-              ann = (meta or {}).get('annotations') or {}
-              removed = [k for k in list(ann) if k.startswith('run.googleapis.com/') and ('source' in k or 'build' in k)]
-              for k in removed: ann.pop(k)
-              return removed
-          removed = strip(svc.get('metadata')) + strip(svc['spec']['template'].get('metadata'))
-          print('removed annotations:', removed)
-          tmpl = svc['spec']['template']
-          validate_official_egress(tmpl.get('metadata', {}).get('annotations', {}), os.environ['DEPLOY_REGION'])
-          tmpl.setdefault('metadata', {})['name'] = os.environ['NEW_REV']
-          containers = tmpl['spec']['containers']
-          assert len(containers) == 1, 'expected a single container'
-          containers[0]['image'] = os.environ['IMAGE']
-          env = containers[0].setdefault('env', [])
-          env[:] = [e for e in env if e['name'] not in ('OPENAI_API_KEY', 'OPENAI_MODEL', 'IMPORT_FLOOR_PLANS_ON_START', 'IMPORT_FLOOR_PLANS_ON_POLL')]
-          env.extend([
-              {'name': 'OPENAI_API_KEY', 'valueFrom': {'secretKeyRef': {'name': 'apt-openai-api-key', 'key': 'latest'}}},
-              {'name': 'OPENAI_MODEL', 'value': 'gpt-6-luna'},
-              # Normal deployments consume saved floor plans only. Collection is a separately authorized job.
-              {'name': 'IMPORT_FLOOR_PLANS_ON_START', 'value': 'false'},
-              {'name': 'IMPORT_FLOOR_PLANS_ON_POLL', 'value': 'false'},
-          ])
-          svc['spec']['traffic'] = [
-              {'revisionName': os.environ['CURRENT'], 'percent': 100},
-              {'revisionName': os.environ['NEW_REV'], 'tag': 'candidate'},
-          ]
-          yaml.safe_dump(svc, open(path, 'w'), sort_keys=False)
-          PY
-          python3 - <<'PY'
-          # Print non-secret runtime settings (no env values) for review.
-          import yaml
-          svc = yaml.safe_load(open('/tmp/service.yaml'))
-          t = svc['spec']['template']; ann = (t.get('metadata') or {}).get('annotations') or {}
-          c = t['spec']['containers'][0]
-          print('runtime settings:', {
-              'resources': c.get('resources'), 'concurrency': t['spec'].get('containerConcurrency'),
-              'timeoutSeconds': t['spec'].get('timeoutSeconds'),
-              'annotations': {k: v for k, v in ann.items() if 'autoscaling' in k or 'cpu' in k or 'startup' in k or 'execution' in k},
-              'envNames': sorted(e['name'] for e in c.get('env', [])),
-          })
-          PY
-          echo "current revision: $CURRENT -> candidate: $NEW_REV"
-          gcloud run services replace /tmp/service.yaml --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" --quiet > /dev/null
-          rm -f /tmp/service.yaml
-      - name: Verify candidate (read-only)
-        run: |
-          URL="$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
-            --format=json | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(t['url'] for t in d['status']['traffic'] if t.get('tag')=='candidate'))")"
-          echo "candidate: $URL"
-          for i in 1 2 3 4 5 6; do
-            code="$(curl -s -o /tmp/health.json -w '%{http_code}' "$URL/api/health" || true)"
-            [ "$code" = 200 ] && break; sleep 10
-          done
-          [ "$code" = 200 ] || { echo "::error::health $code"; cat /tmp/health.json; exit 1; }
-          python3 - <<'PY'
-          import json
-          h = json.load(open('/tmp/health.json'))
-          assert h.get('status') == 'ok', h
-          assert h.get('firestoreReady') is True, 'Firestore not ready on candidate'
-          assert h.get('openaiConfigured') is True and h.get('aiModel') == 'gpt-6-luna', 'OpenAI not ready'
-          print('firestoreReady', h['firestoreReady'], 'gemini', h['checks']['gemini'])
-          PY
-          curl -sf "$URL/api/registry" > /dev/null
-          curl -sf "$URL/" | grep -q '<div id="root">'
-          echo "Checking that stored floor plans are available"
-          for i in 1 2 3 4 5 6; do
-            if curl -fsS "$URL/api/housing/floor-plans/raemian-sur" | python3 -c 'import json,sys; p=json.load(sys.stdin); assert p; print(len(p), "stored Raemian Sur plans")'; then break; fi
-            if [ "$i" -eq 6 ]; then exit 1; fi
-            sleep 5
-          done
-          echo "Checking a known K-Housing saved sale history"
-          curl -fsS --max-time 15 "$URL/api/housing/apartment-trade-history?complex=gwacheon_raemian_sur&family=raemian_sur_59&start=202609&end=202611&page=1" | python3 -c '
-          import json,sys
-          p=json.load(sys.stdin)
-          assert p.get("source") == "K_HOUSING_SAVED_MOLIT" and p.get("coverage") == "saved_snapshot_only"
-          assert (p.get("complex"), p.get("family"), p.get("start"), p.get("end"), p.get("page")) == ("gwacheon_raemian_sur", "raemian_sur_59", "202609", "202611", 1)
-          assert p.get("activeRows", 0) > 0
-          assert any(r.get("cancelled") is False and r.get("exactArea",0)>0 and r.get("amountManwon",0)>0 for r in p.get("rows", []))
-          print("Saved trade history candidate verified")
-          '
-      - name: Promote candidate to 100% traffic
-        run: |
-          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" \
-            --project "$GCP_PROJECT_ID" --to-tags candidate=100 --quiet
-          gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$DEPLOY_REGION" --project "$GCP_PROJECT_ID" \
-            --format='value(status.latestReadyRevisionName,status.url)'
+      - name: Deploy candidate, verify search, and promote
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 ops/deploy_apt_production.py

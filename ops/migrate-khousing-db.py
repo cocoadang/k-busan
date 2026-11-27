@@ -7,6 +7,7 @@ import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor
 from http.client import IncompleteRead, RemoteDisconnected
+from threading import Lock
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, quote, urlencode
 from urllib.request import Request, urlopen
@@ -55,6 +56,37 @@ def read_json(request, retry=False, timeout=40):
         time.sleep(2 ** attempt)
 
 
+class CloudAuth:
+    def __init__(self):
+        self._lock = Lock()
+        self._token = None
+        self._refresh_at = 0
+
+    def get(self, rejected=None):
+        with self._lock:
+            if self._token is None or self._token == rejected or time.monotonic() >= self._refresh_at:
+                token = gcloud("auth", "print-access-token").strip()
+                require(token, "Run this from an authorized Cloud Shell session")
+                self._token = token
+                self._refresh_at = time.monotonic() + 40 * 60
+            return self._token
+
+
+def authorized_json(request, auth, retry=False):
+    token = auth.get()
+    request.add_header("Authorization", "Bearer " + token)
+    try:
+        return read_json(request, retry=retry)
+    except HTTPError as error:
+        if error.code != 401:
+            raise
+        error.close()
+    # An explicit 401 rejected the request before it was authorized. Ambiguous transport
+    # failures on commits still go through the existing no-replay path.
+    request.add_header("Authorization", "Bearer " + auth.get(rejected=token))
+    return read_json(request, retry=retry)
+
+
 class Database:
     def __init__(self, project, database, auth):
         self.auth = auth
@@ -62,11 +94,10 @@ class Database:
         self.url = f"https://firestore.googleapis.com/v1/{self.name}"
 
     def call(self, path, body=None, optional=False):
-        headers = {"Authorization": "Bearer " + self.auth, "Content-Type": "application/json"}
         data = None if body is None else json.dumps(body).encode()
+        request = Request(self.url + path, data=data, headers={"Content-Type": "application/json"})
         try:
-            return read_json(Request(self.url + path, data=data, headers=headers),
-                             retry=data is None or path == ":listCollectionIds")
+            return authorized_json(request, self.auth, retry=data is None or path == ":listCollectionIds")
         except HTTPError as error:
             if optional and error.code == 404:
                 return None
@@ -82,7 +113,8 @@ class Database:
             if body is None and query and error.code == 400:
                 message = " ".join(str(details.get("message", "")).split())
                 page_token = parse_qs(query).get("pageToken", [""])[0]
-                for secret in (self.auth, page_token, quote(page_token, safe="")):
+                sent_token = request.get_header("Authorization", "").removeprefix("Bearer ")
+                for secret in (sent_token, page_token, quote(page_token, safe="")):
                     if secret:
                         message = message.replace(secret, "[redacted]")
                 if message:
@@ -172,11 +204,11 @@ def copy_fields(value, archives, source_name, target_name, historical_metadata=F
                 for key, item in value.items()}
     return value
 
-def object_digest(uri, headers, optional=False):
+def object_digest(uri, auth, optional=False):
     bucket, _, key = uri.removeprefix("gs://").partition("/")
     url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/{quote(key, safe='')}?fields=crc32c,size"
     try:
-        result = read_json(Request(url, headers=headers), retry=True)
+        result = authorized_json(Request(url), auth, retry=True)
     except HTTPError as error:
         if optional and error.code == 404:
             return None
@@ -186,16 +218,14 @@ def object_digest(uri, headers, optional=False):
     return checksum, int(result["size"])
 
 
-def copy_archives(archives):
+def copy_archives(archives, auth):
     if not archives:
         return
     destination = "gs://" + APT_BUCKET
-    token = gcloud("auth", "print-access-token").strip()
-    headers = {"Authorization": "Bearer " + token}
-    request = Request(f"https://storage.googleapis.com/storage/v1/b/{APT_BUCKET}?fields=projectNumber", headers=headers)
+    request = Request(f"https://storage.googleapis.com/storage/v1/b/{APT_BUCKET}?fields=projectNumber")
 
     def owner():
-        return str(read_json(request, retry=True).get("projectNumber", ""))
+        return str(authorized_json(request, auth, retry=True).get("projectNumber", ""))
 
     try:
         project_number = owner()
@@ -208,13 +238,13 @@ def copy_archives(archives):
     require(project_number == "432348267432", "The destination archive bucket must belong to the Apt project")
     def sync_archive(source):
         target = source.replace(SOURCE_BUCKET, APT_BUCKET, 1)
-        expected = object_digest(source, headers)
-        existing = object_digest(target, headers, optional=True)
+        expected = object_digest(source, auth)
+        existing = object_digest(target, auth, optional=True)
         if existing is not None:
             require(existing == expected, f"Archive checksum mismatch: {target}")
             return 1
         gcloud("storage", "cp", "--no-clobber", source, target, capture=False)
-        require(object_digest(target, headers) == expected, f"Archive checksum mismatch: {target}")
+        require(object_digest(target, auth) == expected, f"Archive checksum mismatch: {target}")
         return 0
 
     with ThreadPoolExecutor(max_workers=4) as workers:
@@ -301,7 +331,7 @@ def migrate(source, target, stage=False, previous=None):
     if not stage:
         return {"mode": "audit", "sourceRevision": revision, "collections": counts, "archives": len(archives), "writes": 0}
 
-    copy_archives(archives)
+    copy_archives(archives, target.auth)
 
     def copy_collection(name):
         rows = data[name]
@@ -362,7 +392,6 @@ if __name__ == "__main__":
     service = json.loads(gcloud("run", "services", "describe", "busan-redevelopment-news-monitor",
                                "--region", "asia-northeast3", "--project", APT_PROJECT, "--format=json"))
     project, database = apt_database(service)
-    token = gcloud("auth", "print-access-token").strip()
-    require(token, "Run this from an authorized Cloud Shell session")
-    print(json.dumps(migrate(Database(SOURCE_PROJECT, SOURCE_DB, token), Database(project, database, token),
+    auth = CloudAuth()
+    print(json.dumps(migrate(Database(SOURCE_PROJECT, SOURCE_DB, auth), Database(project, database, auth),
                              args.stage, args.expected_apt_revision), ensure_ascii=False))

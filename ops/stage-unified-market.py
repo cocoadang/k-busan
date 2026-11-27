@@ -94,10 +94,10 @@ def main(root, apt_source, migrate_database=False):
     from runpy import run_path
     migration = run_path(str(apt / "ops/migrate-khousing-db.py"))
     project, db = migration["apt_database"](apt_config)
-    token = cloud.cloud("auth", "print-access-token", capture=True).strip()
-    target = migration["Database"](project, db, token)
+    auth = migration["CloudAuth"]()
+    target = migration["Database"](project, db, auth)
     if migrate_database:
-        source = migration["Database"](migration["SOURCE_PROJECT"], migration["SOURCE_DB"], token)
+        source = migration["Database"](migration["SOURCE_PROJECT"], migration["SOURCE_DB"], auth)
         report = migration["migrate"](source, target, stage=True)
         print(json.dumps(report, ensure_ascii=False), flush=True)
     active_doc = target.get("priceRevisions", "active")

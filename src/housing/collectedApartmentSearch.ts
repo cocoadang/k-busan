@@ -7,7 +7,24 @@ const refreshMs = 5 * 60_000;
 type Complex = { id: string; name: string; alias: string; district: string };
 type Listing = { complexId: string; area: number; areaCategory: string; date: string; price: number; floor: number };
 type TradeResult = { listings: Listing[]; unavailable: boolean };
-type Feed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; months: string[] };
+export type RegionalApartmentRow = [string, string, string, string, string, string, number, string, string];
+export type RegionalApartmentCatalog = { revision: string; asOf: string; complexes: RegionalApartmentRow[] };
+type Feed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; months: string[]; catalog: RegionalApartmentCatalog };
+
+function verifyCatalog(value: unknown): RegionalApartmentCatalog {
+  const catalog = value as RegionalApartmentCatalog | null;
+  if (!catalog || !/^kapt-\d{8}-[a-f0-9]{12}$/.test(catalog.revision) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(catalog.asOf) || !Array.isArray(catalog.complexes) ||
+      catalog.complexes.length === 0 || catalog.complexes.length > 2_500) throw Error('INVALID_SHARED_CATALOG');
+  const ids = new Set<string>();
+  for (const row of catalog.complexes) {
+    if (!Array.isArray(row) || row.length !== 9 || !/^A\d{8}$/.test(row[0]) || ids.has(row[0]) ||
+        !/^\d{5}$/.test(row[2]) || ![row[1], row[3], row[4], row[5], row[7], row[8]].every(field => typeof field === 'string') ||
+        !Number.isSafeInteger(row[6]) || row[6] < 1_000) throw Error('INVALID_SHARED_CATALOG');
+    ids.add(row[0]);
+  }
+  return { revision: catalog.revision, asOf: catalog.asOf, complexes: catalog.complexes };
+}
 
 function monthsInKorea(now: number) {
   const kst = new Date(now + 9 * 3_600_000);
@@ -73,7 +90,12 @@ export function createCollectedApartmentSearch(request: typeof fetch = fetch, no
 
   async function read(months: string[]): Promise<Feed> {
     const [start, , end] = months;
-    const { ok, data } = await get('/api/map-summaries', { areaCategory: '59', startYmd: end, endYmd: end });
+    const [catalogResponse, { ok, data }] = await Promise.all([
+      get('/api/apt/catalog/v1', {}),
+      get('/api/map-summaries', { areaCategory: '59', startYmd: end, endYmd: end }),
+    ]);
+    if (!catalogResponse.ok) throw Error('KHOUSING_SHARED_CATALOG_UNAVAILABLE');
+    const catalog = verifyCatalog(catalogResponse.data);
     if (!ok || data?.success !== true || data.startYmd !== end || data.endYmd !== end ||
         !data.summaries || typeof data.summaries !== 'object' || Array.isArray(data.summaries)) {
       throw Error('KHOUSING_DIRECTORY_UNAVAILABLE');
@@ -101,7 +123,7 @@ export function createCollectedApartmentSearch(request: typeof fetch = fetch, no
         if (failed) unavailable.push(batch[index].id);
       });
     }
-    return { complexes, results, unavailable, months };
+    return { complexes, results, unavailable, months, catalog };
   }
 
   const handle: RequestHandler = async (_req, res) => {

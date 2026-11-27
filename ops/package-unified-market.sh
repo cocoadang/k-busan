@@ -14,7 +14,7 @@ staging=$(cd "$2" && pwd)
 git -C "$apt_root" archive HEAD | tar -x -C "$staging"
 mkdir "$staging/market-src"
 git -C "$housing_repo" archive "$housing_ref" -- \
-  src server.ts index.html vite.config.ts tsconfig.json package.json package-lock.json data/redevelopment |
+  src server.ts index.html vite.config.ts tsconfig.json package.json package-lock.json data/redevelopment scripts/collector_job.ts scripts/collect_molit_readonly.ts |
   tar -x -C "$staging/market-src"
 patch --batch --forward -p1 -d "$staging/market-src" -i "$apt_root/ops/khousing-market.patch"
 test -s "$staging/market-src/src/data/complexFootprints.json"
@@ -32,7 +32,7 @@ WORKDIR /market
 COPY market-src/package.json market-src/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY market-src/ .
-RUN npx vite build --base=/market/ && npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs && npm prune --omit=dev
+RUN npx vite build --base=/market/ && npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs && npx esbuild scripts/collector_job.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/collector.cjs && npm prune --omit=dev
 
 """
 dockerfile = market + dockerfile

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build and verify an Apt Cloud Run candidate while keeping its current production traffic."""
+import argparse
 import importlib.util
 import json
 import re
@@ -11,7 +12,6 @@ from pathlib import Path
 
 import yaml
 
-APT_SOURCE = "878264d18f0b4c062d46f2500f8651a95f1bbac0"
 MARKET_SOURCE = "103c044ede1102bea8326d58d60ca153a4182997"
 TAG = "market-unified"
 MARKET_SETTINGS = ("GOOGLE_MAPS_API_KEY", "GOOGLE_MAPS_MAP_ID", "GEMINI_API_KEY", "GEMINI_MODEL")
@@ -73,8 +73,8 @@ def configure_market(cloud, source, apt, member):
         apt_annotations["run.googleapis.com/secrets"] = ",".join(f"{alias}:{resource}" for alias, resource in apt_secrets.items())
 
 
-def main(root):
-    apt = checkout(root, "k-busan", APT_SOURCE)
+def main(root, apt_source):
+    apt = checkout(root, "k-busan", apt_source)
     khousing = checkout(root, "k-housing", MARKET_SOURCE)
     cloud = load_cloud_helpers(khousing)
     cloud.check_resource(cloud.APT_PROJECT, "432348267432")
@@ -91,26 +91,28 @@ def main(root):
     cloud.require(re.fullmatch(r"[\w.-]+@(?:busan-redevelopment\.iam|developer)\.gserviceaccount\.com", account),
                   "Unexpected Apt runtime account")
     member = "serviceAccount:" + account
-    approved_database = f"projects/{cloud.KH_PROJECT}/databases/{cloud.DATABASE}"
-    cloud.cloud("projects", "add-iam-policy-binding", cloud.KH_PROJECT, "--member", member,
-                "--role", "roles/datastore.viewer",
-                "--condition", f'title=apt-market-read,expression=resource.name == "{approved_database}"',
-                capture=True)
+    from runpy import run_path
+    migration = run_path(str(apt / "ops/migrate-khousing-db.py"))
+    project, db = migration["apt_database"](apt_config)
+    token = cloud.cloud("auth", "print-access-token", capture=True).strip()
+    target = migration["Database"](project, db, token)
+    active_doc = target.get("priceRevisions", "active")
+    cloud.require(active_doc, "Stage the Apt database before deploying the web candidate")
+    migration["inspect_manifest"](active_doc, "active")
+    active = migration["revision_of"](active_doc)
     configure_market(cloud, source_config, apt_config, member)
 
     context = root / "context"
     cloud.run("bash", str(apt / "ops/package-unified-market.sh"), str(khousing), str(context))
-    image = f"{region}-docker.pkg.dev/{cloud.APT_PROJECT}/kbusan-images/k-busan:market-{APT_SOURCE[:8]}"
+    image = f"{region}-docker.pkg.dev/{cloud.APT_PROJECT}/kbusan-images/k-busan:market-{apt_source[:8]}"
     cloud.cloud("builds", "submit", str(context), "--ignore-file", str(context / ".gcloudignore"),
                 "--project", cloud.APT_PROJECT, "--region", region, "--tag", image, "--timeout", "1200s")
     revision, url = cloud.deploy_tagged(
         root, cloud.APT_PROJECT, region, cloud.APT_SERVICE, image, TAG,
-        {"APT_UNIFIED_HOUSING": "true", "APT_TRADE_MODE": "khousing-api",
+        {"APT_UNIFIED_HOUSING": "true", "APT_TRADE_MODE": "khousing-api", "APT_MARKET_DB": "apt",
          "IMPORT_FLOOR_PLANS_ON_START": "false", "IMPORT_FLOOR_PLANS_ON_POLL": "false"},
         PREVIEW_FLAGS, original, yaml.safe_dump(apt_config, sort_keys=False),
     )
-    kh_status = "https://k-housing-5he2zcaska-du.a.run.app"
-    active = cloud.api_json(kh_status, "/api/data-status")["revision"]
     for attempt in range(3):
         try:
             cloud.run("node", str(apt / "ops/verify-unified-market.mjs"), url, active, "202611")
@@ -126,9 +128,14 @@ def main(root):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--apt-source", required=True, help="Pinned Apt integration commit")
+    arguments = parser.parse_args()
+    if not re.fullmatch(r"[a-f0-9]{40}", arguments.apt_source):
+        parser.error("A full Git commit SHA is required")
     try:
         with tempfile.TemporaryDirectory(prefix="apt-market-stage-") as directory:
-            main(Path(directory))
+            main(Path(directory), arguments.apt_source)
     except (RuntimeError, subprocess.CalledProcessError, KeyError) as error:
         print(f"Apt preview stopped: {error}", file=sys.stderr)
         sys.exit(1)

@@ -6,6 +6,7 @@ import express from 'express';
 const port = 18081;
 const origin = `http://127.0.0.1:${port}`;
 const marketDirectory = path.resolve('market');
+const aptProject = 'busan-redevelopment';
 const publicReads = /^\/(?:data-status|config\/maps|map-summaries|monthly-prices\/[a-z0-9_]+|complex-trades\/[a-z0-9_]+|complexes\/[a-z0-9_]+\/area-families(?:\/[a-z0-9_-]+\/(?:ath-trade|monthly-prices))?|redevelopment\/(?:price-availability|lineages(?:\/[a-z0-9_-]+(?:\/(?:targets|land-share|construction-costs))?)?))$/i;
 const publicPosts = new Set(['/ai/analyze', '/redevelopment/analysis']);
 
@@ -20,14 +21,22 @@ export function marketFetch(enabled: boolean): typeof fetch {
 
 export async function startEmbeddedMarket() {
   if (process.env.FIRESTORE_EMULATOR_HOST) throw Error('MARKET_EMULATOR_NOT_ALLOWED');
+  const useApt = process.env.APT_MARKET_DB === 'apt';
+  if (process.env.APT_MARKET_DB && !useApt) throw Error('UNKNOWN_MARKET_DB_TARGET');
+  const aptDatabase = process.env.FIRESTORE_DATABASE_ID ?? '(default)';
+  const parentProject = process.env.FIRESTORE_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || aptProject;
+  if (useApt && (parentProject !== aptProject || !/^(?:\(default\)|[a-z][a-z0-9-]{2,62})$/.test(aptDatabase))) {
+    throw Error('INVALID_APT_MARKET_DB');
+  }
   const env: NodeJS.ProcessEnv = {
     NODE_ENV: 'production',
     PORT: String(port),
     KHOUSING_LOOPBACK_ONLY: 'true',
     USE_SERVER_IAM: 'true',
     PRICE_REVISIONS_ENABLED: 'true',
-    GOOGLE_CLOUD_PROJECT: 'gen-lang-client-0064554427',
-    FIRESTORE_DATABASE_ID: 'ai-studio-khousing-38852770-f782-474c-b219-956fbb846237',
+    GOOGLE_CLOUD_PROJECT: useApt ? aptProject : 'gen-lang-client-0064554427',
+    FIRESTORE_DATABASE_ID: useApt ? aptDatabase : 'ai-studio-khousing-38852770-f782-474c-b219-956fbb846237',
+    ...(useApt ? { KHOUSING_DB_TARGET: 'apt' } : {}),
   };
   for (const key of ['GOOGLE_MAPS_API_KEY', 'GOOGLE_MAPS_MAP_ID', 'GEMINI_API_KEY', 'GEMINI_MODEL', 'AI_CACHE_BUCKET']) {
     const value = process.env[`MARKET_${key}`];

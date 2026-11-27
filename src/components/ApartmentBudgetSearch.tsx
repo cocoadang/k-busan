@@ -127,7 +127,8 @@ function LocationPyramid({ matches }: { matches: Listing[] }) {
             <h3 style={{ width }} className={`mx-auto flex min-h-9 min-w-32 items-center justify-center gap-2 rounded-md px-2 text-center text-sm font-semibold ${color}`}>
               {label} <span className="text-xs font-normal">{entries.length}건</span>
             </h3>
-            {entries.length > 0 && <ul className="mx-auto mt-2 grid max-w-5xl gap-2 md:grid-cols-2">
+            {entries.length > 0 && <ul style={{ width: `min(100%, max(${width}, 34rem))` }}
+              className="mx-auto mt-2 grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]">
               {entries.map(entry => <LocationCard key={`${entry.apt.name}:${entry.apt.areaCategory}`} {...entry} />)}
             </ul>}
           </section>

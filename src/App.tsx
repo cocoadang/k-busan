@@ -44,8 +44,6 @@ export default function App() {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <a href="/" aria-current={searchActive ? 'page' : undefined} className={menuClass(searchActive)}>아파트 검색</a>
           {unifiedHousingLinks && <a href="/market/?view=MAP" className={menuClass(false)}>지도·시세</a>}
-          <a href="?view=trade-history" aria-current={history ? 'page' : undefined} className={menuClass(history)}>실거래 이력</a>
-          <a href="?view=floor-plans" aria-current={plans ? 'page' : undefined} className={menuClass(plans)}>평면도</a>
           <a href="?view=redevelopment" aria-current={redevelopment ? 'page' : undefined} className={menuClass(redevelopment)}>정비사업 분석</a>
         </div>
       </nav>

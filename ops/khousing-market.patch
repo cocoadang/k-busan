@@ -39,13 +39,11 @@ index 7a417a2..99842e1 100644
 +++ b/src/App.tsx
 @@ -0,0 +1 @@
 +import { marketBase } from './utils/marketBase';
-@@ -382,0 +384,9 @@ export default function App() {
+@@ -382,0 +384,7 @@ export default function App() {
 +      {marketBase === '/market/' && (
 +        <nav aria-label="서비스 메뉴" className="flex flex-wrap gap-x-5 gap-y-2 border-b border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold">
 +          <a href="/">아파트 검색</a>
 +          <a href="?view=MAP" aria-current="page">지도·시세</a>
-+          <a href="/?view=trade-history">실거래 이력</a>
-+          <a href="/?view=floor-plans">평면도</a>
 +          <a href="/?view=redevelopment">정비사업 분석</a>
 +        </nav>
 +      )}

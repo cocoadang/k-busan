@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import ApartmentRadar, { ApartmentRadarPreview } from './ApartmentRadar';
 import catalog from '../housing/songApartmentCatalog.json';
-import { AdditionalSongEvidence, SongApartmentVideoEvidence, songVideoUrl as videoUrl } from './SongApartmentVideoEvidence';
+import { AdditionalSongEvidence, songVideoUrl as videoUrl } from './SongApartmentVideoEvidence';
 
 type Listing = (typeof catalog.apartments)[number] & { area: number; price: number; date: string; floor: number; areaCategory: string; tradeSummary?: { count: number; min: number; max: number } };
 type PriceFeed = { results: Listing[]; incomplete: boolean; stale?: boolean; checkedAt: string; marketTrends?: { region: string; month: string; index: number; monthlyChange: number | null }[] };
@@ -21,11 +21,6 @@ const strengths: Record<string, Partial<Record<Exclude<Priority, 'budget'>, stri
   '고덕 아이파크': { transit: '고덕역 접근을 장점으로 언급', schools: '학원가 접근을 장점으로 언급' },
   '대치 은마': { transit: '대치역·삼성역 접근을 장점으로 언급', schools: '대치동 학군을 장점으로 언급' },
 };
-const principles = [
-  { title: '같은 생활권의 대안을 비교', note: '호가가 예산을 넘으면 생활권과 주거 여건이 비슷한 단지를 살펴봅니다.', links: [{ id: 'XZF4lUnY1GY', time: 78 }] },
-  { title: '교통·학군·거주 여건을 함께 확인', note: '역 접근성, 학원가, 주차처럼 실제 거주에 영향을 주는 조건을 비교합니다.', links: [{ id: 'TL_WqYQsUJw', time: 33 }, { id: '9f7SKimLzQA', time: 62 }] },
-  { title: '리모델링 비용과 일정을 함께 검토', note: '매매가와 함께 예상 추가분담금, 이주·공사 일정을 확인합니다.', links: [{ id: '9f7SKimLzQA', time: 137 }, { id: 'iwO_jSjdRaI', time: 190 }] },
-];
 const formatPrice = (price: number) => {
   const eok = Math.floor(price / 10000);
   const remainder = price % 10000;
@@ -260,16 +255,6 @@ export default function ApartmentBudgetSearch() {
         </form>
         <p className="mt-4 text-sm text-slate-300">실거래 검색 근거 영상 {catalog.reviewedVideoIds.length}편 · 검색 대상 단지 {catalog.apartments.length}곳 · 최근 3개 계약월의 국토교통부 신고 거래 기준</p>
       </div>
-      <details className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-        <summary className="cursor-pointer font-semibold">검토한 영상에서 정리한 투자 판단 기준</summary>
-        <ul className="mt-3 grid gap-3 sm:grid-cols-3">
-          {principles.map(principle => <li key={principle.title}>
-            <h3 className="font-semibold">{principle.title}</h3>
-            <p className="text-sm text-slate-700">{principle.note}</p>
-            {principle.links.map(({ id, time }, index) => <a key={id} className="mr-3 text-sm text-blue-800 underline" href={videoUrl(id, time)} target="_blank" rel="noreferrer">근거 영상{principle.links.length > 1 ? ` ${index + 1}` : ''}</a>)}
-          </li>)}
-        </ul>
-      </details>
       {query && <div className="mt-6" aria-live="polite">
         {loading && <p role="status">저장된 실거래 자료에서 후보를 불러오고 있습니다.</p>}
         {failed && <p role="status">저장된 실거래 자료를 불러오지 못했습니다. 잠시 후 다시 검색해 주세요.</p>}
@@ -360,7 +345,6 @@ export default function ApartmentBudgetSearch() {
         </>}
         </>}
       </div>}
-      <SongApartmentVideoEvidence />
     </section>
   );
 }

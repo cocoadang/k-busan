@@ -1,8 +1,36 @@
 diff --git a/server.ts b/server.ts
-index ccdab37..456d36e 100644
+index ccdab37..db2b11a 100644
 --- a/server.ts
 +++ b/server.ts
-@@ -1212 +1212 @@ async function startServer() {
+@@ -4 +4 @@ import {costHttpTelemetry} from './src/server/costTelemetry';
+-import { getReaderDb } from './src/server/firestoreReader';
++import { getReaderDb, getActivePriceRevision, type PriceRevision } from './src/server/firestoreReader';
+@@ -888,2 +888,3 @@ app.get('/api/complex-trades/:complexId', async (req, res) => {
+-  // 1. Try reading from Firestore if available
+-  if (isFirestoreAvailable()) {
++  // Apt returns the same revision that was actually used for the Firestore overlay.
++  const requireRevision = process.env.KHOUSING_DB_TARGET === 'apt';
++  if (isFirestoreAvailable() || requireRevision) {
+@@ -890,0 +892,9 @@ app.get('/api/complex-trades/:complexId', async (req, res) => {
++      let revision: PriceRevision | undefined;
++      if (requireRevision) {
++        res.setHeader('Cache-Control', 'no-store');
++        revision = await getActivePriceRevision();
++        if (!revision || revision.status !== 'READY' || !/^r\d{14}(?:_[a-f0-9]{8})?$/.test(revision.revision) ||
++            revision.collections?.transactions !== `transactions_${revision.revision}` || !Array.isArray(revision.covered)) {
++          throw Error('TRADE_REVISION_UNAVAILABLE');
++        }
++      }
+@@ -895 +905,2 @@ app.get('/api/complex-trades/:complexId', async (req, res) => {
+-        effectiveArea
++        effectiveArea,
++        revision,
+@@ -898 +909 @@ app.get('/api/complex-trades/:complexId', async (req, res) => {
+-      if (fsTrades.length > 0) {
++      if (revision || fsTrades.length > 0) {
+@@ -902,0 +914 @@ app.get('/api/complex-trades/:complexId', async (req, res) => {
++          ...(revision ? { revision: revision.revision } : {}),
+@@ -1212 +1224 @@ async function startServer() {
 -  app.listen(PORT, '0.0.0.0', () => {
 +  app.listen(PORT, process.env.KHOUSING_LOOPBACK_ONLY === 'true' ? '127.0.0.1' : '0.0.0.0', () => {
 diff --git a/src/App.tsx b/src/App.tsx
@@ -95,6 +123,49 @@ index f869e92..9b1f461 100644
 +   project === 'busan-redevelopment' && typeof database === 'string' && /^(?:\(default\)|[a-z][a-z0-9-]{2,62})$/.test(database);
 + if(process.env.USE_SERVER_IAM!=='true'||process.env.FIRESTORE_EMULATOR_HOST||(!legacy&&!apt)) throw Error('APT_DATABASE_UNAVAILABLE');
 + return createCanonicalManifestFirestoreStore(db??=new Firestore({projectId:project,databaseId:database}));
+diff --git a/src/server/firestoreReader.ts b/src/server/firestoreReader.ts
+index 9e80221..060aa60 100644
+--- a/src/server/firestoreReader.ts
++++ b/src/server/firestoreReader.ts
+@@ -17,0 +18,2 @@ export function query(ref: any, ...filters: ReturnType<typeof where>[]): any {
++export type PriceRevision = { status: string; revision: string; covered: string[]; collections: Record<string, string> };
++
+@@ -27 +29 @@ export async function getActivePriceRevision(db:any=getReaderDb()) {
+-export async function getDocs(ref: any): Promise<any> {
++export async function getDocs(ref: any, requestedRevision?: PriceRevision): Promise<any> {
+@@ -31 +33 @@ export async function getDocs(ref: any): Promise<any> {
+-  const revision = await getActivePriceRevision(ref.db);
++  const revision = requestedRevision ?? await getActivePriceRevision(ref.db);
+diff --git a/src/server/firestoreRepository.ts b/src/server/firestoreRepository.ts
+index c153311..c901f72 100644
+--- a/src/server/firestoreRepository.ts
++++ b/src/server/firestoreRepository.ts
+@@ -2,0 +3 @@ import {
++  type PriceRevision,
+@@ -215 +216,2 @@ export const firestoreRepository = {
+-    areaCategory?: AreaCategory | '114_PLUS' | 'ALL' | 'OTHER'
++    areaCategory?: AreaCategory | '114_PLUS' | 'ALL' | 'OTHER',
++    revision?: PriceRevision,
+@@ -218 +220 @@ export const firestoreRepository = {
+-    const memList = memTransactionCache.get(complexId);
++    const memList = revision ? undefined : memTransactionCache.get(complexId);
+@@ -228 +230 @@ export const firestoreRepository = {
+-    if (isFirestoreQuotaExhausted) return [];
++    if (isFirestoreQuotaExhausted && !revision) return [];
+@@ -230 +232,4 @@ export const firestoreRepository = {
+-    if (!db) return [];
++    if (!db) {
++      if (revision) throw Error('TRADE_DATABASE_UNAVAILABLE');
++      return [];
++    }
+@@ -236 +241 @@ export const firestoreRepository = {
+-      const snapshot = await getDocs(q);
++      const snapshot = await getDocs(q, revision);
+@@ -302 +307 @@ export const firestoreRepository = {
+-      if (allForMem.length > 0) {
++      if (!revision && allForMem.length > 0) {
+@@ -309,0 +315 @@ export const firestoreRepository = {
++      if (revision) throw err;
 diff --git a/src/services/dataService.ts b/src/services/dataService.ts
 index 4a928fe..cda1b15 100644
 --- a/src/services/dataService.ts

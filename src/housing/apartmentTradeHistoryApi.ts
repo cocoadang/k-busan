@@ -51,7 +51,7 @@ function dateInWindow(value: unknown, start: string, end: string): value is stri
   return month >= start && month <= end && Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-export function verifyTradeHistorySnapshot(value: unknown, query: Query, expectedRevision?: string): Snapshot {
+export function verifyTradeHistorySnapshot(value: unknown, query: Query, expectedRevision?: string, requireRevision = false): Snapshot {
   if (!obj(value) || value.success !== true || value.source !== 'FIRESTORE' || value.complexId !== query.complex ||
       value.lawdCd !== query.district || value.startYmd !== query.start || value.endYmd !== query.end ||
       value.hasMore !== false || value.nextCursor !== null || value.page !== 1 || !Array.isArray(value.items) ||
@@ -61,6 +61,8 @@ export function verifyTradeHistorySnapshot(value: unknown, query: Query, expecte
   if (expectedRevision !== undefined && value.revision !== expectedRevision) {
     throw Error('KH_UNEXPECTED_PREVIEW_REVISION');
   }
+  const revision = typeof value.revision === 'string' && revisionPattern.test(value.revision) ? value.revision : undefined;
+  if ((expectedRevision || requireRevision) && !revision) throw Error('KH_UNVERIFIED_REVISION');
   const ids = new Set<string>();
   let cancelledRows = 0;
   const rows: { id: string; row: TradeHistoryRow }[] = [];
@@ -77,7 +79,7 @@ export function verifyTradeHistorySnapshot(value: unknown, query: Query, expecte
     rows.push({ id: r.id, row: { dealDate: r.dealDate, exactArea: r.exclusiveArea, amountManwon: r.price, floor: r.floor, cancelled: r.isCancelled } });
   }
   rows.sort((a, b) => b.row.dealDate.localeCompare(a.row.dealDate) || a.id.localeCompare(b.id));
-  return { ...(expectedRevision ? { revision: expectedRevision } : {}), checkedAt: new Date().toISOString(), storedRows: value.items.length, cancelledRows, rows: rows.map(r => r.row) };
+  return { ...(revision ? { revision } : {}), checkedAt: new Date().toISOString(), storedRows: value.items.length, cancelledRows, rows: rows.map(r => r.row) };
 }
 
 async function readSmallJson(response: Response) {
@@ -100,7 +102,7 @@ async function readSmallJson(response: Response) {
   return JSON.parse(json + decoder.decode()) as unknown;
 }
 
-export function createTradeHistoryService(request: UpstreamRequest = fetch, preview?: Preview) {
+export function createTradeHistoryService(request: UpstreamRequest = fetch, preview?: Preview, requireRevision = false) {
   const cache = new Map<string, { until: number; snapshot: Snapshot }>();
   const pending = new Map<string, Promise<Snapshot>>();
   return async (input: unknown): Promise<TradeHistoryResponse | null> => {
@@ -121,7 +123,7 @@ export function createTradeHistoryService(request: UpstreamRequest = fetch, prev
           const response = await request(url, {
             headers: { accept: 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(8000),
           });
-          const verified = verifyTradeHistorySnapshot(await readSmallJson(response), q, preview?.revision);
+          const verified = verifyTradeHistorySnapshot(await readSmallJson(response), q, preview?.revision, requireRevision);
           cache.delete(key);
           if (cache.size >= maxCacheKeys) cache.delete(cache.keys().next().value!);
           cache.set(key, { until: Date.now() + cacheTtl, snapshot: verified });
@@ -141,10 +143,10 @@ export function createTradeHistoryService(request: UpstreamRequest = fetch, prev
   };
 }
 
-export function createApartmentTradeHistoryHandler(request: UpstreamRequest = fetch): RequestHandler {
+export function createApartmentTradeHistoryHandler(request: UpstreamRequest = fetch, requireRevision = false): RequestHandler {
   let load: ReturnType<typeof createTradeHistoryService> | undefined;
   try {
-    load = createTradeHistoryService(request, readPreview(process.env));
+    load = createTradeHistoryService(request, readPreview(process.env), requireRevision);
   } catch {
     // A partial preview configuration cannot fall back to the live origin.
   }

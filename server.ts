@@ -113,7 +113,7 @@ if (unifiedHousing) {
 app.get('/api/housing/busan-prices', createBusanPriceHandler(createBusanPriceReader(housingFetch)));
 const apartmentBudget = createRuntimeApartmentBudgetService(process.env, undefined, housingFetch);
 app.get('/api/housing/apartment-budget', apartmentBudget.handle);
-app.get('/api/housing/apartment-trade-history', createApartmentTradeHistoryHandler(housingFetch));
+app.get('/api/housing/apartment-trade-history', createApartmentTradeHistoryHandler(housingFetch, unifiedHousing && process.env.APT_MARKET_DB === 'apt'));
 
 app.get('/api/housing/floor-plans/raemian-sur', readApartmentFloorPlans);
 

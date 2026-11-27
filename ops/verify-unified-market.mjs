@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 const [base, expectedRevision, fixtureMonth] = process.argv.slice(2);
 const origin = new URL(base);
 assert(origin.protocol === 'https:' && (origin.hostname === 'apt.dsoom.com' ||
-  /^market-unified---busan-redevelopment-news-monitor-[a-z0-9-]+\.[a-z0-9.-]*run\.app$/.test(origin.hostname)),
+  /^market-unified(?:-[a-f0-9]{8})?---busan-redevelopment-news-monitor-[a-z0-9-]+\.[a-z0-9.-]*run\.app$/.test(origin.hostname)),
   'Use the Apt domain or the tagged Apt revision');
 assert(/^r\d{14}(?:_[a-f0-9]{8})?$/.test(expectedRevision), 'Pass the expected active DB revision');
 assert(/^20\d{2}(0[1-9]|1[0-2])$/.test(fixtureMonth), 'Pass a known month with a 래미안슈르 59㎡ trade');
@@ -35,7 +35,7 @@ assert(budget.incomplete === false && budget.stale !== true && budget.results?.l
 const complex = 'gwacheon_raemian_sur';
 const family = 'raemian_sur_59';
 const history = await json(`/api/housing/apartment-trade-history?complex=${complex}&family=${family}&start=${fixtureMonth}&end=${fixtureMonth}`);
-assert.equal(history.revision, expectedRevision);
+assert.equal(history.revision, expectedRevision, 'Trade history did not report the expected Apt Firestore revision');
 assert(history.source === 'K_HOUSING_SAVED_MOLIT' && history.rows?.length > 0);
 const families = await json(`/market/api/complexes/${complex}/area-families`);
 assert(JSON.stringify(families).includes(family), 'Complex price analysis lost the 59㎡ group');

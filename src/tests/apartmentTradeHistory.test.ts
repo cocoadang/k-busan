@@ -29,6 +29,16 @@ test('trade history allows only canonical complex/family pairs, exact bounded co
   assert.ok(parseTradeHistoryQuery({ ...q, start: '202512' }, '202611'));
 });
 
+test('unified history preserves the revision reported by Firestore and rejects missing provenance', async () => {
+  const revision = 'r20261127013219_0d34fa17';
+  for (const upstream of [undefined, 'invalid']) {
+    const service = createTradeHistoryService(async () => Response.json(snapshot([row()], { revision: upstream })), undefined, true);
+    await assert.rejects(service(q), /KH_UNVERIFIED_REVISION/);
+  }
+  const service = createTradeHistoryService(async () => Response.json(snapshot([row()], { revision })), undefined, true);
+  assert.equal((await service(q))?.revision, revision);
+});
+
 test('keeps active and cancelled rows with same reported signature if upstream IDs are distinct', () => {
   const s = verifyTradeHistorySnapshot(snapshot([row(), row({ id: 'second', isCancelled: true, activeCount: 0 })]), exact);
   assert.equal(s.storedRows, 2);

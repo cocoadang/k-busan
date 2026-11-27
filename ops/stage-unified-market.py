@@ -112,7 +112,7 @@ def main(root, apt_source, migrate_database=False):
     cloud.cloud("builds", "submit", str(context), "--ignore-file", str(context / ".gcloudignore"),
                 "--project", cloud.APT_PROJECT, "--region", region, "--tag", image, "--timeout", "1200s")
     revision, url = cloud.deploy_tagged(
-        root, cloud.APT_PROJECT, region, cloud.APT_SERVICE, image, TAG,
+        root, cloud.APT_PROJECT, region, cloud.APT_SERVICE, image, f"{TAG}-{apt_source[:8]}",
         {"APT_UNIFIED_HOUSING": "true", "APT_TRADE_MODE": "khousing-api", "APT_MARKET_DB": "apt",
          "IMPORT_FLOOR_PLANS_ON_START": "false", "IMPORT_FLOOR_PLANS_ON_POLL": "false"},
         PREVIEW_FLAGS, original, yaml.safe_dump(apt_config, sort_keys=False),

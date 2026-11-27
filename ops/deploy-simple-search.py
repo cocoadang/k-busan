@@ -42,7 +42,15 @@ def frontend(origin):
     return entry[1]
 
 
-def deploy(root, sha):
+def runtime_spec(active):
+    spec = dict(active["spec"])
+    runtime_class = spec.pop("runtimeClassName", None)
+    if runtime_class not in (None, "run.googleapis.com/linux-base-image-update"):
+        raise RuntimeError("Unexpected Cloud Run runtime class on the live revision")
+    return spec
+
+
+def deploy(root, sha, image_digest=None):
     helper = checkout(root, "k-housing", KHOUSING_HELPER)
     spec = importlib.util.spec_from_file_location("apt_run", helper / "scripts/rollout_apt_khousing.py")
     cloud = importlib.util.module_from_spec(spec)
@@ -60,7 +68,8 @@ def deploy(root, sha):
         print(json.dumps({"production": PRODUCTION, "revision": revision_name, "entry": frontend(PRODUCTION)}))
         return
     cloud.require(traffic == {EXPECTED_LIVE: 100}, "Apt has a different production revision; inspect it before deploying")
-    image = f"{region}-docker.pkg.dev/{cloud.APT_PROJECT}/kbusan-images/k-busan:search-{sha[:8]}"
+    repository = f"{region}-docker.pkg.dev/{cloud.APT_PROJECT}/kbusan-images/k-busan"
+    image = f"{repository}@{image_digest}" if image_digest else f"{repository}:search-{sha[:8]}"
     candidate = next((item for item in original["status"]["traffic"] if item.get("tag") == tag), None)
     if candidate:
         cloud.require(candidate.get("revisionName") == revision_name and candidate.get("url"), "Unexpected search preview")
@@ -79,9 +88,12 @@ def deploy(root, sha):
                        or key in ("run.googleapis.com/secrets", "run.googleapis.com/execution-environment",
                                   "run.googleapis.com/cpu-throttling", "run.googleapis.com/startup-cpu-boost",
                                   "run.googleapis.com/sessionAffinity", "run.googleapis.com/encryption-key")}
-        service["spec"]["template"] = {"metadata": {"annotations": annotations}, "spec": active["spec"]}
+        service["spec"]["template"] = {"metadata": {"annotations": annotations}, "spec": runtime_spec(active)}
         old_export = yaml.safe_dump(service, sort_keys=False)
-        cloud.build(apt, cloud.APT_PROJECT, region, image)
+        if image_digest:
+            print(f"Reusing Cloud Build image {image}", flush=True)
+        else:
+            cloud.build(apt, cloud.APT_PROJECT, region, image)
         revision_name, url = cloud.deploy_tagged(
             root, cloud.APT_PROJECT, region, cloud.APT_SERVICE, image, tag, {}, (), traffic, old_export,
         )
@@ -115,12 +127,15 @@ def deploy(root, sha):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apt-source", required=True)
+    parser.add_argument("--image-digest", help="Reuse the previously built image without rebuilding")
     arguments = parser.parse_args()
     if not re.fullmatch(r"[a-f0-9]{40}", arguments.apt_source):
         parser.error("Pass the exact Apt search commit")
+    if arguments.image_digest is not None and not re.fullmatch(r"sha256:[a-f0-9]{64}", arguments.image_digest):
+        parser.error("Pass the immutable SHA-256 image digest")
     try:
         with tempfile.TemporaryDirectory(prefix="apt-simple-search-") as directory:
-            deploy(Path(directory), arguments.apt_source)
+            deploy(Path(directory), arguments.apt_source, arguments.image_digest)
     except Exception as error:
         print(f"Apt search deployment stopped: {error}", file=sys.stderr)
         sys.exit(1)

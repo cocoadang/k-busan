@@ -1,0 +1,126 @@
+diff --git a/server.ts b/server.ts
+index ccdab37..456d36e 100644
+--- a/server.ts
++++ b/server.ts
+@@ -1212 +1212 @@ async function startServer() {
+-  app.listen(PORT, '0.0.0.0', () => {
++  app.listen(PORT, process.env.KHOUSING_LOOPBACK_ONLY === 'true' ? '127.0.0.1' : '0.0.0.0', () => {
+diff --git a/src/App.tsx b/src/App.tsx
+index 7a417a2..99842e1 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -0,0 +1 @@
++import { marketBase } from './utils/marketBase';
+@@ -382,0 +384,9 @@ export default function App() {
++      {marketBase === '/market/' && (
++        <nav aria-label="서비스 메뉴" className="flex flex-wrap gap-x-5 gap-y-2 border-b border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold">
++          <a href="/">아파트 검색</a>
++          <a href="?view=MAP" aria-current="page">지도·시세</a>
++          <a href="/?view=trade-history">실거래 이력</a>
++          <a href="/?view=floor-plans">평면도</a>
++          <a href="/?view=redevelopment">정비사업 분석</a>
++        </nav>
++      )}
+diff --git a/src/components/AiAnalysisDrawer.tsx b/src/components/AiAnalysisDrawer.tsx
+index 8d1ceec..7e176af 100644
+--- a/src/components/AiAnalysisDrawer.tsx
++++ b/src/components/AiAnalysisDrawer.tsx
+@@ -0,0 +1 @@
++import { marketBase } from '../utils/marketBase';
+@@ -16 +17 @@ export const AiAnalysisDrawer:React.FC<{isOpen:boolean;onClose:()=>void;complex:
+-        const res=await fetch('/api/ai/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:selectionKey,signal:abort.signal});
++        const res=await fetch(`${marketBase}api/ai/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:selectionKey,signal:abort.signal});
+diff --git a/src/components/ApiInspectorModal.tsx b/src/components/ApiInspectorModal.tsx
+index 35ca9a1..b6a8dd7 100644
+--- a/src/components/ApiInspectorModal.tsx
++++ b/src/components/ApiInspectorModal.tsx
+@@ -0,0 +1 @@
++import { marketBase } from '../utils/marketBase';
+@@ -30 +31 @@ export const ApiInspectorModal: React.FC<ApiInspectorModalProps> = ({
+-    fetch('/api/cache/stats')
++    fetch(`${marketBase}api/cache/stats`)
+@@ -35 +36 @@ export const ApiInspectorModal: React.FC<ApiInspectorModalProps> = ({
+-    fetch('/api/health')
++    fetch(`${marketBase}api/health`)
+@@ -52 +53 @@ export const ApiInspectorModal: React.FC<ApiInspectorModalProps> = ({
+-      await fetch('/api/cache/clear', { method: 'POST' });
++      await fetch(`${marketBase}api/cache/clear`, { method: 'POST' });
+@@ -71 +72 @@ export const ApiInspectorModal: React.FC<ApiInspectorModalProps> = ({
+-      const res = await fetch(`/api/molit/trades?lawdCd=${currentComplex.lawdCd}&dealYmd=${testYmd}`);
++      const res = await fetch(`${marketBase}api/molit/trades?lawdCd=${currentComplex.lawdCd}&dealYmd=${testYmd}`);
+diff --git a/src/components/DataStatus.tsx b/src/components/DataStatus.tsx
+index cbc1edf..3d5c5cf 100644
+--- a/src/components/DataStatus.tsx
++++ b/src/components/DataStatus.tsx
+@@ -0,0 +1 @@
++import { marketBase } from '../utils/marketBase';
+@@ -4 +5 @@ export function DataStatus(){
+- useEffect(()=>{const controller=new AbortController();fetch('/api/data-status',{signal:controller.signal}).then(r=>r.ok?r.json():null).then(setStatus).catch(()=>{});return()=>controller.abort();},[]);
++ useEffect(()=>{const controller=new AbortController();fetch(`${marketBase}api/data-status`,{signal:controller.signal}).then(r=>r.ok?r.json():null).then(setStatus).catch(()=>{});return()=>controller.abort();},[]);
+diff --git a/src/components/Map/MapExplorerView.tsx b/src/components/Map/MapExplorerView.tsx
+index 8fab1f4..2d4a6d3 100644
+--- a/src/components/Map/MapExplorerView.tsx
++++ b/src/components/Map/MapExplorerView.tsx
+@@ -0,0 +1 @@
++import { marketBase } from '../../utils/marketBase';
+@@ -237 +238 @@ export const MapExplorerView: React.FC<MapExplorerViewProps> = ({
+-      const res = await fetch('/api/config/maps');
++      const res = await fetch(`${marketBase}api/config/maps`);
+diff --git a/src/server/aiAnalysis.ts b/src/server/aiAnalysis.ts
+index 18c4f15..410fdd4 100644
+--- a/src/server/aiAnalysis.ts
++++ b/src/server/aiAnalysis.ts
+@@ -82 +82 @@ export function createAiAnalysisRouter(deps:{load?:typeof loadAnalysisFacts;gene
+-      if(origin && !['https://k-housing-5he2zcaska-du.a.run.app','https://k-housing-9298525505.asia-northeast3.run.app',...(process.env.NODE_ENV==='production'?[]:['http://localhost:3000'])].includes(origin))
++      if(origin && !['https://k-housing-5he2zcaska-du.a.run.app','https://k-housing-9298525505.asia-northeast3.run.app',...(process.env.KHOUSING_LOOPBACK_ONLY==='true'?['https://apt.dsoom.com']:[]),...(process.env.NODE_ENV==='production'?[]:['http://localhost:3000'])].includes(origin))
+diff --git a/src/services/dataService.ts b/src/services/dataService.ts
+index 4a928fe..cda1b15 100644
+--- a/src/services/dataService.ts
++++ b/src/services/dataService.ts
+@@ -0,0 +1 @@
++import { marketBase } from '../utils/marketBase';
+@@ -53 +54 @@ export class DataService implements IRealEstateDataService {
+-      const url = `/api/map-summaries?areaCategory=${encodeURIComponent(
++      const url = `${marketBase}api/map-summaries?areaCategory=${encodeURIComponent(
+@@ -69 +70 @@ export class DataService implements IRealEstateDataService {
+-    const url = `/api/complexes/${encodeURIComponent(complexId)}/area-families`;
++    const url = `${marketBase}api/complexes/${encodeURIComponent(complexId)}/area-families`;
+@@ -92 +93 @@ export class DataService implements IRealEstateDataService {
+-    const url = `/api/complexes/${encodeURIComponent(complexId)}/area-families/${encodeURIComponent(
++    const url = `${marketBase}api/complexes/${encodeURIComponent(complexId)}/area-families/${encodeURIComponent(
+@@ -112 +113 @@ export class DataService implements IRealEstateDataService {
+-      const url = `/api/complexes/${encodeURIComponent(complexId)}/area-families/${encodeURIComponent(
++      const url = `${marketBase}api/complexes/${encodeURIComponent(complexId)}/area-families/${encodeURIComponent(
+@@ -140 +141 @@ export class DataService implements IRealEstateDataService {
+-      const url = `/api/complex-trades/${encodeURIComponent(complexId)}?${params.toString()}`;
++      const url = `${marketBase}api/complex-trades/${encodeURIComponent(complexId)}?${params.toString()}`;
+@@ -182 +183 @@ export class DataService implements IRealEstateDataService {
+-      const url = `/api/complex-trades/${encodeURIComponent(params.complexId)}?${q.toString()}`;
++      const url = `${marketBase}api/complex-trades/${encodeURIComponent(params.complexId)}?${q.toString()}`;
+diff --git a/src/services/molitService.ts b/src/services/molitService.ts
+index 9fb9c7b..870c791 100644
+--- a/src/services/molitService.ts
++++ b/src/services/molitService.ts
+@@ -0,0 +1 @@
++import { marketBase } from '../utils/marketBase';
+@@ -128 +129 @@ export class MolitService {
+-    const complexEndpoint = `/api/complex-trades/${encodeURIComponent(
++    const complexEndpoint = `${marketBase}api/complex-trades/${encodeURIComponent(
+diff --git a/src/services/redevelopmentApiClient.ts b/src/services/redevelopmentApiClient.ts
+index 7a9bc82..9f282f0 100644
+--- a/src/services/redevelopmentApiClient.ts
++++ b/src/services/redevelopmentApiClient.ts
+@@ -0,0 +1 @@
++import { marketBase } from '../utils/marketBase';
+@@ -19 +20 @@ import type {
+-const BASE_URL = '/api/redevelopment';
++const BASE_URL = `${marketBase}api/redevelopment`;
+diff --git a/src/utils/marketBase.ts b/src/utils/marketBase.ts
+new file mode 100644
+index 0000000..323f586
+--- /dev/null
++++ b/src/utils/marketBase.ts
+@@ -0,0 +1,3 @@
++/// <reference types="vite/client" />
++
++export const marketBase = import.meta.env?.BASE_URL ?? '/';

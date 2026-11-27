@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { kstContractMonth, tradeHistoryComplexes, tradeHistoryFirstMonth, tradeHistoryOrigin, type TradeHistoryResponse } from '../housing/apartmentTradeHistory';
+import { housingHome } from '../utils/housingLinks';
+import { kstContractMonth, tradeHistoryComplexes, tradeHistoryFirstMonth, type TradeHistoryResponse } from '../housing/apartmentTradeHistory';
 
 type Selection = { complex: string; family: string; start: string; end: string; page: number };
 type Display = { selection: Selection; value: TradeHistoryResponse | null; error: string };
@@ -130,7 +131,7 @@ export default function ApartmentTradeHistory({ initialComplex }: { initialCompl
       선택한 기간·면적군의 저장본에 표시할 거래 행이 없습니다. 국토교통부 신고 건수가 0이라는 뜻은 아닙니다.
     </p>)}
     <p className="text-xs leading-relaxed text-slate-600">
-      <a href={tradeHistoryOrigin} className="font-semibold text-blue-800 underline" target="_blank" rel="noreferrer">출처: K-Housing 저장본</a>.
+      <a href={housingHome} className="font-semibold text-blue-800 underline" target="_blank" rel="noreferrer">출처: K-Housing 저장본</a>.
       {' '}저장본의 조회 결과이며 전체 신고 이력이나 현재 시세를 보장하지 않습니다. 마포 1~4단지 및 슈르 법정동별 수록 범위는 원자료에서 확인되지 않았습니다.
       {' '}도곡한신·디에이치퍼스티어아이파크는 매매 원자료를 확인하기 전까지 표시하지 않습니다.
     </p>

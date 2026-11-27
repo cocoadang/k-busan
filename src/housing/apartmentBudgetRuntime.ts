@@ -32,7 +32,7 @@ function exactRegistry(value: unknown): AptBudgetIdentity[] {
 }
 
 /** Select once for the GET, startup, and scheduled Apt sale paths. Do not create credentials, guess registry data or silently fall back. */
-export function createRuntimeApartmentBudgetService(env: NodeJS.ProcessEnv, deps: Dependencies = defaults) {
+export function createRuntimeApartmentBudgetService(env: NodeJS.ProcessEnv, deps: Dependencies = defaults, request: typeof fetch = fetch) {
   const mode = env.APT_TRADE_MODE ?? 'legacy';
   // Preview resolves 'active' locally to one immutable manifest. Never let a normal
   // serving process silently accept a pin or a preview fall back to the live pointer.
@@ -43,7 +43,7 @@ export function createRuntimeApartmentBudgetService(env: NodeJS.ProcessEnv, deps
     return createApartmentBudgetService(createKhousingRecommendationMode({origin,revision}));
   }
   if (origin!==undefined||revision!==undefined) return badConfiguration();
-  if (mode==='khousing-api'&&pin===undefined) return createApartmentBudgetService(createKhousingRecommendationMode());
+  if (mode==='khousing-api'&&pin===undefined) return createApartmentBudgetService(createKhousingRecommendationMode(undefined, request));
 
   if (mode === 'legacy' && pin === undefined) return createApartmentBudgetService();
   if (mode !== 'canonical' && mode !== 'canonical-preview') return badConfiguration();

@@ -141,10 +141,10 @@ export function createTradeHistoryService(request: UpstreamRequest = fetch, prev
   };
 }
 
-export function createApartmentTradeHistoryHandler(): RequestHandler {
+export function createApartmentTradeHistoryHandler(request: UpstreamRequest = fetch): RequestHandler {
   let load: ReturnType<typeof createTradeHistoryService> | undefined;
   try {
-    load = createTradeHistoryService(fetch, readPreview(process.env));
+    load = createTradeHistoryService(request, readPreview(process.env));
   } catch {
     // A partial preview configuration cannot fall back to the live origin.
   }

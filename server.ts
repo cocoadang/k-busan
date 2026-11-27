@@ -1,7 +1,8 @@
 import { refreshApartmentFloorPlans, readApartmentFloorPlans } from './src/housing/apartmentFloorPlanStore.ts';
 import { createRuntimeApartmentBudgetService } from './src/housing/apartmentBudgetRuntime.ts';
 import { createApartmentTradeHistoryHandler } from './src/housing/apartmentTradeHistoryApi.ts';
-import { createBusanPriceHandler } from './src/housing/busanPriceApi.ts';
+import { createMarketRouter, marketFetch, startEmbeddedMarket } from './src/housing/embeddedMarket.ts';
+import { createBusanPriceHandler, createBusanPriceReader } from './src/housing/busanPriceApi.ts';
 import {costHttpTelemetry} from './src/utils/costTelemetry';
 import {NewsBodyReader,firestoreNewsBodyCache} from './src/news/newsBodyReader';
 import {FirestoreAnalysisQueue} from './src/queue/analysisQueue';
@@ -103,10 +104,16 @@ app.get('/api/official/diagnostics', async (req, res) => {
   }
 });
 
-app.get('/api/housing/busan-prices', createBusanPriceHandler());
-const apartmentBudget = createRuntimeApartmentBudgetService(process.env);
+const unifiedHousing = process.env.APT_UNIFIED_HOUSING === 'true';
+const housingFetch = marketFetch(unifiedHousing);
+if (unifiedHousing) {
+  if (process.env.APT_TRADE_MODE !== 'khousing-api') throw Error('MARKET_REQUIRES_KHOUSING_API');
+  app.use('/market', createMarketRouter());
+}
+app.get('/api/housing/busan-prices', createBusanPriceHandler(createBusanPriceReader(housingFetch)));
+const apartmentBudget = createRuntimeApartmentBudgetService(process.env, undefined, housingFetch);
 app.get('/api/housing/apartment-budget', apartmentBudget.handle);
-app.get('/api/housing/apartment-trade-history', createApartmentTradeHistoryHandler());
+app.get('/api/housing/apartment-trade-history', createApartmentTradeHistoryHandler(housingFetch));
 
 app.get('/api/housing/floor-plans/raemian-sur', readApartmentFloorPlans);
 
@@ -955,6 +962,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // -------------------------------------------------------------
 
 async function startServer() {
+  if (unifiedHousing) await startEmbeddedMarket();
   if (process.env.NODE_ENV !== 'production') {
     // Vite is a build/dev tool only; loading it lazily keeps it out of the production
     // image's runtime dependencies and off the cold-start path.

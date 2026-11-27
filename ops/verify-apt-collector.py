@@ -119,34 +119,40 @@ def apt_database():
     return database
 
 
-def execution_logs(name, project=APT):
-    check(re.fullmatch(r"apt-collector-rehearsal-[a-z0-9]+", name), "Unexpected Cloud Run execution name")
-    predicate = (f'resource.type="cloud_run_job" AND resource.labels.job_name="{JOB}" '
+def execution_logs(name, project=APT, job=JOB):
+    check(job in (JOB, "khousing-collector") and re.fullmatch(re.escape(job) + r"-[a-z0-9]+", name),
+          "Unexpected Cloud Run execution name")
+    predicate = (f'resource.type="cloud_run_job" AND resource.labels.job_name="{job}" '
                  f'AND labels."run.googleapis.com/execution_name"="{name}"')
     return cloud_json("logging", "read", predicate, "--project", project, "--limit", "100")
 
 
+def error_codes(entries):
+    diagnostics = []
+    for entry in entries:
+        text = entry.get("textPayload")
+        if not isinstance(text, str):
+            text = (entry.get("jsonPayload") or {}).get("message", "")
+        if not isinstance(text, str):
+            continue
+        for pattern in (
+            r"(?:MOLIT_FETCH_FAILED|MOLIT_HTTP_[0-9]{3}|MOLIT_REQUEST_FAILED)(?:: [0-9/]+)?",
+            r"MOLIT_NETWORK_UNAVAILABLE_AFTER_RETRIES|MOLIT_KEY_REQUIRED|RETRYABLE_UPSTREAM_STATUS",
+            r"TRUSTED_ACTIVE_BASELINE_REQUIRED|BASELINE_MANIFEST_MISMATCH|BASELINE_TRANSACTION_SET_MISMATCH|ACTIVE_REVISION_CHANGED",
+            r"INVALID_MONTH_LIST|UNREGISTERED_DISTRICT|INVALID_EXTRA_SOURCE_BUCKET|TOO_MANY_EXTRA_SOURCE_BUCKETS|INVALID_TOTAL_COUNT",
+            r"INCOMPLETE_SOURCE_PAGINATION|APT_SOURCE_IDENTITY_MISMATCH|INVALID_MATCHED_SOURCE_ROW|AMBIGUOUS_SOURCE_GROUP|APT_CANCELLATION_DATE_MISSING",
+            r"PERMISSION_DENIED|UNAUTHENTICATED|DEADLINE_EXCEEDED|RESOURCE_EXHAUSTED|INVALID_ARGUMENT|FAILED_PRECONDITION|UNAVAILABLE",
+            r"MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|EACCES|EROFS|ETIMEDOUT|ECONNRESET|URI malformed",
+        ):
+            for match in re.finditer(r"(?<![A-Z0-9_])(?:" + pattern + r")(?![A-Z0-9_])", text):
+                if match.group() not in diagnostics:
+                    diagnostics.append(match.group())
+    return diagnostics
+
+
 def explain_failure(name, project=APT):
     for attempt in range(6):
-        diagnostics = []
-        for entry in execution_logs(name, project):
-            text = entry.get("textPayload")
-            if not isinstance(text, str):
-                text = entry.get("jsonPayload", {}).get("message", "")
-            if not isinstance(text, str):
-                continue
-            for pattern in (
-                r"(?:MOLIT_FETCH_FAILED|MOLIT_HTTP_[0-9]{3}|MOLIT_REQUEST_FAILED)(?:: [0-9/]+)?",
-                r"MOLIT_NETWORK_UNAVAILABLE_AFTER_RETRIES|MOLIT_KEY_REQUIRED|RETRYABLE_UPSTREAM_STATUS",
-                r"TRUSTED_ACTIVE_BASELINE_REQUIRED|BASELINE_MANIFEST_MISMATCH|BASELINE_TRANSACTION_SET_MISMATCH|ACTIVE_REVISION_CHANGED",
-                r"INVALID_MONTH_LIST|UNREGISTERED_DISTRICT|INVALID_EXTRA_SOURCE_BUCKET|TOO_MANY_EXTRA_SOURCE_BUCKETS|INVALID_TOTAL_COUNT",
-                r"INCOMPLETE_SOURCE_PAGINATION|APT_SOURCE_IDENTITY_MISMATCH|INVALID_MATCHED_SOURCE_ROW|AMBIGUOUS_SOURCE_GROUP|APT_CANCELLATION_DATE_MISSING",
-                r"PERMISSION_DENIED|UNAUTHENTICATED|DEADLINE_EXCEEDED|RESOURCE_EXHAUSTED|INVALID_ARGUMENT|FAILED_PRECONDITION|UNAVAILABLE",
-                r"MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|EACCES|EROFS|ETIMEDOUT|ECONNRESET|URI malformed",
-            ):
-                for match in re.finditer(r"(?<![A-Z0-9_])(?:" + pattern + r")(?![A-Z0-9_])", text):
-                    if match.group() not in diagnostics:
-                        diagnostics.append(match.group())
+        diagnostics = error_codes(execution_logs(name, project))
         if diagnostics:
             print(json.dumps({"execution": name, "diagnostics": diagnostics}))
             return
@@ -321,14 +327,15 @@ def run_probe(script, marker, keys, project=APT):
                 except ValueError:
                     continue
             if isinstance(record, dict) and record.get(marker) is True:
-                print(json.dumps({"execution": name, **{key: record[key] for key in keys if key in record}}))
-                return
+                result = {"execution": name, **{key: record[key] for key in keys if key in record}}
+                print(json.dumps(result), flush=True)
+                return result
         if attempt < 7:
             time.sleep(3)
     raise RuntimeError(f"No probe report found for {name}")
 
 
-def diagnose_molit_egress():
+def report_production_collector():
     executions = cloud_json("run", "jobs", "executions", "list", "--job", "khousing-collector",
                             "--project", KH, "--region", REGION, "--limit", "3")
     recent = []
@@ -339,10 +346,27 @@ def diagnose_molit_egress():
         if not isinstance(name, str) or not re.fullmatch(r"khousing-collector-[a-z0-9]+", name):
             continue
         completed = next((item for item in status.get("conditions", []) if item.get("type") == "Completed"), {})
-        recent.append({"name":name, "startTime":status.get("startTime"), "completed":completed.get("status"),
+        diagnostics = error_codes(execution_logs(name, KH, "khousing-collector")) if completed.get("status") == "False" else []
+        recent.append({"name":name, "diagnostics":diagnostics, "startTime":status.get("startTime"), "completed":completed.get("status"),
                        "failed":status.get("failedCount", 0), "succeeded":status.get("succeededCount", 0)})
     print(json.dumps({"existingCollectorExecutions":recent}), flush=True)
+
+
+def diagnose_molit_egress():
+    report_production_collector()
     run_probe(EGRESS_COMPARISON, "molitEgressComparison", ("outcome", "defaultPath", "ipv4Path"), project=KH)
+
+
+
+def resume_when_molit_ready():
+    report_production_collector()
+    # Match the deployed collector's page size and require a successful service response.
+    probe = NETWORK_PROBE.replace("numOfRows:'1'", "numOfRows:'1000'")
+    result = run_probe(probe, "molitProbe", ("outcome", "status", "serviceCode", "codes"), project=KH)
+    if result.get("status") != 200 or not re.fullmatch(r"0+", result.get("serviceCode", "")):
+        print(json.dumps({"state": "WAITING_FOR_MOLIT", "collectorStarted": False}), flush=True)
+        return
+    resume_khousing_rehearsal()
 
 
 def execute_rehearsal(reuse_source_egress=False):
@@ -448,6 +472,7 @@ if __name__ == "__main__":
     modes.add_argument("--khousing-firestore-probe", action="store_true", help="Diagnose Apt Firestore access from the existing K-Housing rehearsal")
     modes.add_argument("--resume-khousing-rehearsal", action="store_true", help="Validate and run the existing read-only rehearsal")
     modes.add_argument("--diagnose-molit-egress", action="store_true", help="Compare TCP/TLS paths and read existing collector execution statuses")
+    modes.add_argument("--resume-when-molit-ready", action="store_true", help="Audit old executions and resume only if the MOLIT preflight succeeds")
     arguments = parser.parse_args()
     try:
         if arguments.inspect_execution:
@@ -459,6 +484,8 @@ if __name__ == "__main__":
                       "permission", "restTransportError", "sdkRead", "sdkList", "sdkCode"), project=KH)
         elif arguments.diagnose_molit_egress:
             diagnose_molit_egress()
+        elif arguments.resume_when_molit_ready:
+            resume_when_molit_ready()
         elif arguments.resume_khousing_rehearsal:
             resume_khousing_rehearsal()
         else:

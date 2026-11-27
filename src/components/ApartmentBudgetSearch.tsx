@@ -129,14 +129,14 @@ function LocationPyramid({ matches }: { matches: Listing[] }) {
             </h3>
             {entries.length > 0 && <ul style={{ width: `min(100%, max(${width}, 34rem))` }}
               className="mx-auto mt-2 grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]">
-              {entries.map(entry => <LocationCard key={`${entry.apt.name}:${entry.apt.areaCategory}`} {...entry} />)}
+              {entries.map(entry => <li key={`${entry.apt.name}:${entry.apt.areaCategory}`} className="min-w-0"><LocationCard {...entry} /></li>)}
             </ul>}
           </section>
         ))}
         {ungraded.length > 0 && <section aria-label="등급 산정 대기">
           <h3 className="text-sm font-semibold text-slate-700">등급 산정 대기</h3>
           <ul className="mt-2 grid gap-2 md:grid-cols-2">
-            {ungraded.map(entry => <LocationCard key={`${entry.apt.name}:${entry.apt.areaCategory}`} {...entry} />)}
+            {ungraded.map(entry => <li key={`${entry.apt.name}:${entry.apt.areaCategory}`} className="min-w-0"><LocationCard {...entry} /></li>)}
           </ul>
         </section>}
       </div>
@@ -148,7 +148,7 @@ function LocationCard({ apt, grades, average, confirmed }: {
   apt: Listing; grades: LocationGrades; average: number | null; confirmed: number;
 }) {
   return (
-    <li className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3">
+    <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
       <div className="flex flex-wrap items-center justify-between gap-x-3">
         <div className="min-w-0 flex-1 basis-32">
           <h4 className="font-bold text-slate-900">{apt.name}</h4>
@@ -183,7 +183,7 @@ function LocationCard({ apt, grades, average, confirmed }: {
           })}
         </dl>
       </details>
-    </li>
+    </article>
   );
 }
 

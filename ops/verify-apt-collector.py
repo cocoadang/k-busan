@@ -206,6 +206,55 @@ NETWORK_PROBE = r"""
 """
 
 
+EGRESS_COMPARISON = r"""
+(async () => {
+  const https = require('node:https');
+  const endpoint = new URL('https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev');
+  const key = decodeURIComponent(process.env.MOLIT_API_KEY || '');
+  const emit = result => console.log(JSON.stringify({molitEgressComparison:true, ...result}));
+  if (!key) { emit({outcome:'MOLIT_KEY_REQUIRED'}); return; }
+  const month = new Date(Date.now() + 32400000).toISOString().slice(0,7).replace('-', '');
+  endpoint.search = new URLSearchParams({serviceKey:key, LAWD_CD:'41290', DEAL_YMD:month, pageNo:'1', numOfRows:'1'});
+  const allowed = new Set(['EAI_AGAIN','ENOTFOUND','EHOSTUNREACH','ENETUNREACH','ETIMEDOUT','ECONNRESET','ECONNREFUSED',
+    'UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT','UND_ERR_SOCKET',
+    'UNABLE_TO_VERIFY_LEAF_SIGNATURE','UNABLE_TO_GET_ISSUER_CERT_LOCALLY','CERT_HAS_EXPIRED',
+    'SELF_SIGNED_CERT_IN_CHAIN','DEPTH_ZERO_SELF_SIGNED_CERT','ERR_TLS_CERT_ALTNAME_INVALID','EPROTO']);
+  function code(error) {
+    const value = error?.cause?.code || error?.code;
+    return allowed.has(value) ? value : error?.name === 'TimeoutError' ? 'TIMEOUT' : 'TRANSPORT_ERROR';
+  }
+  function result(status, body) {
+    return {status, serviceCode:body.match(/<(?:resultCode|returnReasonCode)>\s*([A-Za-z0-9_-]{1,24})\s*<\//)?.[1]};
+  }
+  const standard = (async () => {
+    try {
+      const response = await fetch(endpoint, {signal:AbortSignal.timeout(25000)});
+      return result(response.status, await response.text());
+    } catch (error) { return {error:code(error)}; }
+  })();
+  const ipv4 = new Promise(resolve => {
+    let phase = 'dns';
+    const request = https.get(endpoint,{family:4, signal:AbortSignal.timeout(25000)},response => {
+      phase='response';
+      response.setEncoding('utf8');
+      let body = '';
+      response.on('data',chunk=>{ if (body.length < 4096) body += chunk.slice(0,4096-body.length); });
+      response.on('end',()=>resolve(result(response.statusCode,body)));
+      response.on('error',error=>resolve({phase,error:code(error)}));
+    });
+    request.on('socket', socket => {
+      socket.on('lookup', error => { if (!error) phase='tcp'; });
+      socket.on('connect', () => { phase='tls'; });
+      socket.on('secureConnect', () => { phase='http'; });
+    });
+    request.on('error',error=>resolve({phase,error:code(error)}));
+  });
+  const [defaultPath, ipv4Path] = await Promise.all([standard,ipv4]);
+  emit({defaultPath, ipv4Path});
+})().catch(() => console.log(JSON.stringify({molitEgressComparison:true,outcome:'PROBE_RUNTIME_UNAVAILABLE'})));
+"""
+
+
 FIRESTORE_PROBE = r"""
 (async () => {
   const report = {aptFirestoreProbe:true};
@@ -277,6 +326,23 @@ def run_probe(script, marker, keys, project=APT):
         if attempt < 7:
             time.sleep(3)
     raise RuntimeError(f"No probe report found for {name}")
+
+
+def diagnose_molit_egress():
+    executions = cloud_json("run", "jobs", "executions", "list", "--job", "khousing-collector",
+                            "--project", KH, "--region", REGION, "--limit", "3")
+    recent = []
+    for execution in executions:
+        metadata = execution.get("metadata", {})
+        status = execution.get("status", {})
+        name = metadata.get("name")
+        if not isinstance(name, str) or not re.fullmatch(r"khousing-collector-[a-z0-9]+", name):
+            continue
+        completed = next((item for item in status.get("conditions", []) if item.get("type") == "Completed"), {})
+        recent.append({"name":name, "startTime":status.get("startTime"), "completed":completed.get("status"),
+                       "failed":status.get("failedCount", 0), "succeeded":status.get("succeededCount", 0)})
+    print(json.dumps({"existingCollectorExecutions":recent}), flush=True)
+    run_probe(EGRESS_COMPARISON, "molitEgressComparison", ("outcome", "defaultPath", "ipv4Path"), project=KH)
 
 
 def execute_rehearsal(reuse_source_egress=False):
@@ -381,6 +447,7 @@ if __name__ == "__main__":
     modes.add_argument("--khousing-egress", action="store_true", help="Rehearse in K-Housing Cloud Run while reading Apt Firestore")
     modes.add_argument("--khousing-firestore-probe", action="store_true", help="Diagnose Apt Firestore access from the existing K-Housing rehearsal")
     modes.add_argument("--resume-khousing-rehearsal", action="store_true", help="Validate and run the existing read-only rehearsal")
+    modes.add_argument("--diagnose-molit-egress", action="store_true", help="Compare TCP/TLS paths and read existing collector execution statuses")
     arguments = parser.parse_args()
     try:
         if arguments.inspect_execution:
@@ -390,6 +457,8 @@ if __name__ == "__main__":
         elif arguments.khousing_firestore_probe:
             run_probe(FIRESTORE_PROBE, "aptFirestoreProbe", ("outcome", "tokenStatus", "restStatus", "reason",
                       "permission", "restTransportError", "sdkRead", "sdkList", "sdkCode"), project=KH)
+        elif arguments.diagnose_molit_egress:
+            diagnose_molit_egress()
         elif arguments.resume_khousing_rehearsal:
             resume_khousing_rehearsal()
         else:

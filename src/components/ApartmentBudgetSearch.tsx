@@ -5,7 +5,7 @@ import type { OfficialSalesSnapshot, RegionalApartmentCatalog, RegionalApartment
 type Complex = { id: string; name: string; alias: string; district: string; region?: string; units?: number; address?: string; directoryOnly?: boolean };
 type Listing = { complexId: string; area: number; price: number; date: string; areaCategory: string };
 type AptListing = Omit<Listing, 'complexId'> & { complexId?: string; name: string };
-type SearchFeed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; catalog: RegionalApartmentCatalog; officialSales?: OfficialSalesSnapshot; months: string[] };
+type SearchFeed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; catalog: RegionalApartmentCatalog; officialSales?: OfficialSalesSnapshot; months: string[]; nativeDirectoryUnavailable?: boolean };
 type AptFeed = { results: AptListing[]; incomplete: boolean; stale?: boolean };
 type SearchQuery = { keyword: string; minimum: number; maximum: number; size: string; region: string };
 const regionalAreas = ['서울', '과천', '분당', '구성남', '광명', '하남'] as const;
@@ -219,8 +219,8 @@ export default function ApartmentBudgetSearch() {
             <h2 id="apartment-search-results" className="text-lg font-bold">검색 결과 <span className="text-sm font-normal text-slate-600">{matches.length}개 단지</span></h2>
             <p className="mt-1 text-xs text-slate-600">최근 3개 계약월의 저장 실거래가 연결된 단지에 예산 조건을 적용합니다. {shared && `대단지 ${shared.catalog.complexes.length}곳 · K-apt ${shared.catalog.asOf} 기준`}{shared?.officialSales && ` · 국토부 공개 자료 ${shared.officialSales.through} 기준`}</p>
             {!shared && <p role="status" className="mt-2 text-sm text-slate-700">K-Housing 단지 목록을 불러오지 못했습니다. 잠시 후 다시 검색해 주세요.</p>}
-            {(!apt || apt.incomplete || apt.stale || Boolean(shared?.unavailable.length)) &&
-              <p role="status" className="mt-2 text-sm text-slate-700">일부 단지는 최근 저장 거래를 확인할 수 없습니다.</p>}
+            {(!apt || apt.incomplete || apt.stale || Boolean(shared?.unavailable.length) || shared?.nativeDirectoryUnavailable) &&
+              <p role="status" className="mt-2 text-sm text-slate-700">일부 단지의 최신 실거래를 확인할 수 없습니다. 확인된 거래만 검색 결과에 표시합니다.</p>}
             {matches.length ? <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {shown.map(({ complex, listings, unavailable }) => (
                 <li key={complex.id} className="min-w-0 rounded-lg border border-slate-200 p-4">

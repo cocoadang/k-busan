@@ -329,6 +329,28 @@ def execute_rehearsal(reuse_source_egress=False):
         config = Path(directory) / "job.json"
         config.write_text(json.dumps(configuration))
         gc("run", "jobs", "replace", str(config), "--project", project, "--region", REGION)
+    check_rehearsal(project)
+
+
+def resume_khousing_rehearsal():
+    check(active_revision() == EXPECTED, "Apt candidate revision changed")
+    job = cloud_json("run", "jobs", "describe", JOB, "--project", KH, "--region", REGION)
+    spec = job["spec"]["template"]["spec"]["template"]["spec"]
+    check(spec.get("serviceAccountName") == f"{IDENTITY}@{KH}.iam.gserviceaccount.com",
+          "Unexpected rehearsal service account")
+    containers = spec.get("containers", [])
+    check(len(containers) == 1 and containers[0].get("command") == ["node"] and
+          containers[0].get("args") == ["/app/dist/collector.cjs"], "Unexpected rehearsal command")
+    entries = containers[0].get("env", [])
+    values = {entry["name"]: entry.get("value") for entry in entries}
+    check(len(values) == len(entries) and values.get("COLLECTOR_VALIDATE_ONLY") == "true" and
+          values.get("COLLECTOR_STAGE_ONLY") in (None, "false") and values.get("GOOGLE_CLOUD_PROJECT") == APT and
+          values.get("FIRESTORE_DATABASE_ID") == apt_database(), "Unexpected rehearsal Firestore or write setting")
+    print("Resuming the existing K-Housing collector in read-only Apt verification mode.", flush=True)
+    check_rehearsal(KH)
+
+
+def check_rehearsal(project):
     name = run_collector(project=project)
     for _ in range(12):
         reports = execution_logs(name, project)
@@ -358,6 +380,7 @@ if __name__ == "__main__":
     modes.add_argument("--network-probe", action="store_true", help="Make one diagnostic request from the existing rehearsal job")
     modes.add_argument("--khousing-egress", action="store_true", help="Rehearse in K-Housing Cloud Run while reading Apt Firestore")
     modes.add_argument("--khousing-firestore-probe", action="store_true", help="Diagnose Apt Firestore access from the existing K-Housing rehearsal")
+    modes.add_argument("--resume-khousing-rehearsal", action="store_true", help="Validate and run the existing read-only rehearsal")
     arguments = parser.parse_args()
     try:
         if arguments.inspect_execution:
@@ -367,6 +390,8 @@ if __name__ == "__main__":
         elif arguments.khousing_firestore_probe:
             run_probe(FIRESTORE_PROBE, "aptFirestoreProbe", ("outcome", "tokenStatus", "restStatus", "reason",
                       "permission", "restTransportError", "sdkRead", "sdkList", "sdkCode"), project=KH)
+        elif arguments.resume_khousing_rehearsal:
+            resume_khousing_rehearsal()
         else:
             execute_rehearsal(arguments.khousing_egress)
     except (RuntimeError, subprocess.CalledProcessError, KeyError, OSError) as error:

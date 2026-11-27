@@ -13,7 +13,7 @@ const pad = (value: unknown) => String(value).padStart(2, '0');
 const regions = [...new Set(catalog.apartments.map(({ region }) => region))];
 type Sale = { area: number; price: number; date: string; floor: number };
 type TradeSummary = { count: number; min: number; max: number };
-type Result = (typeof catalog.apartments)[number] & Sale & { areaCategory: string; tradeSummary?: TradeSummary };
+type Result = (typeof catalog.apartments)[number] & Sale & { areaCategory: string; complexId?: string; tradeSummary?: TradeSummary };
 type ResponseData = { results: Result[]; marketTrends: MarketTrend[]; incomplete: boolean; stale?: boolean; checkedAt: string; observedAt?:string; validUntil?:number; revision?:string };
 
 async function monthTrades(key: string, region: string, month: string) {
@@ -153,8 +153,8 @@ async function loadCanonicalPrices(mode: Extract<ApartmentTradeMode, { kind: 'ca
     const results = projected.results.map(row => {
       const apt = catalog.apartments.find(apt => apt.region === row.region && apt.neighborhood === row.neighborhood && apt.name === row.name);
       if (!apt) throw Error('CANONICAL_TRADES_UNAVAILABLE');
-      const { price, area, date, floor, areaCategory, tradeSummary } = row;
-      return { ...apt, price, area, date, floor, areaCategory, tradeSummary };
+      const { complexId, price, area, date, floor, areaCategory, tradeSummary } = row;
+      return { ...apt, complexId, price, area, date, floor, areaCategory, tradeSummary };
     });
     return { results, marketTrends: await readRoneMarketTrends(), incomplete: false, checkedAt: projected.checkedAt, observedAt:projected.observedAt, validUntil:projected.validUntil, revision:projected.revision };
   }

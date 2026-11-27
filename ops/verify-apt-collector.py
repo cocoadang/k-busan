@@ -79,15 +79,17 @@ def molit_secret(entries, annotation_layers):
     return secret, match[1]
 
 
-def collector_settings():
+def collector_settings(reuse_source_egress=False):
     source = cloud_json("run", "jobs", "describe", "khousing-collector", "--project", KH, "--region", REGION)
     job_template = source["spec"]["template"]
     template = job_template["spec"]["template"]
     layers = [item.get("metadata", {}).get("annotations", {}) for item in (source, job_template, template)]
     annotations = {key: value for layer in layers for key, value in layer.items()}
-    check(not any("vpc-access" in key or "network-interfaces" in key for key in annotations),
-          "K-Housing collector uses custom egress. Reproduce the approved egress before running the Apt collector.")
-    entries = {entry["name"]: entry for entry in template["spec"]["containers"][0].get("env", [])}
+    network = {key: value for key, value in annotations.items() if key.startswith("run.googleapis.com/")
+               and ("vpc-access" in key or "network-interfaces" in key or key.endswith("/network-tags"))}
+    check(reuse_source_egress or not network, "K-Housing collector uses custom egress; use --khousing-egress")
+    container = template["spec"]["containers"][0]
+    entries = {entry["name"]: entry for entry in container.get("env", [])}
     check(not any(entries.get(key, {}).get("value") == "true"
                   for key in ("COLLECTOR_STAGE_ONLY", "COLLECTOR_VALIDATE_ONLY")),
           "K-Housing collector is currently configured for a rehearsal")
@@ -98,7 +100,11 @@ def collector_settings():
             check(isinstance(value, str) and re.fullmatch(r"[a-zA-Z0-9,/-]+", value),
                   f"Review the old collector setting {name}")
             values[name] = value
-    return values, molit_secret(entries, layers)
+    image = container.get("image", "") if reuse_source_egress else IMAGE
+    if reuse_source_egress:
+        check(re.fullmatch(r"asia-northeast3-docker\.pkg\.dev/gen-lang-client-0064554427/[a-z0-9_./-]+(?::[a-zA-Z0-9_.-]+|@sha256:[a-f0-9]{64})", image),
+              "Unexpected source collector image")
+    return values, molit_secret(entries, layers), image, network
 
 
 def apt_database():
@@ -113,17 +119,17 @@ def apt_database():
     return database
 
 
-def execution_logs(name):
+def execution_logs(name, project=APT):
     check(re.fullmatch(r"apt-collector-rehearsal-[a-z0-9]+", name), "Unexpected Cloud Run execution name")
     predicate = (f'resource.type="cloud_run_job" AND resource.labels.job_name="{JOB}" '
                  f'AND labels."run.googleapis.com/execution_name"="{name}"')
-    return cloud_json("logging", "read", predicate, "--project", APT, "--limit", "100")
+    return cloud_json("logging", "read", predicate, "--project", project, "--limit", "100")
 
 
-def explain_failure(name):
+def explain_failure(name, project=APT):
     for attempt in range(6):
         diagnostics = []
-        for entry in execution_logs(name):
+        for entry in execution_logs(name, project):
             text = entry.get("textPayload")
             if not isinstance(text, str):
                 text = entry.get("jsonPayload", {}).get("message", "")
@@ -149,8 +155,8 @@ def explain_failure(name):
     raise RuntimeError(f"No recognized diagnostic for {name}. Inspect the execution's container stderr in Cloud Logging.")
 
 
-def run_collector(*overrides):
-    command = ["gcloud", "run", "jobs", "execute", JOB, "--wait", "--project", APT,
+def run_collector(*overrides, project=APT):
+    command = ["gcloud", "run", "jobs", "execute", JOB, "--wait", "--project", project,
                "--region", REGION, "--format=json", "--quiet", *overrides]
     outcome = subprocess.run(command, capture_output=True, text=True)
     if outcome.returncode:
@@ -163,7 +169,7 @@ def run_collector(*overrides):
         else:
             name = JOB + "-" + match[1]
         if name:
-            explain_failure(name)
+            explain_failure(name, project)
         raise RuntimeError(f"Apt collector execution failed{f' ({name})' if name else ''}")
     return json.loads(outcome.stdout)["metadata"]["name"]
 
@@ -219,18 +225,20 @@ def probe_network():
     raise RuntimeError(f"No network probe report found for {name}")
 
 
-def execute_rehearsal():
+def execute_rehearsal(reuse_source_egress=False):
     check(gc("projects", "describe", APT, "--format=value(projectNumber)") == "432348267432",
           "Unexpected Apt project number")
     check(gc("projects", "describe", KH, "--format=value(projectNumber)") == "9298525505",
           "Unexpected K-Housing project number")
     check(active_revision() == EXPECTED, "Apt candidate revision changed")
-    values, (secret_name, secret_version) = collector_settings()
+    values, (secret_name, secret_version), image, network = collector_settings(reuse_source_egress)
+    project = KH if reuse_source_egress else APT
+    collector_path = "/app/dist/collector.cjs" if reuse_source_egress else "/app/market/dist/collector.cjs"
     database = apt_database()
-    email = f"{IDENTITY}@{APT}.iam.gserviceaccount.com"
-    account_ids = cloud_json("iam", "service-accounts", "list", "--project", APT, f"--filter=email={email}")
+    email = f"{IDENTITY}@{project}.iam.gserviceaccount.com"
+    account_ids = cloud_json("iam", "service-accounts", "list", "--project", project, f"--filter=email={email}")
     if not any(account.get("email") == email for account in account_ids):
-        gc("iam", "service-accounts", "create", IDENTITY, "--project", APT,
+        gc("iam", "service-accounts", "create", IDENTITY, "--project", project,
            "--display-name=Apt Firestore collector validation")
     gc("projects", "add-iam-policy-binding", APT, "--member=serviceAccount:" + email,
        "--role=roles/datastore.viewer",
@@ -240,19 +248,20 @@ def execute_rehearsal():
     values.update(GOOGLE_CLOUD_PROJECT=APT, FIRESTORE_DATABASE_ID=database,
                   SOURCE_ARCHIVE_BUCKET="busan-redevelopment-khousing-source",
                   COLLECTOR_VALIDATE_ONLY="true")
-    print("Starting the Apt collector in read-only verification mode.", flush=True)
+    print(f"Starting the Apt collector in read-only verification mode in {project}.", flush=True)
     configuration = {
         "apiVersion": "run.googleapis.com/v1",
         "kind": "Job",
         "metadata": {"name": JOB},
         "spec": {"template": {
             "metadata": {"annotations": {
+                **network,
                 "run.googleapis.com/secrets": f"apt-molit-key:projects/9298525505/secrets/{secret_name}",
             }},
             "spec": {"taskCount": 1, "parallelism": 1, "template": {"spec": {
                 "serviceAccountName": email, "maxRetries": 0, "timeoutSeconds": "900",
                 "containers": [{
-                    "image": IMAGE, "command": ["node"], "args": ["/app/market/dist/collector.cjs"],
+                    "image": image, "command": ["node"], "args": [collector_path],
                     "resources": {"limits": {"cpu": "1", "memory": "1Gi"}},
                     "env": [{"name": key, "value": value} for key, value in values.items()] + [{
                         "name": "MOLIT_API_KEY",
@@ -265,10 +274,10 @@ def execute_rehearsal():
     with tempfile.TemporaryDirectory(prefix="apt-collector-") as directory:
         config = Path(directory) / "job.json"
         config.write_text(json.dumps(configuration))
-        gc("run", "jobs", "replace", str(config), "--project", APT, "--region", REGION)
-    name = run_collector()
+        gc("run", "jobs", "replace", str(config), "--project", project, "--region", REGION)
+    name = run_collector(project=project)
     for _ in range(12):
-        reports = execution_logs(name)
+        reports = execution_logs(name, project)
         for report in reports:
             record = report.get("jsonPayload")
             if not record and report.get("textPayload", "").startswith("{"):
@@ -281,7 +290,7 @@ def execute_rehearsal():
                       record["groups"] >= 1275 and record["requiresAptReceiptRefresh"] is False and
                       not record["missingAptCells"], "Collector failed the Apt retention or receipt checks")
                 check(active_revision() == EXPECTED, "Apt active revision changed during the rehearsal")
-                print(json.dumps({"execution": name, "revision": EXPECTED, "baseline": record["baselineGroups"],
+                print(json.dumps({"execution": name, "project": project, "revision": EXPECTED, "baseline": record["baselineGroups"],
                                   "merged": record["groups"], "databaseWrites": 0}))
                 return
         time.sleep(5)
@@ -293,6 +302,7 @@ if __name__ == "__main__":
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--inspect-execution", help="Read redacted diagnostics from an existing execution")
     modes.add_argument("--network-probe", action="store_true", help="Make one diagnostic request from the existing rehearsal job")
+    modes.add_argument("--khousing-egress", action="store_true", help="Rehearse in K-Housing Cloud Run while reading Apt Firestore")
     arguments = parser.parse_args()
     try:
         if arguments.inspect_execution:
@@ -300,7 +310,7 @@ if __name__ == "__main__":
         elif arguments.network_probe:
             probe_network()
         else:
-            execute_rehearsal()
+            execute_rehearsal(arguments.khousing_egress)
     except (RuntimeError, subprocess.CalledProcessError, KeyError, OSError) as error:
         print(f"Apt collector verification stopped: {error}", file=sys.stderr)
         sys.exit(1)

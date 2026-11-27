@@ -206,23 +206,77 @@ NETWORK_PROBE = r"""
 """
 
 
-def probe_network():
-    name = run_collector("--args=^~^-e~" + NETWORK_PROBE.strip())
+FIRESTORE_PROBE = r"""
+(async () => {
+  const report = {aptFirestoreProbe:true};
+  const project = process.env.GOOGLE_CLOUD_PROJECT;
+  const database = process.env.FIRESTORE_DATABASE_ID;
+  if (project !== 'busan-redevelopment' || !/^(?:\(default\)|[a-z][a-z0-9-]{2,62})$/.test(database || '') ||
+      process.env.COLLECTOR_VALIDATE_ONLY !== 'true') {
+    console.log(JSON.stringify({...report, outcome:'INVALID_REHEARSAL_CONFIGURATION'}));
+    return;
+  }
+  try {
+    const tokenResponse = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
+      {headers:{'Metadata-Flavor':'Google'},signal:AbortSignal.timeout(8000)});
+    report.tokenStatus = tokenResponse.status;
+    if (tokenResponse.ok) {
+      const {access_token} = await tokenResponse.json();
+      const url = 'https://firestore.googleapis.com/v1/projects/' + project + '/databases/' +
+        encodeURIComponent(database) + '/documents/priceRevisions/active';
+      const response = await fetch(url, {headers:{Authorization:'Bearer ' + access_token},signal:AbortSignal.timeout(12000)});
+      report.restStatus = response.status;
+      if (!response.ok) {
+        const error = (await response.json()).error || {};
+        const detail = (error.details || []).find(item => String(item['@type']).endsWith('/google.rpc.ErrorInfo')) || {};
+        if (/^[A-Z0-9_]{1,80}$/.test(detail.reason || '')) report.reason = detail.reason;
+        if (/^(?:datastore|firestore|serviceusage|resourcemanager)\.[a-zA-Z.]+$/.test(detail.metadata?.permission || '')) {
+          report.permission = detail.metadata.permission;
+        }
+      }
+    }
+  } catch (_) {
+    report.restTransportError = true;
+  }
+  const {Firestore} = require('@google-cloud/firestore');
+  const db = new Firestore({projectId:project,databaseId:database});
+  try {
+    const document = await db.collection('priceRevisions').doc('active').get();
+    report.sdkRead = document.exists;
+    const revision = document.get('revision');
+    const collection = document.get('collections.transactions');
+    if (typeof revision === 'string' && /^r[0-9]{14}(?:_[a-f0-9]{8})?$/.test(revision) &&
+        collection === 'transactions_' + revision) {
+      report.sdkList = !(await db.collection(collection).limit(1).get()).empty;
+    }
+  } catch (error) {
+    if (Number.isInteger(error?.code)) report.sdkCode = error.code;
+    const permission = String(error?.details || error?.message || '').match(/\b(?:datastore|firestore|serviceusage|resourcemanager)\.[a-zA-Z.]+\b/)?.[0];
+    if (permission) report.permission = permission;
+  } finally {
+    await db.terminate();
+  }
+  console.log(JSON.stringify(report));
+})().catch(() => console.log(JSON.stringify({aptFirestoreProbe:true,outcome:'PROBE_RUNTIME_UNAVAILABLE'})));
+"""
+
+
+def run_probe(script, marker, keys, project=APT):
+    name = run_collector("--task-timeout=120s", "--args=^~^-e~" + script.strip(), project=project)
     for attempt in range(8):
-        for entry in execution_logs(name):
+        for entry in execution_logs(name, project):
             record = entry.get("jsonPayload")
             if not isinstance(record, dict):
                 try:
                     record = json.loads(entry.get("textPayload", ""))
                 except ValueError:
                     continue
-            if isinstance(record, dict) and record.get("molitProbe") is True:
-                keys = ("outcome", "status", "serviceCode", "codes")
+            if isinstance(record, dict) and record.get(marker) is True:
                 print(json.dumps({"execution": name, **{key: record[key] for key in keys if key in record}}))
                 return
         if attempt < 7:
             time.sleep(3)
-    raise RuntimeError(f"No network probe report found for {name}")
+    raise RuntimeError(f"No probe report found for {name}")
 
 
 def execute_rehearsal(reuse_source_egress=False):
@@ -303,12 +357,16 @@ if __name__ == "__main__":
     modes.add_argument("--inspect-execution", help="Read redacted diagnostics from an existing execution")
     modes.add_argument("--network-probe", action="store_true", help="Make one diagnostic request from the existing rehearsal job")
     modes.add_argument("--khousing-egress", action="store_true", help="Rehearse in K-Housing Cloud Run while reading Apt Firestore")
+    modes.add_argument("--khousing-firestore-probe", action="store_true", help="Diagnose Apt Firestore access from the existing K-Housing rehearsal")
     arguments = parser.parse_args()
     try:
         if arguments.inspect_execution:
             explain_failure(arguments.inspect_execution)
         elif arguments.network_probe:
-            probe_network()
+            run_probe(NETWORK_PROBE, "molitProbe", ("outcome", "status", "serviceCode", "codes"))
+        elif arguments.khousing_firestore_probe:
+            run_probe(FIRESTORE_PROBE, "aptFirestoreProbe", ("outcome", "tokenStatus", "restStatus", "reason",
+                      "permission", "restTransportError", "sdkRead", "sdkList", "sdkCode"), project=KH)
         else:
             execute_rehearsal(arguments.khousing_egress)
     except (RuntimeError, subprocess.CalledProcessError, KeyError, OSError) as error:

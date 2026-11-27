@@ -28,6 +28,7 @@ export function kstContractMonth(offset = 0, now = new Date()) {
 export type TradeHistoryRow = { dealDate: string; exactArea: number; amountManwon: number; floor: number; cancelled: boolean };
 export type TradeHistoryResponse = {
   source: 'K_HOUSING_SAVED_MOLIT';
+  revision?: string;
   coverage: 'saved_snapshot_only';
   checkedAt: string;
   complex: string;

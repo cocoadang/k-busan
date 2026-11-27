@@ -96,3 +96,17 @@ test('history view has explicit saved coverage and canonical preselection withou
   assert.equal(tradeHistoryLink('디에이치퍼스티어아이파크'), null);
   assert.equal(tradeHistoryLink('래미안슈르'), '?view=trade-history&complex=gwacheon_raemian_sur');
 });
+
+test('preview history trusts only the configured tagged origin and exact revision', async () => {
+  const pin = 'r20261125084348_907cfe39';
+  const preview = { origin: 'https://preview---k-housing-example.a.run.app', revision: pin };
+  const exactService = createTradeHistoryService(async input => {
+    assert.equal(new URL(String(input)).origin, preview.origin);
+    return Response.json(snapshot([row()], { revision: pin }));
+  }, preview);
+  assert.equal((await exactService(q))?.revision, pin);
+
+  const staleService = createTradeHistoryService(async () =>
+    Response.json(snapshot([row()], { revision: 'r20261125000000' })), preview);
+  await assert.rejects(staleService(q), /KH_UNEXPECTED_PREVIEW_REVISION/);
+});

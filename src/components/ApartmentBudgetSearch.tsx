@@ -1,24 +1,67 @@
 import { useState, type FormEvent } from 'react';
-import { getApartmentLocationGrades, locationGradeAxes } from './ApartmentRadar';
-import type catalog from '../housing/songApartmentCatalog.json';
+import catalog from '../housing/songApartmentCatalog.json';
 
-type Listing = (typeof catalog.apartments)[number] & { area: number; price: number; date: string; floor: number; areaCategory: string };
-type PriceFeed = { results: Listing[]; incomplete: boolean; stale?: boolean };
-const priorities = { budget: '예산에 가까운 순', transit: '교통', schools: '학군', living: '주거환경' };
-type Priority = keyof typeof priorities;
-const strengths: Record<string, Partial<Record<Exclude<Priority, 'budget'>, string>>> = {
-  '힐스테이트 e편한세상 문정': { schools: '학교 접근성을 장점으로 언급', living: '주변 주거환경을 장점으로 언급' },
-  '가락쌍용1차': { schools: '학군을 가격과 함께 검토' },
-  '래미안슈르': { living: '주차와 거주 여건을 장점으로 언급' },
-  '광장현대3단지': { transit: '광나루·강변역 접근을 장점으로 언급', schools: '학원가 접근을 장점으로 언급' },
-  '고덕 아이파크': { transit: '고덕역 접근을 장점으로 언급', schools: '학원가 접근을 장점으로 언급' },
-  '대치 은마': { transit: '대치역·삼성역 접근을 장점으로 언급', schools: '대치동 학군을 장점으로 언급' },
-};
+type Complex = { id: string; name: string; alias: string; district: string };
+type Listing = { complexId: string; area: number; price: number; date: string; areaCategory: string };
+type AptListing = Omit<Listing, 'complexId'> & { complexId?: string; name: string };
+type SearchFeed = { complexes: Complex[]; results: Listing[]; unavailable: string[] };
+type AptFeed = { results: AptListing[]; incomplete: boolean; stale?: boolean };
+type SearchQuery = { keyword: string; minimum: number; maximum: number; size: string };
+const normalize = (value: string) => value.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+
 const formatPrice = (price: number) => {
   const eok = Math.floor(price / 10000);
   const remainder = price % 10000;
   return [eok ? `${eok}억` : '', remainder ? `${remainder.toLocaleString('ko-KR')}만` : ''].filter(Boolean).join(' ') + ' 원';
 };
+
+async function fetchSearch<T>(path: string): Promise<T> {
+  const response = await fetch(path, { signal: AbortSignal.timeout(45_000) });
+  if (!response.ok) throw Error('SEARCH_DATA_UNAVAILABLE');
+  return response.json() as Promise<T>;
+}
+
+function findMatches(query: SearchQuery, shared: SearchFeed | null, apt: AptFeed | null) {
+  const complexes = new Map((shared?.complexes ?? []).map(complex => [complex.id, complex]));
+  const sharedNames = new Map([...complexes.values()].map(complex => [normalize(complex.alias || complex.name), complex.id]));
+  const idsByName = new Map<string, string>();
+  for (const entry of catalog.apartments) {
+    const key = normalize(entry.name);
+    const id = sharedNames.get(key) ?? `apt:${key}`;
+    idsByName.set(key, id);
+    if (!complexes.has(id)) {
+      complexes.set(id, { id, name: entry.name, alias: entry.aliases.join(' '), district: `${entry.district} ${entry.neighborhood}` });
+    }
+  }
+
+  const trades = new Map<string, Map<string, Listing>>();
+  const put = (trade: Listing) => {
+    const areas = trades.get(trade.complexId) ?? new Map<string, Listing>();
+    const previous = areas.get(trade.areaCategory);
+    if (!previous || previous.date < trade.date || (previous.date === trade.date && previous.price < trade.price)) {
+      areas.set(trade.areaCategory, trade);
+    }
+    trades.set(trade.complexId, areas);
+  };
+  for (const trade of shared?.results ?? []) put(trade);
+  for (const trade of apt?.results ?? []) {
+    const id = trade.complexId && complexes.has(trade.complexId) ? trade.complexId : idsByName.get(normalize(trade.name));
+    if (id) put({ ...trade, complexId: id });
+  }
+
+  const budgetFilter = query.minimum > 0 || Number.isFinite(query.maximum);
+  const terms = query.keyword.split(/\s+/).map(normalize).filter(Boolean);
+  return [...complexes.values()].flatMap(complex => {
+    const searchable = normalize(`${complex.name} ${complex.alias} ${complex.district}`);
+    if (!terms.every(term => searchable.includes(term))) return [];
+    const listings = [...(trades.get(complex.id)?.values() ?? [])].filter(trade =>
+      (!query.size || trade.areaCategory === query.size) && trade.price >= query.minimum && trade.price <= query.maximum,
+    ).sort((first, second) => second.price - first.price);
+    if (budgetFilter && !listings.length) return [];
+    return [{ complex, listings, unavailable: shared?.unavailable.includes(complex.id) ?? false }];
+  }).sort((first, second) => (budgetFilter ? (second.listings[0]?.price ?? 0) - (first.listings[0]?.price ?? 0) : 0)
+    || first.complex.name.localeCompare(second.complex.name, 'ko'));
+}
 
 function PriceRange({ minimum, budget, onMinimum, onBudget }: {
   minimum: string; budget: string; onMinimum: (value: string) => void; onBudget: (value: string) => void;
@@ -44,227 +87,93 @@ function PriceRange({ minimum, budget, onMinimum, onBudget }: {
   );
 }
 
-type LocationGrades = ReturnType<typeof getApartmentLocationGrades>;
-
-const locationTiers = [
-  { level: 5, label: '최상급지', width: '44%', color: 'bg-slate-900 text-white' },
-  { level: 4, label: '상급지', width: '58%', color: 'bg-blue-800 text-white' },
-  { level: 3, label: '중급지', width: '72%', color: 'bg-blue-600 text-white' },
-  { level: 2, label: '하급지', width: '86%', color: 'bg-blue-200 text-blue-950' },
-  { level: 1, label: '최하급지', width: '100%', color: 'bg-slate-200 text-slate-900' },
-] as const;
-
-function radarPoint(axis: number, radius: number) {
-  const angle = axis * Math.PI / 3;
-  return { x: 80 + Math.sin(angle) * radius, y: 80 - Math.cos(angle) * radius };
-}
-
-function LocationHexagon({ grades }: { grades: LocationGrades }) {
-  const vertices = grades.map(({ grade }, index) => grade === null ? null : radarPoint(index, grade * 10));
-  const complete = vertices.every(point => point !== null);
-  return (
-    <svg viewBox="0 0 160 160" role="img"
-      aria-label={grades.map(({ grade }, index) =>
-        `${locationGradeAxes[index][1]} ${grade ?? '미확인'}`
-      ).join(', ')}
-      className="h-36 w-36 shrink-0 sm:h-40 sm:w-40">
-      {[1, 2, 3, 4, 5].map(level => (
-        <polygon key={level} fill="none" stroke="#cbd5e1"
-          points={locationGradeAxes.map((_, index) => {
-            const { x, y } = radarPoint(index, level * 10);
-            return `${x},${y}`;
-          }).join(' ')} />
-      ))}
-      {locationGradeAxes.map(([short, label], index) => {
-        const spoke = radarPoint(index, 50);
-        const heading = radarPoint(index, 65);
-        const { grade } = grades[index];
-        return (
-          <g key={label}>
-            <line x1={80} y1={80} x2={spoke.x} y2={spoke.y} stroke="#e2e8f0" />
-            <text x={heading.x} y={heading.y} textAnchor="middle" dominantBaseline="central"
-              className="text-[12px] font-bold" fill={grade === null ? '#64748b' : '#1e293b'}>
-              {short}{grade === null ? '?' : ''}
-            </text>
-          </g>
-        );
-      })}
-      {complete && <polygon fill="#dbeafe" fillOpacity={0.85}
-        points={vertices.map(point => `${point!.x},${point!.y}`).join(' ')} />}
-      {vertices.map((point, index) => {
-        const next = vertices[(index + 1) % vertices.length];
-        if (!point) return null;
-        return (
-          <g key={index}>
-            {next && <line x1={point.x} y1={point.y} x2={next.x} y2={next.y} stroke="#1d4ed8" strokeWidth={2} />}
-            <circle cx={point.x} cy={point.y} r={3.4} fill="#1d4ed8" />
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function LocationPyramid({ matches }: { matches: Listing[] }) {
-  const ranked = matches.map(apt => {
-    const grades = getApartmentLocationGrades(apt.name);
-    const confirmed = grades.flatMap(({ grade }) => grade === null ? [] : [grade]);
-    const average = confirmed.length ? confirmed.reduce((sum, grade) => sum + grade, 0) / confirmed.length : null;
-    return { apt, grades, average, confirmed: confirmed.length };
-  });
-  const ungraded = ranked.filter(({ average }) => average === null);
-  const groups = locationTiers.map(tier => ({
-    ...tier,
-    entries: ranked.filter(({ average }) => average !== null && Math.round(average) === tier.level),
-  }));
-  return (
-    <section aria-labelledby="location-grades" className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
-      <h2 id="location-grades" className="text-lg font-bold">입지 등급표</h2>
-      <p className="mt-1 text-sm text-slate-600">확인된 항목의 평균을 반올림해 5단으로 표시합니다. 6개 항목이 모두 확인되기 전에는 잠정 등급입니다.</p>
-      <div className="mt-5 space-y-3">
-        {groups.map(({ level, label, width, color, entries }) => (
-          <section key={level} aria-label={label}>
-            <h3 style={{ width }} className={`mx-auto flex min-h-9 min-w-32 items-center justify-center gap-2 rounded-md px-2 text-center text-sm font-semibold ${color}`}>
-              {label} <span className="text-xs font-normal">{entries.length}건</span>
-            </h3>
-            {entries.length > 0 && <ul style={{ width: `min(100%, max(${width}, 34rem))` }}
-              className="mx-auto mt-2 grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]">
-              {entries.map(entry => <li key={`${entry.apt.name}:${entry.apt.areaCategory}`} className="min-w-0"><LocationCard {...entry} /></li>)}
-            </ul>}
-          </section>
-        ))}
-        {ungraded.length > 0 && <section aria-label="등급 산정 대기">
-          <h3 className="text-sm font-semibold text-slate-700">등급 산정 대기</h3>
-          <ul className="mt-2 grid gap-2 md:grid-cols-2">
-            {ungraded.map(entry => <li key={`${entry.apt.name}:${entry.apt.areaCategory}`} className="min-w-0"><LocationCard {...entry} /></li>)}
-          </ul>
-        </section>}
-      </div>
-    </section>
-  );
-}
-
-function LocationCard({ apt, grades, average, confirmed }: {
-  apt: Listing; grades: LocationGrades; average: number | null; confirmed: number;
-}) {
-  return (
-    <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-x-3">
-        <div className="min-w-0 flex-1 basis-32">
-          <h4 className="font-bold text-slate-900">{apt.name}</h4>
-          <p className="mt-1 text-sm text-slate-700">{apt.area}㎡ · {formatPrice(apt.price)}</p>
-          {average !== null && <p className="mt-2 text-sm font-semibold text-blue-900">
-            {average.toFixed(1)}/5{confirmed < locationGradeAxes.length && ` · 잠정 (${confirmed}/6 확인)`}
-          </p>}
-          {grades.map(({ grade, summary, pending }, index) => grade === null && summary ? (
-            <p key={locationGradeAxes[index][0]} className="mt-1 text-xs leading-relaxed text-slate-600">
-              {locationGradeAxes[index][1]} · {summary} · {pending}
-            </p>
-          ) : null)}
-        </div>
-        <LocationHexagon grades={grades} />
-      </div>
-      <details className="mt-1 border-t border-slate-200 pt-2 text-sm">
-        <summary className="cursor-pointer font-medium text-slate-700">항목별 점수·근거</summary>
-        <dl className="mt-2 space-y-2">
-          {grades.map(({ grade, label, pending, source }, index) => {
-            const [key, axis, rule] = locationGradeAxes[index];
-            const score = grade === null ? '미확인' : `${grade}/5`;
-            return (
-              <div key={key}>
-                <dt className="font-medium text-slate-900" title={rule}>{axis} · {score}</dt>
-                <dd className="text-xs leading-relaxed text-slate-600">
-                  {[label, grade === null && pending].filter(Boolean).join(' · ') || '근거 자료 확인 필요'}
-                  {source && <a href={source} target="_blank" rel="noreferrer" className="ml-2 text-blue-800 underline"
-                    aria-label={`${apt.name} ${axis} 출처`}>출처</a>}
-                </dd>
-              </div>
-            );
-          })}
-        </dl>
-      </details>
-    </article>
-  );
-}
-
 export default function ApartmentBudgetSearch() {
+  const [keyword, setKeyword] = useState('');
   const [budget, setBudget] = useState('');
   const [minimum, setMinimum] = useState('');
-  const [size, setSize] = useState('59');
-  const [priority, setPriority] = useState<Priority>('budget');
-  const [query, setQuery] = useState<{ budget: number; minimum: number; size: string; priority: Priority } | null>(null);
-  const [feed, setFeed] = useState<PriceFeed | null>(null);
+  const [size, setSize] = useState('');
+  const [query, setQuery] = useState<SearchQuery | null>(null);
+  const [shared, setShared] = useState<SearchFeed | null>(null);
+  const [apt, setApt] = useState<AptFeed | null>(null);
+  const [checkedAt, setCheckedAt] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const matchEvidence = (apt: Listing) => query && query.priority !== 'budget' ? strengths[apt.name]?.[query.priority] : undefined;
-  const matches = query ? (feed?.results ?? []).filter((apt) =>
-    apt.price >= query.minimum && apt.price <= query.budget &&
-    (!query.size || apt.areaCategory === query.size)
-  ).sort((first, second) => Number(Boolean(matchEvidence(second))) - Number(Boolean(matchEvidence(first))) || second.price - first.price) : [];
-
   const [rangeError, setRangeError] = useState(false);
+  const matches = query ? findMatches(query, shared, apt) : [];
+
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const amount = Math.round(Number(budget) * 10000);
-    if (!Number.isSafeInteger(amount) || amount <= 0 || loading) return;
+    if (loading) return;
+    const maximum = budget === '' ? Infinity : Math.round(Number(budget) * 10000);
     const lower = Math.round(Number(minimum) * 10000);
-    const invalid = !Number.isSafeInteger(lower) || lower < 0 || lower > amount;
+    const invalid = (budget !== '' && (!Number.isSafeInteger(maximum) || maximum <= 0))
+      || !Number.isSafeInteger(lower) || lower < 0 || lower > maximum;
     setRangeError(invalid);
     if (invalid) return;
-    setQuery({ budget: amount, minimum: lower, size, priority });
+    setQuery({ keyword: keyword.trim(), minimum: lower, maximum, size });
+    if (shared && apt && !apt.incomplete && !apt.stale && Date.now() - checkedAt < 60_000) return;
     setLoading(true);
-    setFailed(false);
-    if (feed && !feed.incomplete && !feed.stale) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const response = await fetch('/api/housing/apartment-budget', { signal: AbortSignal.timeout(25000) });
-      if (!response.ok) throw new Error('PRICE_UNAVAILABLE');
-      setFeed(await response.json() as PriceFeed);
-    } catch {
-      setFailed(true);
-    } finally {
-      setLoading(false);
-    }
+    const [housing, recommendations] = await Promise.allSettled([
+      fetchSearch<SearchFeed>('/api/housing/collected-apartments'),
+      fetchSearch<AptFeed>('/api/housing/apartment-budget'),
+    ]);
+    setShared(housing.status === 'fulfilled' ? housing.value : null);
+    setApt(recommendations.status === 'fulfilled' ? recommendations.value : null);
+    setCheckedAt(Date.now());
+    setLoading(false);
   }
 
   return (
     <section aria-labelledby="budget-title">
       <div className="rounded-3xl bg-slate-900 px-5 py-10 text-white sm:px-12 sm:py-14">
-        <p className="mb-3 text-sm font-semibold text-sky-300">아파트 예산 검색</p>
-        <h1 id="budget-title" className="text-3xl font-bold tracking-tight sm:text-5xl">내 예산으로 어디에 살 수 있을까?</h1>
-        <form onSubmit={search} className="mt-8 grid gap-3 rounded-2xl bg-white p-4 text-slate-900 sm:grid-cols-2 lg:grid-cols-4 sm:items-end">
-          <label className="grid gap-1 text-sm font-semibold">최대 매매가 (억 원)
-            <input className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" type="number" min="0.0001" step="0.0001" required placeholder="예: 19" value={budget} onChange={(event) => setBudget(event.target.value)} />
+        <h1 id="budget-title" className="text-3xl font-bold tracking-tight sm:text-5xl">아파트 검색</h1>
+        <p className="mt-3 text-sm text-slate-300">단지명, 지역, 예산으로 검색합니다. 거래가는 최근 3개 계약월의 저장 실거래 기준입니다.</p>
+        <form onSubmit={search} className="mt-8 grid gap-3 rounded-2xl bg-white p-4 text-slate-900 sm:grid-cols-2 lg:grid-cols-5 sm:items-end">
+          <label className="grid gap-1 text-sm font-semibold lg:col-span-2">단지명 또는 지역
+            <input className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" value={keyword}
+              onChange={event => setKeyword(event.target.value)} placeholder="예: 과천자이, 잠실, 부산" />
           </label>
           <label className="grid gap-1 text-sm font-semibold">최소 매매가 (억 원)
-            <input className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" type="number" min="0" step="0.0001" placeholder="선택" value={minimum} onChange={event => { setMinimum(event.target.value); setRangeError(false); }} />
+            <input className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" type="number" min="0" step="0.0001"
+              placeholder="선택" value={minimum} onChange={event => { setMinimum(event.target.value); setRangeError(false); }} />
+          </label>
+          <label className="grid gap-1 text-sm font-semibold">최대 매매가 (억 원)
+            <input className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" type="number" min="0.0001" step="0.0001"
+              placeholder="선택" value={budget} onChange={event => { setBudget(event.target.value); setRangeError(false); }} />
           </label>
           <label className="grid gap-1 text-sm font-semibold">전용면적
-            <select className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" value={size} onChange={(event) => setSize(event.target.value)}>
+            <select className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" value={size} onChange={event => setSize(event.target.value)}>
               <option value="">전체 면적</option><option value="59">59㎡대</option><option value="84">84㎡대</option>
             </select>
           </label>
-          <label className="grid gap-1 text-sm font-semibold">우선 조건
-            <select className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
-              {(Object.keys(priorities) as Priority[]).map(key => <option key={key} value={key}>{priorities[key]}</option>)}
-            </select>
-          </label>
-          <button type="submit" disabled={loading} className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800">아파트 찾기</button>
           <PriceRange minimum={minimum} budget={budget} onMinimum={value => { setMinimum(value); setRangeError(false); }}
             onBudget={value => { setBudget(value); setRangeError(false); }} />
           {rangeError && <p role="alert" className="text-sm text-red-700 sm:col-span-full">최소 매매가를 최대 매매가 이하로 입력하세요.</p>}
+          <button type="submit" disabled={loading} className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800">아파트 찾기</button>
         </form>
       </div>
       {query && <div className="mt-6" aria-live="polite">
-        {loading && <p role="status">저장된 실거래 자료에서 후보를 불러오고 있습니다.</p>}
-        {failed && <p role="status">저장된 실거래 자료를 불러오지 못했습니다. 잠시 후 다시 검색해 주세요.</p>}
-        {feed?.stale && <p role="status">갱신이 지연되어 마지막으로 저장된 거래를 표시합니다.</p>}
-        {feed?.incomplete && <p role="status">일부 지역의 거래 자료를 불러오지 못했습니다.</p>}
-        {!loading && !failed && feed && (matches.length ? (
-          <LocationPyramid matches={matches} />
-        ) : <p className="rounded-xl bg-white p-5 text-slate-700">조건에 맞는 신고 거래가 없습니다.</p>)}
+        {loading ? <p role="status">저장된 단지와 실거래를 불러오고 있습니다.</p> : (
+          <section aria-labelledby="apartment-search-results" className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+            <h2 id="apartment-search-results" className="text-lg font-bold">검색 결과 <span className="text-sm font-normal text-slate-600">{matches.length}개 단지</span></h2>
+            {!shared && <p role="status" className="mt-2 text-sm text-slate-700">K-Housing 단지 목록을 불러오지 못했습니다. 잠시 후 다시 검색해 주세요.</p>}
+            {(!apt || apt.incomplete || apt.stale || Boolean(shared?.unavailable.length)) &&
+              <p role="status" className="mt-2 text-sm text-slate-700">일부 단지는 최근 저장 거래를 확인할 수 없습니다.</p>}
+            {matches.length ? <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {matches.map(({ complex, listings, unavailable }) => (
+                <li key={complex.id} className="min-w-0 rounded-lg border border-slate-200 p-4">
+                  <h3 className="font-semibold text-slate-900">{complex.name}</h3>
+                  <p className="mt-1 text-sm text-slate-600">{complex.district}</p>
+                  {listings.length ? <ul className="mt-3 divide-y divide-slate-100 text-sm">
+                    {listings.map(trade => <li key={trade.areaCategory} className="flex flex-wrap items-baseline justify-between gap-x-2 py-1.5 tabular-nums">
+                      <span>{trade.area}㎡</span>
+                      <span><strong>{formatPrice(trade.price)}</strong> <time dateTime={trade.date} className="ml-1 text-xs text-slate-600">{trade.date}</time></span>
+                    </li>)}
+                  </ul> : <p className="mt-3 text-sm text-slate-600">{unavailable ? '최근 저장 거래 확인 불가' : '선택한 면적의 최근 저장 거래 없음'}</p>}
+                </li>
+              ))}
+            </ul> : <p className="mt-4 text-sm text-slate-700">조건에 맞는 단지 또는 신고 거래가 없습니다.</p>}
+          </section>
+        )}
       </div>}
     </section>
   );

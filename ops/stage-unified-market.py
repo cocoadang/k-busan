@@ -13,7 +13,8 @@ from pathlib import Path
 import yaml
 
 MARKET_SOURCE = "103c044ede1102bea8326d58d60ca153a4182997"
-TAG = "market-unified"
+TAG_PREFIX = "mk-"
+MAX_TAG_AND_SERVICE_LENGTH = 46
 MARKET_SETTINGS = ("GOOGLE_MAPS_API_KEY", "GOOGLE_MAPS_MAP_ID", "GEMINI_API_KEY", "GEMINI_MODEL")
 PREVIEW_FLAGS = ("APT_KHOUSING_PREVIEW_ORIGIN", "APT_KHOUSING_PREVIEW_REVISION", "APT_CANONICAL_TRADE_PREVIEW_REVISION")
 
@@ -73,7 +74,7 @@ def configure_market(cloud, source, apt, member):
         apt_annotations["run.googleapis.com/secrets"] = ",".join(f"{alias}:{resource}" for alias, resource in apt_secrets.items())
 
 
-def main(root, apt_source, migrate_database=False):
+def main(root, apt_source, migrate_database=False, image_digest=None):
     apt = checkout(root, "k-busan", apt_source)
     khousing = checkout(root, "k-housing", MARKET_SOURCE)
     cloud = load_cloud_helpers(khousing)
@@ -81,6 +82,9 @@ def main(root, apt_source, migrate_database=False):
     cloud.check_resource(cloud.KH_PROJECT, "9298525505")
     region, current = cloud.apt_location()
     original = cloud.traffic_of(current)
+    tag = TAG_PREFIX + apt_source[:8]
+    cloud.require(len(tag) + len(cloud.APT_SERVICE) <= MAX_TAG_AND_SERVICE_LENGTH,
+                  "Candidate tag and Cloud Run service name exceed 46 characters")
     apt_config = yaml.safe_load(cloud.cloud("run", "services", "describe", cloud.APT_SERVICE,
                                            "--project", cloud.APT_PROJECT, "--region", region,
                                            "--format=export", capture=True))
@@ -106,13 +110,18 @@ def main(root, apt_source, migrate_database=False):
     active = migration["revision_of"](active_doc)
     configure_market(cloud, source_config, apt_config, member)
 
-    context = root / "context"
-    cloud.run("bash", str(apt / "ops/package-unified-market.sh"), str(khousing), str(context))
-    image = f"{region}-docker.pkg.dev/{cloud.APT_PROJECT}/kbusan-images/k-busan:market-{apt_source[:8]}"
-    cloud.cloud("builds", "submit", str(context), "--ignore-file", str(context / ".gcloudignore"),
-                "--project", cloud.APT_PROJECT, "--region", region, "--tag", image, "--timeout", "1200s")
+    repository = f"{region}-docker.pkg.dev/{cloud.APT_PROJECT}/kbusan-images/k-busan"
+    if image_digest:
+        image = f"{repository}@{image_digest}"
+        print(f"Using existing image {image}", flush=True)
+    else:
+        context = root / "context"
+        cloud.run("bash", str(apt / "ops/package-unified-market.sh"), str(khousing), str(context))
+        image = f"{repository}:market-{apt_source[:8]}"
+        cloud.cloud("builds", "submit", str(context), "--ignore-file", str(context / ".gcloudignore"),
+                    "--project", cloud.APT_PROJECT, "--region", region, "--tag", image, "--timeout", "1200s")
     revision, url = cloud.deploy_tagged(
-        root, cloud.APT_PROJECT, region, cloud.APT_SERVICE, image, f"{TAG}-{apt_source[:8]}",
+        root, cloud.APT_PROJECT, region, cloud.APT_SERVICE, image, tag,
         {"APT_UNIFIED_HOUSING": "true", "APT_TRADE_MODE": "khousing-api", "APT_MARKET_DB": "apt",
          "IMPORT_FLOOR_PLANS_ON_START": "false", "IMPORT_FLOOR_PLANS_ON_POLL": "false"},
         PREVIEW_FLAGS, original, yaml.safe_dump(apt_config, sort_keys=False),
@@ -135,12 +144,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apt-source", required=True, help="Pinned Apt integration commit")
     parser.add_argument("--migrate-db", action="store_true", help="Copy and verify the source before staging the web candidate")
+    parser.add_argument("--image-digest", help="Deploy a previously built Apt integration image by its immutable digest")
     arguments = parser.parse_args()
     if not re.fullmatch(r"[a-f0-9]{40}", arguments.apt_source):
         parser.error("A full Git commit SHA is required")
+    if arguments.image_digest is not None and not re.fullmatch(r"sha256:[a-f0-9]{64}", arguments.image_digest):
+        parser.error("A SHA-256 image digest is required")
     try:
         with tempfile.TemporaryDirectory(prefix="apt-market-stage-") as directory:
-            main(Path(directory), arguments.apt_source, arguments.migrate_db)
+            main(Path(directory), arguments.apt_source, arguments.migrate_db, arguments.image_digest)
     except (RuntimeError, subprocess.CalledProcessError, KeyError) as error:
         print(f"Apt preview stopped: {error}", file=sys.stderr)
         sys.exit(1)

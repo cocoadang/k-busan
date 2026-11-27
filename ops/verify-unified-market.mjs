@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 const [base, expectedRevision, fixtureMonth] = process.argv.slice(2);
 const origin = new URL(base);
 assert(origin.protocol === 'https:' && (origin.hostname === 'apt.dsoom.com' ||
-  /^market-unified(?:-[a-f0-9]{8})?---busan-redevelopment-news-monitor-[a-z0-9-]+\.[a-z0-9.-]*run\.app$/.test(origin.hostname)),
+  /^(?:market-unified|mk-[a-f0-9]{8})---busan-redevelopment-news-monitor-[a-z0-9-]+\.[a-z0-9.-]*run\.app$/.test(origin.hostname)),
   'Use the Apt domain or the tagged Apt revision');
 assert(/^r\d{14}(?:_[a-f0-9]{8})?$/.test(expectedRevision), 'Pass the expected active DB revision');
 assert(/^20\d{2}(0[1-9]|1[0-2])$/.test(fixtureMonth), 'Pass a known month with a 래미안슈르 59㎡ trade');

@@ -44,6 +44,154 @@ function PriceRange({ minimum, budget, onMinimum, onBudget }: {
   );
 }
 
+type LocationGrades = ReturnType<typeof getApartmentLocationGrades>;
+
+const locationTiers = [
+  { level: 5, label: '최상급지', width: '44%', color: 'bg-slate-900 text-white' },
+  { level: 4, label: '상급지', width: '58%', color: 'bg-blue-800 text-white' },
+  { level: 3, label: '중급지', width: '72%', color: 'bg-blue-600 text-white' },
+  { level: 2, label: '하급지', width: '86%', color: 'bg-blue-200 text-blue-950' },
+  { level: 1, label: '최하급지', width: '100%', color: 'bg-slate-200 text-slate-900' },
+] as const;
+
+function radarPoint(axis: number, radius: number) {
+  const angle = axis * Math.PI / 3;
+  return { x: 80 + Math.sin(angle) * radius, y: 80 - Math.cos(angle) * radius };
+}
+
+function LocationHexagon({ grades }: { grades: LocationGrades }) {
+  const vertices = grades.map(({ grade }, index) => grade === null ? null : radarPoint(index, grade * 10));
+  const complete = vertices.every(point => point !== null);
+  return (
+    <svg viewBox="0 0 160 160" role="img"
+      aria-label={grades.map(({ grade, estimate }, index) =>
+        `${locationGradeAxes[index][1]} ${grade ?? (estimate === undefined ? '미확인' : `참고 ${estimate}`)}`
+      ).join(', ')}
+      className="h-36 w-36 shrink-0 sm:h-40 sm:w-40">
+      {[1, 2, 3, 4, 5].map(level => (
+        <polygon key={level} fill="none" stroke="#cbd5e1"
+          points={locationGradeAxes.map((_, index) => {
+            const { x, y } = radarPoint(index, level * 10);
+            return `${x},${y}`;
+          }).join(' ')} />
+      ))}
+      {locationGradeAxes.map(([short, label], index) => {
+        const spoke = radarPoint(index, 50);
+        const heading = radarPoint(index, 65);
+        const { grade, estimate } = grades[index];
+        return (
+          <g key={label}>
+            <line x1={80} y1={80} x2={spoke.x} y2={spoke.y} stroke="#e2e8f0" />
+            <text x={heading.x} y={heading.y} textAnchor="middle" dominantBaseline="central"
+              className="text-[12px] font-bold" fill={grade === null ? '#64748b' : '#1e293b'}>
+              {short}{grade === null && estimate === undefined ? '?' : ''}
+            </text>
+          </g>
+        );
+      })}
+      {complete && <polygon fill="#dbeafe" fillOpacity={0.85}
+        points={vertices.map(point => `${point!.x},${point!.y}`).join(' ')} />}
+      {vertices.map((point, index) => {
+        const next = vertices[(index + 1) % vertices.length];
+        const estimate = grades[index].estimate;
+        if (point === null) {
+          if (estimate === undefined) return null;
+          const reference = radarPoint(index, estimate * 10);
+          return <circle key={index} cx={reference.x} cy={reference.y} r={4}
+            fill="white" stroke="#475569" strokeWidth={1.5} strokeDasharray="2 1" />;
+        }
+        return (
+          <g key={index}>
+            {next && <line x1={point.x} y1={point.y} x2={next.x} y2={next.y} stroke="#1d4ed8" strokeWidth={2} />}
+            <circle cx={point.x} cy={point.y} r={3.4} fill="#1d4ed8" />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function LocationPyramid({ matches }: { matches: Listing[] }) {
+  const ranked = matches.map(apt => {
+    const grades = getApartmentLocationGrades(apt.name);
+    const confirmed = grades.flatMap(({ grade }) => grade === null ? [] : [grade]);
+    const average = confirmed.length ? confirmed.reduce((sum, grade) => sum + grade, 0) / confirmed.length : null;
+    return { apt, grades, average, confirmed: confirmed.length };
+  });
+  const ungraded = ranked.filter(({ average }) => average === null);
+  const groups = locationTiers.map(tier => ({
+    ...tier,
+    entries: ranked.filter(({ average }) => average !== null && Math.round(average) === tier.level),
+  }));
+  return (
+    <section aria-labelledby="location-grades" className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+      <h2 id="location-grades" className="text-lg font-bold">입지 등급표</h2>
+      <p className="mt-1 text-sm text-slate-600">확인된 항목의 평균을 반올림해 5단으로 표시합니다. 6개 미만이면 잠정이며, 참고 점수는 평균에서 제외합니다.</p>
+      <div className="mt-5 space-y-3">
+        {groups.map(({ level, label, width, color, entries }) => (
+          <section key={level} aria-label={label}>
+            <h3 style={{ width }} className={`mx-auto flex min-h-9 min-w-32 items-center justify-center gap-2 rounded-md px-2 text-center text-sm font-semibold ${color}`}>
+              {label} <span className="text-xs font-normal">{entries.length}건</span>
+            </h3>
+            {entries.length > 0 && <ul className="mx-auto mt-2 grid max-w-5xl gap-2 md:grid-cols-2">
+              {entries.map(entry => <LocationCard key={`${entry.apt.name}:${entry.apt.areaCategory}`} {...entry} />)}
+            </ul>}
+          </section>
+        ))}
+        {ungraded.length > 0 && <section aria-label="등급 산정 대기">
+          <h3 className="text-sm font-semibold text-slate-700">등급 산정 대기</h3>
+          <ul className="mt-2 grid gap-2 md:grid-cols-2">
+            {ungraded.map(entry => <LocationCard key={`${entry.apt.name}:${entry.apt.areaCategory}`} {...entry} />)}
+          </ul>
+        </section>}
+      </div>
+    </section>
+  );
+}
+
+function LocationCard({ apt, grades, average, confirmed }: {
+  apt: Listing; grades: LocationGrades; average: number | null; confirmed: number;
+}) {
+  return (
+    <li className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3">
+        <div className="min-w-0 flex-1 basis-32">
+          <h4 className="font-bold text-slate-900">{apt.name}</h4>
+          <p className="mt-1 text-sm text-slate-700">{apt.area}㎡ · {formatPrice(apt.price)}</p>
+          {average !== null && <p className="mt-2 text-sm font-semibold text-blue-900">
+            {average.toFixed(1)}/5{confirmed < locationGradeAxes.length && ` · 잠정 (${confirmed}/6 확인)`}
+          </p>}
+          {grades.map(({ grade, summary, estimate, pending }, index) => grade === null && summary ? (
+            <p key={locationGradeAxes[index][0]} className="mt-1 text-xs leading-relaxed text-slate-600">
+              {locationGradeAxes[index][1]} · {summary}{estimate === undefined ? ` · ${pending}` : ` · 참고 ${estimate}/5`}
+            </p>
+          ) : null)}
+        </div>
+        <LocationHexagon grades={grades} />
+      </div>
+      <details className="mt-1 border-t border-slate-200 pt-2 text-sm">
+        <summary className="cursor-pointer font-medium text-slate-700">항목별 점수·근거</summary>
+        <dl className="mt-2 space-y-2">
+          {grades.map(({ grade, estimate, label, pending, source }, index) => {
+            const [key, axis, rule] = locationGradeAxes[index];
+            const score = grade === null ? (estimate === undefined ? '미확인' : `참고 ${estimate}/5`) : `${grade}/5`;
+            return (
+              <div key={key}>
+                <dt className="font-medium text-slate-900" title={rule}>{axis} · {score}</dt>
+                <dd className="text-xs leading-relaxed text-slate-600">
+                  {[label, grade === null && estimate === undefined && pending].filter(Boolean).join(' · ') || '근거 자료 확인 필요'}
+                  {source && <a href={source} target="_blank" rel="noreferrer" className="ml-2 text-blue-800 underline"
+                    aria-label={`${apt.name} ${axis} 출처`}>출처</a>}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+      </details>
+    </li>
+  );
+}
+
 export default function ApartmentBudgetSearch() {
   const [budget, setBudget] = useState('');
   const [minimum, setMinimum] = useState('');
@@ -120,40 +268,7 @@ export default function ApartmentBudgetSearch() {
         {feed?.stale && <p role="status">갱신이 지연되어 마지막으로 저장된 거래를 표시합니다.</p>}
         {feed?.incomplete && <p role="status">일부 지역의 거래 자료를 불러오지 못했습니다.</p>}
         {!loading && !failed && feed && (matches.length ? (
-          <section aria-labelledby="location-grades" className="rounded-xl border border-slate-200 bg-white p-4">
-            <h2 id="location-grades" className="text-lg font-bold">입지 등급표</h2>
-            <div className="mt-3 overflow-x-auto" role="region" aria-labelledby="location-grades" tabIndex={0}>
-              <table className="w-full min-w-[42rem] text-left text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th scope="col" className="p-2">단지</th>
-                    <th scope="col" className="p-2">전용면적</th>
-                    <th scope="col" className="p-2">신고 거래가</th>
-                    {locationGradeAxes.map(([key, label, rule]) =>
-                      <th key={key} scope="col" title={rule} className="whitespace-nowrap p-2 text-center">{label}</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {matches.map(apt => (
-                    <tr key={`${apt.name}:${apt.areaCategory}`} className="border-t border-slate-200">
-                      <th scope="row" className="p-2 font-semibold">{apt.name}</th>
-                      <td className="whitespace-nowrap p-2">{apt.area}㎡</td>
-                      <td className="whitespace-nowrap p-2 tabular-nums">{formatPrice(apt.price)}</td>
-                      {getApartmentLocationGrades(apt.name).map(({ grade, label, pending, source }, index) => {
-                        const score = grade === null ? '미확인' : `${grade}/5`;
-                        const detail = [label, grade === null && pending].filter(Boolean).join(' · ');
-                        return <td key={locationGradeAxes[index][0]} title={detail} className="whitespace-nowrap p-2 text-center tabular-nums">
-                          {source ? <a className="text-blue-800 underline" href={source} target="_blank" rel="noreferrer"
-                            aria-label={`${locationGradeAxes[index][1]} ${score} · ${detail}`}>{score}</a> : score}
-                        </td>;
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <LocationPyramid matches={matches} />
         ) : <p className="rounded-xl bg-white p-5 text-slate-700">조건에 맞는 신고 거래가 없습니다.</p>)}
       </div>}
     </section>

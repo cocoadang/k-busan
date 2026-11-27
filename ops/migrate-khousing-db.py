@@ -4,7 +4,9 @@ import argparse
 import json
 import re
 import subprocess
-from urllib.error import HTTPError
+import time
+from http.client import IncompleteRead, RemoteDisconnected
+from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, quote, urlencode
 from urllib.request import Request, urlopen
 
@@ -33,6 +35,25 @@ def gcloud(*args, capture=True):
                           stdout=subprocess.PIPE if capture else None).stdout
 
 
+def read_json(request, retry=False, timeout=40):
+    attempts = 4 if retry else 1
+    for attempt in range(attempts):
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                return json.load(response)
+        except HTTPError as error:
+            if error.code not in (408, 429, 500, 502, 503, 504) or attempt + 1 == attempts:
+                raise
+            error.close()
+        except (TimeoutError, ConnectionError, IncompleteRead, RemoteDisconnected, URLError) as error:
+            if attempt + 1 == attempts:
+                route = request.full_url.split("?", 1)[0]
+                if retry:
+                    raise RuntimeError(f"Read failed after {attempts} attempts on {route}: {type(error).__name__}") from None
+                raise RuntimeError(f"Write result could not be confirmed on {route}. Re-run to verify and resume.") from None
+        time.sleep(2 ** attempt)
+
+
 class Database:
     def __init__(self, project, database, auth):
         self.auth = auth
@@ -43,8 +64,8 @@ class Database:
         headers = {"Authorization": "Bearer " + self.auth, "Content-Type": "application/json"}
         data = None if body is None else json.dumps(body).encode()
         try:
-            with urlopen(Request(self.url + path, data=data, headers=headers), timeout=60) as response:
-                return json.load(response)
+            return read_json(Request(self.url + path, data=data, headers=headers),
+                             retry=data is None or path == ":listCollectionIds")
         except HTTPError as error:
             if optional and error.code == 404:
                 return None
@@ -84,7 +105,7 @@ class Database:
         token = None
         path = f"/{quote(collection, safe='')}"
         while True:
-            query = {"pageSize": 150}
+            query = {"pageSize": 75}
             if token:
                 query["pageToken"] = token
             result = self.call(f"{path}?{urlencode(query)}")
@@ -150,37 +171,52 @@ def copy_fields(value, archives, source_name, target_name, historical_metadata=F
                 for key, item in value.items()}
     return value
 
-def object_digest(uri):
-    result = json.loads(gcloud("storage", "objects", "describe", uri, "--format=json"))
-    checksum = result.get("crc32c_hash")
+def object_digest(uri, headers, optional=False):
+    bucket, _, key = uri.removeprefix("gs://").partition("/")
+    url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/{quote(key, safe='')}?fields=crc32c,size"
+    try:
+        result = read_json(Request(url, headers=headers), retry=True)
+    except HTTPError as error:
+        if optional and error.code == 404:
+            return None
+        raise RuntimeError(f"Cloud Storage HTTP {error.code} reading metadata for {uri}") from None
+    checksum = result.get("crc32c")
     require(bool(checksum) and int(result.get("size", 0)) > 0, f"Missing archive checksum: {uri}")
     return checksum, int(result["size"])
 
 
 def copy_archives(archives):
+    if not archives:
+        return
     destination = "gs://" + APT_BUCKET
     token = gcloud("auth", "print-access-token").strip()
-    request = Request(f"https://storage.googleapis.com/storage/v1/b/{APT_BUCKET}?fields=projectNumber",
-                      headers={"Authorization": "Bearer " + token})
+    headers = {"Authorization": "Bearer " + token}
+    request = Request(f"https://storage.googleapis.com/storage/v1/b/{APT_BUCKET}?fields=projectNumber", headers=headers)
 
     def owner():
-        with urlopen(request, timeout=30) as response:
-            return str(json.load(response).get("projectNumber", ""))
+        return str(read_json(request, retry=True).get("projectNumber", ""))
 
     try:
         project_number = owner()
     except HTTPError as error:
         if error.code != 404:
-            raise
+            raise RuntimeError(f"Cloud Storage HTTP {error.code} reading the Apt archive bucket") from None
         gcloud("storage", "buckets", "create", destination, "--project", APT_PROJECT,
                "--location", "asia-northeast3", "--uniform-bucket-level-access", "--public-access-prevention")
         project_number = owner()
     require(project_number == "432348267432", "The destination archive bucket must belong to the Apt project")
+    reused = 0
     for source in sorted(archives):
         target = source.replace(SOURCE_BUCKET, APT_BUCKET, 1)
-        expected = object_digest(source)
+        expected = object_digest(source, headers)
+        existing = object_digest(target, headers, optional=True)
+        if existing is not None:
+            require(existing == expected, f"Archive checksum mismatch: {target}")
+            reused += 1
+            continue
         gcloud("storage", "cp", "--no-clobber", source, target, capture=False)
-        require(object_digest(target) == expected, f"Archive checksum mismatch: {target}")
+        require(object_digest(target, headers) == expected, f"Archive checksum mismatch: {target}")
+    print(f"ARCHIVES_VERIFIED count={len(archives)} reused={reused}", flush=True)
 
 
 def migrate(source, target, stage=False, previous=None):
@@ -220,6 +256,7 @@ def migrate(source, target, stage=False, previous=None):
         require(len(data.get(name, {})) == count, f"Source manifest count mismatch: {name}")
 
     counts = {}
+    matched = {}
     for name, rows in data.items():
         destination = DESTINATIONS.get(name, name)
         present = {document_id(doc): doc.get("fields", {})
@@ -231,7 +268,8 @@ def migrate(source, target, stage=False, previous=None):
         require((allow_extra or present.keys() <= rows.keys()) and
                 all(rows[id] == value for id, value in present.items() if id in rows),
                 f"Destination data differs in {name}")
-        counts[name] = {"source": len(rows), "alreadyMatched": len(present.keys() & rows.keys())}
+        matched[name] = present.keys() & rows.keys()
+        counts[name] = {"source": len(rows), "alreadyMatched": len(matched[name])}
         if name != destination:
             counts[name]["destination"] = destination
     require(source.get("priceRevisions", "active") == active, "Source active revision changed during audit")
@@ -241,10 +279,10 @@ def migrate(source, target, stage=False, previous=None):
     copy_archives(archives)
     for name, rows in data.items():
         destination = DESTINATIONS.get(name, name)
-        present = {document_id(doc): doc.get("fields", {})
-                   for page in target.documents(destination) for doc in page
-                   if not (name == "priceRevisions" and document_id(doc) == "active")}
-        missing = [target.write(destination, id, fields) for id, fields in rows.items() if id not in present]
+        missing = [target.write(destination, id, fields) for id, fields in rows.items() if id not in matched[name]]
+        if not missing:
+            continue
+        print(f"COPY_COLLECTION {destination} remaining={len(missing)}", flush=True)
         batch = []
         size = 0
         for write in missing:
@@ -262,6 +300,7 @@ def migrate(source, target, stage=False, previous=None):
         require((name == "priceRevisions" or len(verified) == len(rows)) and
                 all(verified.get(id) == fields for id, fields in rows.items()),
                 f"Destination verification failed: {name}")
+        print(f"COLLECTION_VERIFIED {destination} count={len(rows)}", flush=True)
 
     require(source.get("priceRevisions", "active") == active, "Source active revision changed during copy")
     if not target_active or target_active["fields"] != active_fields:

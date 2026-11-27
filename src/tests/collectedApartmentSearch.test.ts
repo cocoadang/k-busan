@@ -56,3 +56,24 @@ test('keeps registered complexes with unavailable trades and uses the latest act
   assert.deepEqual(one.unavailable, ['complex_two']);
   assert.deepEqual(one.results, [{ complexId: 'complex_one', area: 59.96, areaCategory: '59', date: '2026-11-01', price: 120000, floor: 11 }]);
 });
+
+test('continues serving verified official sales when the K-Housing map directory returns 503', async () => {
+  const quote = ['2026-11-27', 84.96, 250000, 11];
+  const fetcher: typeof fetch = async input => {
+    const url = new URL(String(input));
+    if (url.pathname === '/api/map-summaries') return Response.json({ success: false }, { status: 503 });
+    assert.equal(url.pathname, '/api/apt/catalog/v1');
+    return Response.json({ revision: 'kapt-20261127-fc274fd1312b', asOf: '2026-11-27',
+      complexes: [['A10024059', '과천', '41290', '과천시', '별양동', '과천자이아파트', 2099, '52-0', '']],
+      officialSales: { through: '2026-11-28', prices: { A10024059: [quote] } } });
+  };
+  let payload: any;
+  await createCollectedApartmentSearch(fetcher, () => Date.parse('2026-11-28T08:00:00+09:00'))({} as never, {
+    setHeader() {},
+    status(code: number) { assert.fail('Unexpected status ' + code); },
+    json(value: unknown) { payload = value; },
+  } as never, () => assert.fail('Unexpected next()'));
+  assert.equal(payload.nativeDirectoryUnavailable, true);
+  assert.deepEqual(payload.results, []);
+  assert.deepEqual(payload.officialSales.prices.A10024059, [quote]);
+});

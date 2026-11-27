@@ -142,11 +142,20 @@ def verify(origin, expected_entry=None):
             entry = frontend_entry(origin)
         require(entry == expected_entry, "Production did not serve the verified Apt bundle")
     bundle = read(origin, entry).decode()
-    require(all(label in bundle for label in ("\uc544\ud30c\ud2b8 \ucc3e\uae30", "\uc785\uc9c0 \ub4f1\uae09\ud45c")), "Apt search UI is missing")
+    require(all(label in bundle for label in ("\uc544\ud30c\ud2b8 \ucc3e\uae30", "\ub2e8\uc9c0\uba85 \ub610\ub294 \uc9c0\uc5ed")), "Apt search UI is missing")
+    require("\uc785\uc9c0 \ub4f1\uae09\ud45c" not in bundle, "Removed location grade table still appears in the Apt bundle")
     budget = json.loads(read(origin, "/api/housing/apartment-budget"))
     require(isinstance(budget.get("results"), list) and budget.get("incomplete") is False
             and isinstance(budget.get("revision"), str) and budget["revision"],
             "Apt search did not return a complete saved-data response with a revision")
+    collected = json.loads(read(origin, "/api/housing/collected-apartments"))
+    complexes = collected.get("complexes", [])
+    ids = {row["id"] for row in complexes}
+    require(len(ids) == len(complexes) and len(ids) >= 31 and {"gwacheon_xi", "banpo_xi", "busan_centum_park_2"} <= ids,
+            "Apt is missing registered K-Housing complexes")
+    require(any(row.get("complexId") in ids and row.get("price", 0) > 0 for row in collected.get("results", [])),
+            "Apt has no collected K-Housing transactions")
+    print(f"{origin}: {len(ids)} registered K-Housing complexes, {len(collected.get('results', []))} price rows", flush=True)
     require(json.loads(read(origin, "/api/housing/floor-plans/raemian-sur")), "Saved floor plans are empty")
     history = json.loads(read(origin, "/api/housing/apartment-trade-history?"
                               "complex=gwacheon_raemian_sur&family=raemian_sur_59&start=202609&end=202611&page=1"))

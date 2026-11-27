@@ -5,7 +5,9 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 import time
+from pathlib import Path
 from urllib.request import urlopen
 
 APT = "busan-redevelopment"
@@ -38,10 +40,51 @@ def active_revision():
         return json.load(response)["revision"]
 
 
+def molit_secret(entries, annotation_layers):
+    names = {}
+    for annotations in annotation_layers:
+        for binding in annotations.get("run.googleapis.com/secrets", "").split(","):
+            if not binding:
+                continue
+            alias, sep, reference = binding.partition(":")
+            check(sep and alias and reference, "Malformed Cloud Run secret alias")
+            check(alias not in names or names[alias] == reference, "Conflicting Cloud Run secret aliases")
+            names[alias] = reference
+
+    entry = entries.get("MOLIT_API_KEY", {})
+    ref = entry.get("valueFrom", {}).get("secretKeyRef") or entry.get("valueSource", {}).get("secretKeyRef")
+    if ref:
+        name = ref.get("name") or ref.get("secret")
+        version = str(ref.get("key") or ref.get("version") or "")
+        check(isinstance(name, str) and name, "MOLIT Secret Manager reference has no name")
+        resource = names.get(name, name)
+        full = re.fullmatch(r"projects/(9298525505|gen-lang-client-0064554427)/secrets/([A-Za-z0-9_-]+)", resource)
+        if full:
+            secret = full[2]
+        else:
+            check(re.fullmatch(r"[A-Za-z0-9_-]+", resource), "MOLIT secret points outside the K-Housing project")
+            secret = resource
+        check(re.fullmatch(r"latest|[1-9][0-9]*|[A-Za-z][A-Za-z0-9_-]{0,62}", version),
+              "Invalid MOLIT Secret Manager version")
+    else:
+        # Prior rollout verified this stored key. Never extract a literal key or a mounted config.
+        secret, version = "khousing-molit", "latest"
+        print("Using the existing K-Housing MOLIT Secret Manager entry for the rehearsal.", flush=True)
+
+    metadata = cloud_json("secrets", "versions", "describe", version, "--secret", secret, "--project", KH)
+    check(metadata.get("state") == "ENABLED", "MOLIT Secret Manager version is unavailable")
+    name = metadata.get("name", "")
+    match = re.fullmatch(rf"projects/(?:9298525505|{re.escape(KH)})/secrets/{re.escape(secret)}/versions/([1-9][0-9]*)", name)
+    check(match, "Unexpected MOLIT Secret Manager version metadata")
+    return secret, match[1]
+
+
 def collector_settings():
     source = cloud_json("run", "jobs", "describe", "khousing-collector", "--project", KH, "--region", REGION)
-    template = source["spec"]["template"]["spec"]["template"]
-    annotations = template.get("metadata", {}).get("annotations", {})
+    job_template = source["spec"]["template"]
+    template = job_template["spec"]["template"]
+    layers = [item.get("metadata", {}).get("annotations", {}) for item in (source, job_template, template)]
+    annotations = {key: value for layer in layers for key, value in layer.items()}
     check(not any("vpc-access" in key or "network-interfaces" in key for key in annotations),
           "K-Housing collector uses custom egress. Reproduce the approved egress before running the Apt collector.")
     entries = {entry["name"]: entry for entry in template["spec"]["containers"][0].get("env", [])}
@@ -55,10 +98,7 @@ def collector_settings():
             check(isinstance(value, str) and re.fullmatch(r"[a-zA-Z0-9,/-]+", value),
                   f"Review the old collector setting {name}")
             values[name] = value
-    secret = entries.get("MOLIT_API_KEY", {}).get("valueFrom", {}).get("secretKeyRef", {})
-    check(secret.get("name") == "khousing-molit" and re.fullmatch(r"latest|[1-9][0-9]*", str(secret.get("key"))),
-          "Unexpected national trade API secret configuration")
-    return values, str(secret["key"])
+    return values, molit_secret(entries, layers)
 
 
 def apt_database():
@@ -79,7 +119,7 @@ def execute_rehearsal():
     check(gc("projects", "describe", KH, "--format=value(projectNumber)") == "9298525505",
           "Unexpected K-Housing project number")
     check(active_revision() == EXPECTED, "Apt candidate revision changed")
-    values, secret_version = collector_settings()
+    values, (secret_name, secret_version) = collector_settings()
     database = apt_database()
     email = f"{IDENTITY}@{APT}.iam.gserviceaccount.com"
     account_ids = cloud_json("iam", "service-accounts", "list", "--project", APT, f"--filter=email={email}")
@@ -89,17 +129,37 @@ def execute_rehearsal():
     gc("projects", "add-iam-policy-binding", APT, "--member=serviceAccount:" + email,
        "--role=roles/datastore.viewer",
        f'--condition=title=apt-collector-read,expression=resource.name == "projects/{APT}/databases/{database}"')
-    gc("secrets", "add-iam-policy-binding", "khousing-molit", "--project", KH,
+    gc("secrets", "add-iam-policy-binding", secret_name, "--project", KH,
        "--role=roles/secretmanager.secretAccessor", "--member=serviceAccount:" + email, "--condition=None")
     values.update(GOOGLE_CLOUD_PROJECT=APT, FIRESTORE_DATABASE_ID=database,
                   SOURCE_ARCHIVE_BUCKET="busan-redevelopment-khousing-source",
                   COLLECTOR_VALIDATE_ONLY="true")
     print("Starting the Apt collector in read-only verification mode.", flush=True)
-    gc("run", "jobs", "deploy", JOB, "--project", APT, "--region", REGION,
-       "--image", IMAGE, "--service-account", email, "--command=node", "--args=/app/market/dist/collector.cjs",
-       "--tasks=1", "--max-retries=0", "--task-timeout=900s", "--cpu=1", "--memory=1Gi",
-       "--set-env-vars", "^~^" + "~".join(f"{key}={value}" for key, value in values.items()),
-       f"--set-secrets=MOLIT_API_KEY=projects/9298525505/secrets/khousing-molit:{secret_version}")
+    configuration = {
+        "apiVersion": "run.googleapis.com/v1",
+        "kind": "Job",
+        "metadata": {"name": JOB},
+        "spec": {"template": {
+            "metadata": {"annotations": {
+                "run.googleapis.com/secrets": f"apt-molit-key:projects/9298525505/secrets/{secret_name}",
+            }},
+            "spec": {"taskCount": 1, "parallelism": 1, "template": {"spec": {
+                "serviceAccountName": email, "maxRetries": 0, "timeoutSeconds": "900",
+                "containers": [{
+                    "image": IMAGE, "command": ["node"], "args": ["/app/market/dist/collector.cjs"],
+                    "resources": {"limits": {"cpu": "1", "memory": "1Gi"}},
+                    "env": [{"name": key, "value": value} for key, value in values.items()] + [{
+                        "name": "MOLIT_API_KEY",
+                        "valueFrom": {"secretKeyRef": {"name": "apt-molit-key", "key": secret_version}},
+                    }],
+                }],
+            }}},
+        }},
+    }
+    with tempfile.TemporaryDirectory(prefix="apt-collector-") as directory:
+        config = Path(directory) / "job.json"
+        config.write_text(json.dumps(configuration))
+        gc("run", "jobs", "replace", str(config), "--project", APT, "--region", REGION)
     execution = cloud_json("run", "jobs", "execute", JOB, "--wait", "--project", APT, "--region", REGION)
     name = execution["metadata"]["name"]
     check(re.fullmatch(r"apt-collector-rehearsal-[a-z0-9]+", name), "Unexpected Cloud Run execution name")

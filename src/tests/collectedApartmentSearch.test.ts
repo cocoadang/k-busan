@@ -8,6 +8,10 @@ test('keeps registered complexes with unavailable trades and uses the latest act
   const request: typeof fetch = async input => {
     const url = new URL(String(input));
     fetched.push(url);
+    if (url.pathname === '/api/apt/catalog/v1') {
+      return Response.json({ revision: 'kapt-20261127-fc274fd1312b', asOf: '2026-11-27',
+        complexes: [['A10024059', '과천', '41290', '과천시', '별양동', '과천자이아파트', 2099, '52-0', '']] });
+    }
     if (url.pathname === '/api/map-summaries') {
       return Response.json({
         success: true, startYmd: '202612', endYmd: '202612', totalComplexes: 2,
@@ -43,7 +47,8 @@ test('keeps registered complexes with unavailable trades and uses the latest act
     return payload;
   }
   const [one, two] = await Promise.all([search(), search()]);
-  assert.equal(fetched.length, 3);
+  assert.equal(fetched.length, 4);
+  assert.equal(one.catalog.complexes[0][0], 'A10024059');
   assert.deepEqual(one, two);
   assert.deepEqual(one.complexes.map(({ id }: { id: string }) => id), ['complex_one', 'complex_two']);
   assert.deepEqual(one.unavailable, ['complex_two']);

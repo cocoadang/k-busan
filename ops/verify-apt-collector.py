@@ -358,15 +358,28 @@ def diagnose_molit_egress():
 
 
 
-def resume_when_molit_ready():
+def resume_when_molit_ready(attempts=1, interval=900):
     report_production_collector()
     # Match the deployed collector's page size and require a successful service response.
     probe = NETWORK_PROBE.replace("numOfRows:'1'", "numOfRows:'1000'")
-    result = run_probe(probe, "molitProbe", ("outcome", "status", "serviceCode", "codes"), project=KH)
-    if result.get("status") != 200 or not re.fullmatch(r"0+", result.get("serviceCode", "")):
-        print(json.dumps({"state": "WAITING_FOR_MOLIT", "collectorStarted": False}), flush=True)
-        return
-    resume_khousing_rehearsal()
+    for attempt in range(1, attempts + 1):
+        result = run_probe(probe, "molitProbe", ("outcome", "status", "serviceCode", "codes"), project=KH)
+        status = result.get("status")
+        service_code = result.get("serviceCode", "")
+        if status == 200 and re.fullmatch(r"0+", service_code):
+            resume_khousing_rehearsal()
+            return
+
+        transient = (service_code in ("01", "02", "04", "05") or
+                     result.get("outcome") in ("TRANSPORT_ERROR", "TIMEOUT") or
+                     status in (408, 500, 502, 503, 504))
+        if not transient or attempt == attempts:
+            print(json.dumps({"state": "WAITING_FOR_MOLIT" if transient else "MOLIT_REQUIRES_REVIEW",
+                              "collectorStarted": False, "attempts": attempt}), flush=True)
+            return
+        print(json.dumps({"state": "WAITING_FOR_MOLIT", "collectorStarted": False,
+                          "attempt": attempt, "nextCheckSeconds": interval}), flush=True)
+        time.sleep(interval)
 
 
 def execute_rehearsal(reuse_source_egress=False):
@@ -473,6 +486,7 @@ if __name__ == "__main__":
     modes.add_argument("--resume-khousing-rehearsal", action="store_true", help="Validate and run the existing read-only rehearsal")
     modes.add_argument("--diagnose-molit-egress", action="store_true", help="Compare TCP/TLS paths and read existing collector execution statuses")
     modes.add_argument("--resume-when-molit-ready", action="store_true", help="Audit old executions and resume only if the MOLIT preflight succeeds")
+    modes.add_argument("--watch-molit", action="store_true", help="Try up to 9 recovery probes, 15 minutes apart, then run the read-only rehearsal")
     arguments = parser.parse_args()
     try:
         if arguments.inspect_execution:
@@ -486,6 +500,8 @@ if __name__ == "__main__":
             diagnose_molit_egress()
         elif arguments.resume_when_molit_ready:
             resume_when_molit_ready()
+        elif arguments.watch_molit:
+            resume_when_molit_ready(attempts=9)
         elif arguments.resume_khousing_rehearsal:
             resume_khousing_rehearsal()
         else:

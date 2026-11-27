@@ -3,7 +3,6 @@ type Profile = {
   homes?: number;
   year?: number;
   station?: [string, number?];
-  stationEstimate?: { meters: number; description: string; source: string };
   stationRoute?: { meters: number; description: string; source: string };
   school?: [string, number];
   schoolName?: string;
@@ -22,13 +21,13 @@ const profiles: ReadonlyMap<string, Profile> = new Map([
   ['래미안슈르', { brand: '래미안', homes: 2899, year: 2008, station: ['정부과천청사역', 8], school: ['문원초', 5], schoolRoute: { adjacent: true, crossingLanes: [], description: '문원초 인접 통학로 · 공개 단지 자료 기준' }, terrain: '평탄', sources: ['https://www.geummaecatch.com/complex/22781/review', 'https://cdn.zippoom.com/부동산/경기-과천시-원문동-래미안슈르/wg7y0h', 'https://realty.daangn.com/complexes/14787855/topics/school-district', 'https://bigvalue.ai/dashboard/apartment/경기도/과천시/원문동/c01906547'] }],
   ['광장현대3단지', { brand: '현대', homes: 1056, year: 1990, station: ['강변역', 10], school: ['서울광남초', 3], terrain: '평탄', sources: ['https://juso.zzxxccvv.com/a/서울/광진구/광나루로/635', 'https://kbland.kr/se/c/735', 'https://realty.daangn.com/complexes/11100626', 'https://openapt.seoul.go.kr/openApt/index.do?aptCode=A14381415'] }],
   ['고덕 아이파크', { brand: '아이파크', station: ['고덕역', 7], school: ['서울묘곡초', 3], homes: 1142, year: 2011, terrain: '완만', schoolRoute: { adjacent: true, crossingLanes: [], description: '서울묘곡초 인접 통학로 · 공개 기사 기준' }, stationRoute: { meters: 739, description: '단지 기준점 → 고덕역 · 서울시 보행 네트워크', source: 'https://imjangmap.co.kr/apt/A13408003' }, schoolDistance: { meters: 340, source: 'https://imjangmap.co.kr/apt/A13408003' }, sources: ['https://realty.chosun.com/m/article.amp.html?contid=2017112701870', 'https://imjangmap.co.kr/apt/A13408003', 'https://realty.daangn.com/complexes/10654556'] }],
-  ['청량리한신', { brand: '한신', homes: 960, year: 1997, station: ['청량리역', 14], terrain: '가파른 언덕', stationRoute: { meters: 1246, description: '단지 기준점 → 청량리역(1호선) · 서울시 보행 네트워크', source: 'https://imjangmap.co.kr/apt/A13086704' }, schoolDistance: { meters: 705, source: 'https://imjangmap.co.kr/apt/A13086704' }, schoolName: '서울홍릉초', schoolSource: 'https://council.ddm.go.kr/viewer/minutes.do?uid=8317', schoolNote: '구의회 회의록에서 청량교·홍릉근린공원을 통한 통학 동선 확인', sources: ['https://council.ddm.go.kr/viewer/minutes.do?uid=8317', 'https://imjangmap.co.kr/gu/동대문구', 'https://www.k-apt.go.kr/cmmn/introMmentPop.do?bjdCode=11&searchOccuDate=201606'] }],
+  ['청량리한신', { brand: '한신', homes: 960, year: 1997, station: ['청량리역', 14], terrain: '가파른 언덕', stationRoute: { meters: 1246, description: '단지 기준점 → 청량리역(1호선) · 서울시 보행 네트워크', source: 'https://imjangmap.co.kr/apt/A13086704' }, schoolDistance: { meters: 705, source: 'https://imjangmap.co.kr/apt/A13086704' }, schoolName: '서울홍릉초', schoolSource: 'https://council.ddm.go.kr/viewer/minutes.do?uid=8317', schoolNote: '청량교·홍릉근린공원 통학 동선은 구의회 회의록 기준. 카카오맵 기본 최단 도보 경로는 약 1km로 표시', sources: ['https://council.ddm.go.kr/viewer/minutes.do?uid=8317', 'https://imjangmap.co.kr/gu/동대문구', 'https://www.k-apt.go.kr/cmmn/introMmentPop.do?bjdCode=11&searchOccuDate=201606'] }],
   ['평촌 공작부영', { brand: '부영', year: 1993, homes: 1710, station: ['평촌역', 9], school: ['부림초', 4], terrain: '평탄', sources: ['https://realty.daangn.com/complexes/15076981/reviews/600969', 'https://realty.daangn.com/complexes/15076981', 'https://chungyakalji.com/complex/A43181406'] }],
   ['철산주공 12단지', { brand: '주공', homes: 1800, year: 1986, station: ['철산역', 3], school: ['광명광성초', 2], terrain: '평탄', sources: ['https://cdn.zippoom.com/부동산/경기-광명시-철산동-주공12단지/ov085k', 'https://realty.daangn.com/complexes/15028901/topics/transportation', 'https://realty.chosun.com/site/data/html_dir/2026/09/06/2026090600874.html'] }],
   ['철산주공 13단지', { brand: '주공', year: 1986, station: ['철산역', 2], stationRoute: { meters: 115, description: '단지 남쪽 끝 → 철산역 4번 출구 · 단지 북쪽 끝은 936m', source: 'https://naezipnow.com/notes/d6213257-f0c5-4e4b-b932-fc12a6995844' }, school: ['광명광성초', 1], homes: 2460, terrain: '평탄', sources: ['https://zippoom.com/부동산/경기-광명시-철산동-주공13단지/h3hgck/b', 'https://www.gm.go.kr/pt/partInfo/ud/newtown/gm_rebuild.jsp', 'https://realty.daangn.com/complexes/15028452'] }],
   ['대치 은마', { year: 1979, station: ['대치역', 1], homes: 4424, school: ['서울대곡초', 5], brand: '한보주택', terrain: '평탄', stationRoute: { meters: 140, description: '은마복지상가 → 대치역 3·4번 출구 · 강남구립 대치도서관 안내', source: 'https://library.gangnam.go.kr/dchlib/menu/10305/contents/40055/contents.do' }, sources: ['https://heyzip.kr/building/1168010600103160000', 'https://www.modueapt.com/subpage/info.php?idx=4349', 'https://openapt.seoul.go.kr/openApt/index.do?aptCode=A13583507', 'https://realty.daangn.com/complexes/10689421/topics/transportation', 'https://realty.daangn.com/complexes/10689421/topics/school-district'] }],
   ['길음 롯데캐슬클라시아', { brand: '롯데캐슬', homes: 2033, year: 2022, station: ['길음역', 10], school: ['서울미아초', 9], terrain: '평탄', stationRoute: { meters: 697, description: '109동 → 길음역 · 서울시 보행 네트워크', source: 'https://imjangmap.co.kr/apt/A10023926' }, schoolDistance: { meters: 591, source: 'https://imjangmap.co.kr/apt/A10023926' }, sources: ['https://zippoom.com/부동산/서울-성북구-길음동-롯데캐슬클라시아/uvbtlb', 'https://zipsaja.com/complexes/15567-길음동-롯데캐슬클라시아', 'https://www.mk.co.kr/news/realestate/12157064'] }],
-  ['인덕원센트럴푸르지오', { brand: '푸르지오', homes: 408, year: 2001, station: ['인덕원역', 11], stationEstimate: { meters: 1100, description: '인덕원역 · 공개 단지 자료 표시 거리, 보행 경로 미검증', source: 'https://imjangon.co.kr/apt/40945' }, school: ['벌말초', 1], schoolRoute: { adjacent: true, crossingLanes: [], description: '의왕 포일동 단지 후문에서 벌말초까지 인접 통학로' }, terrain: '평탄', sources: ['https://www.goebc.kr/upload/sd-m/na/bbs_4520/2025/09/65946B99-4D64-C630-E957-6863E55B0F92.pdf', 'https://m.richgo.ai/realty/danji/a0cunQK?priceType=meme&pyeongType=25', 'https://realty.daangn.com/complexes/14640680/topics/school-district', 'https://zippoom.com/부동산/경기-의왕시-포일동-인덕원센트럴푸르지오/0z1qt9', 'https://www.aptfit.co.kr/complex/A43783103'] }],
+  ['인덕원센트럴푸르지오', { brand: '푸르지오', homes: 408, year: 2001, station: ['인덕원역', 11], stationRoute: { meters: 1200, description: '의왕시 새롬길 21 단지 기준점 → 인덕원역 3번 출구 · 카카오맵 최단 도보 약 1.2km', source: 'https://map.kakao.com/link/search/%EC%9D%98%EC%99%95%EC%8B%9C%20%EC%83%88%EB%A1%AC%EA%B8%B8%2021' }, school: ['벌말초', 1], schoolRoute: { adjacent: true, crossingLanes: [], description: '의왕 포일동 단지 후문에서 벌말초까지 인접 통학로' }, terrain: '평탄', sources: ['https://www.goebc.kr/upload/sd-m/na/bbs_4520/2025/09/65946B99-4D64-C630-E957-6863E55B0F92.pdf', 'https://m.richgo.ai/realty/danji/a0cunQK?priceType=meme&pyeongType=25', 'https://realty.daangn.com/complexes/14640680/topics/school-district', 'https://zippoom.com/부동산/경기-의왕시-포일동-인덕원센트럴푸르지오/0z1qt9', 'https://www.aptfit.co.kr/complex/A43783103'] }],
   ['관악푸르지오', { brand: '푸르지오', homes: 2104, year: 2004, station: ['숭실대입구역', 19], terrain: '가파른 언덕', stationRoute: { meters: 1408, description: '단지 기준점 → 숭실대입구역 · 서울시 보행 네트워크', source: 'https://imjangmap.co.kr/apt/A15105302' }, schoolDistance: { meters: 919, source: 'https://imjangmap.co.kr/apt/A15105302' }, schoolName: '서울봉천초', sources: ['https://imjangmap.co.kr/apt/A15105302', 'https://zipsaja.com/complexes/7206-봉천동-관악푸르지오?area=85', 'https://statnorth.kr/apt/서울/관악구/봉천동-관악푸르지오-f27bf1e7fd70'] }],
   ['관악현대', { brand: '현대', homes: 1729, year: 1992, station: ['숭실대입구역', 12], terrain: '가파른 언덕', stationRoute: { meters: 994, description: '단지 기준점 → 숭실대입구역 · 서울시 보행 네트워크', source: 'https://imjangmap.co.kr/apt/A15105303' }, schoolDistance: { meters: 368, source: 'https://imjangmap.co.kr/apt/A15105303' }, schoolName: '서울봉현초', sources: ['https://imjangmap.co.kr/apt/A15105303', 'https://부동산계산기.com/실거래/서울특별시_관악구_봉천동/현대(관악)', 'https://statnorth.kr/apt/서울/관악구/봉천동-현대(관악)-9f8d847d6259'] }],
   ['이문아이파크자이', {
@@ -121,7 +120,7 @@ export function getApartmentLocationGrades(name: string) {
   const year = new Date(Date.now() + 9 * 3600_000).getUTCFullYear();
   const p = profiles.get(name);
   const contractor = contractors.get(name);
-  const station = p?.stationRoute ?? p?.stationEstimate;
+  const station = p?.stationRoute;
   const school = p?.schoolRoute;
   const schoolName = p?.schoolName ?? p?.school?.[0];
   const schoolDistance = p?.schoolDistance;
@@ -138,11 +137,10 @@ export function getApartmentLocationGrades(name: string) {
   return [
     { label: contractor ? `${contractor[0]} · ${contractor[1]}위` : p?.brand, grade: contractor ? gradeBelow(contractor[1], [3, 10, 20, 50]) : null, source: contractor ? rankingSource : undefined },
     {
-      label: station ? `${p?.stationEstimate && !p.stationRoute ? '약 ' : ''}${meters(station.meters)} · ${station.description}` : walk(p?.station),
+      label: station ? `${meters(station.meters)} · ${station.description}` : walk(p?.station),
       pending: '보행 경로 거리 확인 필요',
-      grade: p?.stationRoute ? gradeBelow(p.stationRoute.meters, stationThresholds) : null,
-      estimate: p?.stationEstimate ? gradeBelow(p.stationEstimate.meters, stationThresholds) : undefined,
-      summary: station ? (p?.stationRoute ? undefined : `${p?.station?.[0]} 약 ${meters(station.meters)}`) : walk(p?.station),
+      grade: station ? gradeBelow(station.meters, stationThresholds) : null,
+      summary: station ? undefined : walk(p?.station),
       source: station?.source,
     },
     { label: p?.homes ? `${p.homes.toLocaleString('ko-KR')}세대` : null, grade: p?.homes ? 1 + [500, 1000, 1500, 2000].filter(limit => p.homes! >= limit).length : null },

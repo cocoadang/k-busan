@@ -113,6 +113,61 @@ def apt_database():
     return database
 
 
+def execution_logs(name):
+    check(re.fullmatch(r"apt-collector-rehearsal-[a-z0-9]+", name), "Unexpected Cloud Run execution name")
+    predicate = (f'resource.type="cloud_run_job" AND resource.labels.job_name="{JOB}" '
+                 f'AND labels."run.googleapis.com/execution_name"="{name}"')
+    return cloud_json("logging", "read", predicate, "--project", APT, "--limit", "100")
+
+
+def explain_failure(name):
+    for attempt in range(6):
+        diagnostics = []
+        for entry in execution_logs(name):
+            text = entry.get("textPayload")
+            if not isinstance(text, str):
+                text = entry.get("jsonPayload", {}).get("message", "")
+            if not isinstance(text, str):
+                continue
+            for pattern in (
+                r"(?:MOLIT_FETCH_FAILED|MOLIT_HTTP_[0-9]{3}|MOLIT_REQUEST_FAILED)(?:: [0-9/]+)?",
+                r"MOLIT_NETWORK_UNAVAILABLE_AFTER_RETRIES|MOLIT_KEY_REQUIRED|RETRYABLE_UPSTREAM_STATUS",
+                r"TRUSTED_ACTIVE_BASELINE_REQUIRED|BASELINE_MANIFEST_MISMATCH|BASELINE_TRANSACTION_SET_MISMATCH|ACTIVE_REVISION_CHANGED",
+                r"INVALID_MONTH_LIST|UNREGISTERED_DISTRICT|INVALID_EXTRA_SOURCE_BUCKET|TOO_MANY_EXTRA_SOURCE_BUCKETS|INVALID_TOTAL_COUNT",
+                r"INCOMPLETE_SOURCE_PAGINATION|APT_SOURCE_IDENTITY_MISMATCH|INVALID_MATCHED_SOURCE_ROW|AMBIGUOUS_SOURCE_GROUP|APT_CANCELLATION_DATE_MISSING",
+                r"PERMISSION_DENIED|UNAUTHENTICATED|DEADLINE_EXCEEDED|RESOURCE_EXHAUSTED|INVALID_ARGUMENT|FAILED_PRECONDITION|UNAVAILABLE",
+                r"MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|EACCES|EROFS|ETIMEDOUT|ECONNRESET|URI malformed",
+            ):
+                for match in re.finditer(r"(?<![A-Z0-9_])(?:" + pattern + r")(?![A-Z0-9_])", text):
+                    if match.group() not in diagnostics:
+                        diagnostics.append(match.group())
+        if diagnostics:
+            print(json.dumps({"execution": name, "diagnostics": diagnostics}))
+            return
+        if attempt < 5:
+            time.sleep(3)
+    raise RuntimeError(f"No recognized diagnostic for {name}. Inspect the execution's container stderr in Cloud Logging.")
+
+
+def run_collector():
+    command = ["gcloud", "run", "jobs", "execute", JOB, "--wait", "--project", APT,
+               "--region", REGION, "--format=json", "--quiet"]
+    outcome = subprocess.run(command, capture_output=True, text=True)
+    if outcome.returncode:
+        match = re.search(r"apt-collector-rehearsal-([a-z0-9]+)-task[0-9]+",
+                          outcome.stderr + outcome.stdout)
+        if not match:
+            match = re.search(r"executions describe (apt-collector-rehearsal-[a-z0-9]+)",
+                              outcome.stderr + outcome.stdout)
+            name = match[1] if match else None
+        else:
+            name = JOB + "-" + match[1]
+        if name:
+            explain_failure(name)
+        raise RuntimeError(f"Apt collector execution failed{f' ({name})' if name else ''}")
+    return json.loads(outcome.stdout)["metadata"]["name"]
+
+
 def execute_rehearsal():
     check(gc("projects", "describe", APT, "--format=value(projectNumber)") == "432348267432",
           "Unexpected Apt project number")
@@ -160,13 +215,9 @@ def execute_rehearsal():
         config = Path(directory) / "job.json"
         config.write_text(json.dumps(configuration))
         gc("run", "jobs", "replace", str(config), "--project", APT, "--region", REGION)
-    execution = cloud_json("run", "jobs", "execute", JOB, "--wait", "--project", APT, "--region", REGION)
-    name = execution["metadata"]["name"]
-    check(re.fullmatch(r"apt-collector-rehearsal-[a-z0-9]+", name), "Unexpected Cloud Run execution name")
-    predicate = (f'resource.type="cloud_run_job" AND resource.labels.job_name="{JOB}" '
-                 f'AND labels."run.googleapis.com/execution_name"="{name}"')
+    name = run_collector()
     for _ in range(12):
-        reports = cloud_json("logging", "read", predicate, "--project", APT, "--limit", "100")
+        reports = execution_logs(name)
         for report in reports:
             record = report.get("jsonPayload")
             if not record and report.get("textPayload", "").startswith("{"):
@@ -188,9 +239,13 @@ def execute_rehearsal():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.parse_args()
+    parser.add_argument("--inspect-execution", help="Read redacted diagnostics from an existing execution")
+    arguments = parser.parse_args()
     try:
-        execute_rehearsal()
+        if arguments.inspect_execution:
+            explain_failure(arguments.inspect_execution)
+        else:
+            execute_rehearsal()
     except (RuntimeError, subprocess.CalledProcessError, KeyError, OSError) as error:
         print(f"Apt collector verification stopped: {error}", file=sys.stderr)
         sys.exit(1)

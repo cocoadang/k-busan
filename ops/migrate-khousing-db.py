@@ -16,10 +16,11 @@ APT_BUCKET = "busan-redevelopment-khousing-source"
 REVISION = r"r[0-9]{14}(?:_[a-f0-9]{8})?"
 COLLECTION_PATTERN = re.compile(
     rf"(?:transactions|monthlyComplexPrices_v2|monthlyStandardAreaPrices_v2)(?:_{REVISION})?"
-    r"|monthlyComplexPrices|priceRevisions|backfillJobs"
+    r"|monthlyComplexPrices|priceRevisions|backfillJobs|complexes|settings|aptCutoverStages"
 )
 ARCHIVE_PATTERN = re.compile(rf"gs://{SOURCE_BUCKET}/khousing-source/{REVISION}/source\.json\.gz")
 KINDS = ("transactions", "monthlyComplexPrices_v2", "monthlyStandardAreaPrices_v2")
+DESTINATIONS = {"settings": "khousingSettings", "aptCutoverStages": "khousingCutoverStages"}
 
 
 def require(value, message):
@@ -110,18 +111,25 @@ def inspect_manifest(review, name):
     return expected
 
 
-def copy_fields(value, archives):
+def copy_fields(value, archives, source_name, target_name, historical_metadata=False):
     if isinstance(value, list):
-        return [copy_fields(item, archives) for item in value]
+        return [copy_fields(item, archives, source_name, target_name, historical_metadata) for item in value]
     if isinstance(value, dict):
-        require("referenceValue" not in value, "Firestore references require explicit mapping")
+        reference = value.get("referenceValue")
+        if reference is not None:
+            require(isinstance(reference, str) and reference.startswith(source_name + "/"),
+                    "Firestore reference targets an unrecognized database")
+            collection, _, rest = reference.removeprefix(source_name + "/").partition("/")
+            require(COLLECTION_PATTERN.fullmatch(collection) and rest, "Invalid source document reference")
+            return {"referenceValue": f"{target_name}/{DESTINATIONS.get(collection, collection)}/{rest}"}
         if isinstance(uri := value.get("stringValue"), str) and uri.startswith("gs://"):
-            require(ARCHIVE_PATTERN.fullmatch(uri), f"Archive URI requires explicit mapping: {uri}")
-            archives.add(uri)
-            return {"stringValue": uri.replace(SOURCE_BUCKET, APT_BUCKET, 1)}
-        return {key: copy_fields(item, archives) for key, item in value.items()}
+            if ARCHIVE_PATTERN.fullmatch(uri):
+                archives.add(uri)
+                return {"stringValue": uri.replace(SOURCE_BUCKET, APT_BUCKET, 1)}
+            require(historical_metadata, "A source archive URI requires explicit mapping")
+        return {key: copy_fields(item, archives, source_name, target_name, historical_metadata)
+                for key, item in value.items()}
     return value
-
 
 def object_digest(uri):
     result = json.loads(gcloud("storage", "objects", "describe", uri, "--format=json"))
@@ -132,12 +140,19 @@ def object_digest(uri):
 
 def copy_archives(archives):
     destination = "gs://" + APT_BUCKET
+    token = gcloud("auth", "print-access-token").strip()
+    request = Request(f"https://storage.googleapis.com/storage/v1/b/{APT_BUCKET}?fields=projectNumber",
+                      headers={"Authorization": "Bearer " + token})
+
     def owner():
-        return gcloud("storage", "buckets", "describe", destination, "--format=value(project_number)").strip()
+        with urlopen(request, timeout=30) as response:
+            return str(json.load(response).get("projectNumber", ""))
+
     try:
         project_number = owner()
-    except subprocess.CalledProcessError:
-        # The unique bucket is created privately under the verified Apt project on first use.
+    except HTTPError as error:
+        if error.code != 404:
+            raise
         gcloud("storage", "buckets", "create", destination, "--project", APT_PROJECT,
                "--location", "asia-northeast3", "--uniform-bucket-level-access", "--public-access-prevention")
         project_number = owner()
@@ -159,8 +174,8 @@ def migrate(source, target, stage=False, previous=None):
             "The existing Apt price pointer differs. A verified baseline is required.")
     require(not target_active or revision_of(target_active), "Apt price pointer has no revision")
     names = source.inventory()
-    require(names and all(COLLECTION_PATTERN.fullmatch(name) for name in names),
-            f"Review unrecognized source collections before copying: {names}")
+    unknown = sorted(name for name in names if not COLLECTION_PATTERN.fullmatch(name))
+    require(names and not unknown, f"Review unrecognized source collections before copying: {unknown}")
 
     archives = set()
     expected = {}
@@ -176,9 +191,10 @@ def migrate(source, target, stage=False, previous=None):
                         require(doc["fields"] == active["fields"], "Source active revision changed during scan")
                         continue
                 require(id not in rows, f"Duplicate document in {name}")
-                rows[id] = copy_fields(doc.get("fields", {}), archives)
+                rows[id] = copy_fields(doc.get("fields", {}), archives, source.name, target.name,
+                                       historical_metadata=name in DESTINATIONS)
         data[name] = rows
-    active_fields = copy_fields(active["fields"], archives)
+    active_fields = copy_fields(active["fields"], archives, source.name, target.name)
     require(data.get("priceRevisions", {}).get(revision) == active_fields,
             "Source active and immutable manifests differ")
     for name, count in expected.items():
@@ -186,8 +202,9 @@ def migrate(source, target, stage=False, previous=None):
 
     counts = {}
     for name, rows in data.items():
+        destination = DESTINATIONS.get(name, name)
         present = {document_id(doc): doc.get("fields", {})
-                   for page in target.documents(name) for doc in page
+                   for page in target.documents(destination) for doc in page
                    if not (name == "priceRevisions" and document_id(doc) == "active")}
         # Historical revisions already produced by Apt may exist after a rehearsal.
         # Only an immutable source collection with overlapping IDs must match exactly.
@@ -196,16 +213,19 @@ def migrate(source, target, stage=False, previous=None):
                 all(rows[id] == value for id, value in present.items() if id in rows),
                 f"Destination data differs in {name}")
         counts[name] = {"source": len(rows), "alreadyMatched": len(present.keys() & rows.keys())}
+        if name != destination:
+            counts[name]["destination"] = destination
     require(source.get("priceRevisions", "active") == active, "Source active revision changed during audit")
     if not stage:
         return {"mode": "audit", "sourceRevision": revision, "collections": counts, "archives": len(archives), "writes": 0}
 
     copy_archives(archives)
     for name, rows in data.items():
+        destination = DESTINATIONS.get(name, name)
         present = {document_id(doc): doc.get("fields", {})
-                   for page in target.documents(name) for doc in page
+                   for page in target.documents(destination) for doc in page
                    if not (name == "priceRevisions" and document_id(doc) == "active")}
-        missing = [target.write(name, id, fields) for id, fields in rows.items() if id not in present]
+        missing = [target.write(destination, id, fields) for id, fields in rows.items() if id not in present]
         batch = []
         size = 0
         for write in missing:
@@ -218,7 +238,7 @@ def migrate(source, target, stage=False, previous=None):
         if batch:
             target.commit(batch)
         verified = {document_id(doc): doc.get("fields", {})
-                    for page in target.documents(name) for doc in page
+                    for page in target.documents(destination) for doc in page
                     if not (name == "priceRevisions" and document_id(doc) == "active")}
         require((name == "priceRevisions" or len(verified) == len(rows)) and
                 all(verified.get(id) == fields for id, fields in rows.items()),

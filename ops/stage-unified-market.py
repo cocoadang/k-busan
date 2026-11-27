@@ -73,7 +73,7 @@ def configure_market(cloud, source, apt, member):
         apt_annotations["run.googleapis.com/secrets"] = ",".join(f"{alias}:{resource}" for alias, resource in apt_secrets.items())
 
 
-def main(root, apt_source):
+def main(root, apt_source, migrate_database=False):
     apt = checkout(root, "k-busan", apt_source)
     khousing = checkout(root, "k-housing", MARKET_SOURCE)
     cloud = load_cloud_helpers(khousing)
@@ -96,6 +96,10 @@ def main(root, apt_source):
     project, db = migration["apt_database"](apt_config)
     token = cloud.cloud("auth", "print-access-token", capture=True).strip()
     target = migration["Database"](project, db, token)
+    if migrate_database:
+        source = migration["Database"](migration["SOURCE_PROJECT"], migration["SOURCE_DB"], token)
+        report = migration["migrate"](source, target, stage=True)
+        print(json.dumps(report, ensure_ascii=False), flush=True)
     active_doc = target.get("priceRevisions", "active")
     cloud.require(active_doc, "Stage the Apt database before deploying the web candidate")
     migration["inspect_manifest"](active_doc, "active")
@@ -130,12 +134,13 @@ def main(root, apt_source):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apt-source", required=True, help="Pinned Apt integration commit")
+    parser.add_argument("--migrate-db", action="store_true", help="Copy and verify the source before staging the web candidate")
     arguments = parser.parse_args()
     if not re.fullmatch(r"[a-f0-9]{40}", arguments.apt_source):
         parser.error("A full Git commit SHA is required")
     try:
         with tempfile.TemporaryDirectory(prefix="apt-market-stage-") as directory:
-            main(Path(directory), arguments.apt_source)
+            main(Path(directory), arguments.apt_source, arguments.migrate_db)
     except (RuntimeError, subprocess.CalledProcessError, KeyError) as error:
         print(f"Apt preview stopped: {error}", file=sys.stderr)
         sys.exit(1)

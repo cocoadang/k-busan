@@ -142,7 +142,7 @@ def verify(origin, expected_entry=None):
             entry = frontend_entry(origin)
         require(entry == expected_entry, "Production did not serve the verified Apt bundle")
     bundle = read(origin, entry).decode()
-    require(all(label in bundle for label in ("����Ʈ ã��", "���� ���ǥ")), "Apt search UI is missing")
+    require(all(label in bundle for label in ("\uc544\ud30c\ud2b8 \ucc3e\uae30", "\uc785\uc9c0 \ub4f1\uae09\ud45c")), "Apt search UI is missing")
     budget = json.loads(read(origin, "/api/housing/apartment-budget"))
     require(isinstance(budget.get("results"), list) and budget.get("incomplete") is False
             and isinstance(budget.get("revision"), str) and budget["revision"],

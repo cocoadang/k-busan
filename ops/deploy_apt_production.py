@@ -150,6 +150,9 @@ def verify(origin, expected_entry=None):
             "Apt search did not return a complete saved-data response with a revision")
     require("1,000\uc138\ub300 \uc774\uc0c1 \uc9c0\uc5ed" in bundle, "K-apt large-apartment regional search is missing")
     collected = json.loads(read(origin, "/api/housing/collected-apartments"))
+    catalog = collected.get("catalog", {})
+    require(catalog.get("revision", "").startswith("kapt-") and len(catalog.get("complexes", [])) >= 546,
+            "The shared Firestore-backed directory is missing from Apt")
     complexes = collected.get("complexes", [])
     ids = {row["id"] for row in complexes}
     require(len(ids) == len(complexes) and len(ids) >= 31 and {"gwacheon_xi", "banpo_xi", "busan_centum_park_2"} <= ids,

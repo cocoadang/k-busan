@@ -64,8 +64,8 @@ function LocationHexagon({ grades }: { grades: LocationGrades }) {
   const complete = vertices.every(point => point !== null);
   return (
     <svg viewBox="0 0 160 160" role="img"
-      aria-label={grades.map(({ grade, estimate }, index) =>
-        `${locationGradeAxes[index][1]} ${grade ?? (estimate === undefined ? '미확인' : `참고 ${estimate}`)}`
+      aria-label={grades.map(({ grade }, index) =>
+        `${locationGradeAxes[index][1]} ${grade ?? '미확인'}`
       ).join(', ')}
       className="h-36 w-36 shrink-0 sm:h-40 sm:w-40">
       {[1, 2, 3, 4, 5].map(level => (
@@ -78,13 +78,13 @@ function LocationHexagon({ grades }: { grades: LocationGrades }) {
       {locationGradeAxes.map(([short, label], index) => {
         const spoke = radarPoint(index, 50);
         const heading = radarPoint(index, 65);
-        const { grade, estimate } = grades[index];
+        const { grade } = grades[index];
         return (
           <g key={label}>
             <line x1={80} y1={80} x2={spoke.x} y2={spoke.y} stroke="#e2e8f0" />
             <text x={heading.x} y={heading.y} textAnchor="middle" dominantBaseline="central"
               className="text-[12px] font-bold" fill={grade === null ? '#64748b' : '#1e293b'}>
-              {short}{grade === null && estimate === undefined ? '?' : ''}
+              {short}{grade === null ? '?' : ''}
             </text>
           </g>
         );
@@ -93,13 +93,7 @@ function LocationHexagon({ grades }: { grades: LocationGrades }) {
         points={vertices.map(point => `${point!.x},${point!.y}`).join(' ')} />}
       {vertices.map((point, index) => {
         const next = vertices[(index + 1) % vertices.length];
-        const estimate = grades[index].estimate;
-        if (point === null) {
-          if (estimate === undefined) return null;
-          const reference = radarPoint(index, estimate * 10);
-          return <circle key={index} cx={reference.x} cy={reference.y} r={4}
-            fill="white" stroke="#475569" strokeWidth={1.5} strokeDasharray="2 1" />;
-        }
+        if (!point) return null;
         return (
           <g key={index}>
             {next && <line x1={point.x} y1={point.y} x2={next.x} y2={next.y} stroke="#1d4ed8" strokeWidth={2} />}
@@ -126,7 +120,7 @@ function LocationPyramid({ matches }: { matches: Listing[] }) {
   return (
     <section aria-labelledby="location-grades" className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
       <h2 id="location-grades" className="text-lg font-bold">입지 등급표</h2>
-      <p className="mt-1 text-sm text-slate-600">확인된 항목의 평균을 반올림해 5단으로 표시합니다. 6개 미만이면 잠정이며, 참고 점수는 평균에서 제외합니다.</p>
+      <p className="mt-1 text-sm text-slate-600">확인된 항목의 평균을 반올림해 5단으로 표시합니다. 6개 항목이 모두 확인되기 전에는 잠정 등급입니다.</p>
       <div className="mt-5 space-y-3">
         {groups.map(({ level, label, width, color, entries }) => (
           <section key={level} aria-label={label}>
@@ -161,9 +155,9 @@ function LocationCard({ apt, grades, average, confirmed }: {
           {average !== null && <p className="mt-2 text-sm font-semibold text-blue-900">
             {average.toFixed(1)}/5{confirmed < locationGradeAxes.length && ` · 잠정 (${confirmed}/6 확인)`}
           </p>}
-          {grades.map(({ grade, summary, estimate, pending }, index) => grade === null && summary ? (
+          {grades.map(({ grade, summary, pending }, index) => grade === null && summary ? (
             <p key={locationGradeAxes[index][0]} className="mt-1 text-xs leading-relaxed text-slate-600">
-              {locationGradeAxes[index][1]} · {summary}{estimate === undefined ? ` · ${pending}` : ` · 참고 ${estimate}/5`}
+              {locationGradeAxes[index][1]} · {summary} · {pending}
             </p>
           ) : null)}
         </div>
@@ -172,14 +166,14 @@ function LocationCard({ apt, grades, average, confirmed }: {
       <details className="mt-1 border-t border-slate-200 pt-2 text-sm">
         <summary className="cursor-pointer font-medium text-slate-700">항목별 점수·근거</summary>
         <dl className="mt-2 space-y-2">
-          {grades.map(({ grade, estimate, label, pending, source }, index) => {
+          {grades.map(({ grade, label, pending, source }, index) => {
             const [key, axis, rule] = locationGradeAxes[index];
-            const score = grade === null ? (estimate === undefined ? '미확인' : `참고 ${estimate}/5`) : `${grade}/5`;
+            const score = grade === null ? '미확인' : `${grade}/5`;
             return (
               <div key={key}>
                 <dt className="font-medium text-slate-900" title={rule}>{axis} · {score}</dt>
                 <dd className="text-xs leading-relaxed text-slate-600">
-                  {[label, grade === null && estimate === undefined && pending].filter(Boolean).join(' · ') || '근거 자료 확인 필요'}
+                  {[label, grade === null && pending].filter(Boolean).join(' · ') || '근거 자료 확인 필요'}
                   {source && <a href={source} target="_blank" rel="noreferrer" className="ml-2 text-blue-800 underline"
                     aria-label={`${apt.name} ${axis} 출처`}>출처</a>}
                 </dd>

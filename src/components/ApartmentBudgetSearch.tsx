@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import ApartmentRadar, { ApartmentRadarPreview } from './ApartmentRadar';
-import catalog from '../housing/songApartmentCatalog.json';
+import type catalog from '../housing/songApartmentCatalog.json';
 import { AdditionalSongEvidence, songVideoUrl as videoUrl } from './SongApartmentVideoEvidence';
 
 type Listing = (typeof catalog.apartments)[number] & { area: number; price: number; date: string; floor: number; areaCategory: string; tradeSummary?: { count: number; min: number; max: number } };
@@ -230,7 +230,6 @@ export default function ApartmentBudgetSearch() {
       <div className="rounded-3xl bg-slate-900 px-5 py-10 text-white sm:px-12 sm:py-14">
         <p className="mb-3 text-sm font-semibold text-sky-300">아파트 예산 검색</p>
         <h1 id="budget-title" className="text-3xl font-bold tracking-tight sm:text-5xl">내 예산으로 어디에 살 수 있을까?</h1>
-        <p className="mt-4 max-w-xl text-base text-slate-200">송희구 작가가 입지를 분석한 단지에서 매매 예산에 맞는 후보를 찾아보세요.</p>
         <form onSubmit={search} className="mt-8 grid gap-3 rounded-2xl bg-white p-4 text-slate-900 sm:grid-cols-2 lg:grid-cols-4 sm:items-end">
           <label className="grid gap-1 text-sm font-semibold">최대 매매가 (억 원)
             <input className="min-w-0 rounded-lg border border-slate-300 p-2.5 text-base" type="number" min="0.0001" step="0.0001" required placeholder="예: 19" value={budget} onChange={(event) => setBudget(event.target.value)} />
@@ -253,7 +252,6 @@ export default function ApartmentBudgetSearch() {
             onBudget={value => { setBudget(value); setRangeError(false); }} />
           {rangeError && <p role="alert" className="text-sm text-red-700 sm:col-span-full">최소 매매가를 최대 매매가 이하로 입력하세요.</p>}
         </form>
-        <p className="mt-4 text-sm text-slate-300">실거래 검색 근거 영상 {catalog.reviewedVideoIds.length}편 · 검색 대상 단지 {catalog.apartments.length}곳 · 최근 3개 계약월의 국토교통부 신고 거래 기준</p>
       </div>
       {query && <div className="mt-6" aria-live="polite">
         {loading && <p role="status">저장된 실거래 자료에서 후보를 불러오고 있습니다.</p>}

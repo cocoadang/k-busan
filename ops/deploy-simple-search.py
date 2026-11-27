@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 from urllib.request import urlopen
 
-APT_BASE = "c1be202ce43be08d82664ef21c9460ea334d40b4"
+APT_BASE = "27130f2d44d0354ea8af75c9f09fc26cf17f39b6"
 KHOUSING_HELPER = "103c044ede1102bea8326d58d60ca153a4182997"
 EXPECTED_LIVE = "busan-redevelopment-news-monitor-ui-d6e5c721"
 PRODUCTION = "https://apt.dsoom.com"
@@ -37,6 +37,8 @@ def frontend(origin):
         bundle = response.read().decode()
     if "아파트 찾기" not in bundle or any(section in bundle for section in (
         "검토한 영상에서 정리한 투자 판단 기준", "영상에서 확인한 입지 비교",
+        "송희구 작가가 입지를 분석한 단지에서 매매 예산에 맞는 후보를 찾아보세요.",
+        "실거래 검색 근거 영상",
     )):
         raise RuntimeError("Apt landing page did not match the simplified layout")
     if not all(value in bundle for value in (

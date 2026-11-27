@@ -9,7 +9,26 @@ type Listing = { complexId: string; area: number; areaCategory: string; date: st
 type TradeResult = { listings: Listing[]; unavailable: boolean };
 export type RegionalApartmentRow = [string, string, string, string, string, string, number, string, string];
 export type RegionalApartmentCatalog = { revision: string; asOf: string; complexes: RegionalApartmentRow[] };
-type Feed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; months: string[]; catalog: RegionalApartmentCatalog };
+export type OfficialSalesSnapshot = { through: string; prices: Record<string, [string, number, number, number][]> };
+type Feed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; months: string[]; catalog: RegionalApartmentCatalog; officialSales?: OfficialSalesSnapshot };
+
+function verifyOfficialSales(value: unknown, catalog: RegionalApartmentCatalog): OfficialSalesSnapshot | undefined {
+  if (value === undefined) return;
+  const snapshot = value as OfficialSalesSnapshot | null;
+  if (!snapshot || !/^20\d{2}-\d{2}-\d{2}$/.test(snapshot.through) ||
+      !snapshot.prices || typeof snapshot.prices !== 'object' || Array.isArray(snapshot.prices)) {
+    throw Error('INVALID_OFFICIAL_SALES_SNAPSHOT');
+  }
+  const validIds = new Set(catalog.complexes.map(([id]) => id));
+  for (const [id, sales] of Object.entries(snapshot.prices)) {
+    if (!validIds.has(id) || !Array.isArray(sales) || sales.length > 300 ||
+        sales.some(sale => !Array.isArray(sale) || sale.length !== 4 ||
+          !/^20\d{2}-\d{2}-\d{2}$/.test(sale[0]) || sale[0] > snapshot.through ||
+          !Number.isFinite(sale[1]) || sale[1] <= 0 || !Number.isSafeInteger(sale[2]) ||
+          sale[2] <= 0 || !Number.isSafeInteger(sale[3]))) throw Error('INVALID_OFFICIAL_SALES_SNAPSHOT');
+  }
+  return { through: snapshot.through, prices: snapshot.prices };
+}
 
 function verifyCatalog(value: unknown): RegionalApartmentCatalog {
   const catalog = value as RegionalApartmentCatalog | null;
@@ -96,6 +115,7 @@ export function createCollectedApartmentSearch(request: typeof fetch = fetch, no
     ]);
     if (!catalogResponse.ok) throw Error('KHOUSING_SHARED_CATALOG_UNAVAILABLE');
     const catalog = verifyCatalog(catalogResponse.data);
+    const officialSales = verifyOfficialSales(catalogResponse.data.officialSales, catalog);
     if (!ok || data?.success !== true || data.startYmd !== end || data.endYmd !== end ||
         !data.summaries || typeof data.summaries !== 'object' || Array.isArray(data.summaries)) {
       throw Error('KHOUSING_DIRECTORY_UNAVAILABLE');
@@ -123,7 +143,7 @@ export function createCollectedApartmentSearch(request: typeof fetch = fetch, no
         if (failed) unavailable.push(batch[index].id);
       });
     }
-    return { complexes, results, unavailable, months, catalog };
+    return { complexes, results, unavailable, months, catalog, officialSales };
   }
 
   const handle: RequestHandler = async (_req, res) => {

@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import catalog from '../housing/songApartmentCatalog.json';
-import type { RegionalApartmentCatalog, RegionalApartmentRow } from '../housing/collectedApartmentSearch';
+import type { OfficialSalesSnapshot, RegionalApartmentCatalog, RegionalApartmentRow } from '../housing/collectedApartmentSearch';
 
 type Complex = { id: string; name: string; alias: string; district: string; region?: string; units?: number; address?: string; directoryOnly?: boolean };
 type Listing = { complexId: string; area: number; price: number; date: string; areaCategory: string };
 type AptListing = Omit<Listing, 'complexId'> & { complexId?: string; name: string };
-type SearchFeed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; catalog: RegionalApartmentCatalog };
+type SearchFeed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; catalog: RegionalApartmentCatalog; officialSales?: OfficialSalesSnapshot; months: string[] };
 type AptFeed = { results: AptListing[]; incomplete: boolean; stale?: boolean };
 type SearchQuery = { keyword: string; minimum: number; maximum: number; size: string; region: string };
 const regionalAreas = ['서울', '과천', '분당', '구성남', '광명', '하남'] as const;
@@ -38,6 +38,7 @@ function addRegionalDirectory(complexes: Map<string, Complex>, catalog: Regional
     return region === '과천' ? key.replace(/^과천(?=래미안슈르$)/, '') : key;
   };
   const assigned = new Set<string>();
+  const byCode = new Map<string, string>();
   for (const [code, region, , district, dong, name, units, , address] of catalog) {
     const localDistrict = district.split(' ').at(-1);
     const key = nameKey(name, region);
@@ -47,14 +48,17 @@ function addRegionalDirectory(complexes: Map<string, Complex>, catalog: Regional
     const match = candidates.length === 1 ? candidates[0] : undefined;
     if (match) {
       assigned.add(match.id);
+      byCode.set(code, match.id);
       complexes.set(match.id, { ...match, region, units, address });
     } else {
       const id = `kapt:${code}`;
+      byCode.set(code, id);
       const province = region === '서울' ? '서울특별시' : '경기도';
       complexes.set(id, { id, name, alias: '', district: [province, district, dong].filter(Boolean).join(' '),
         region, units, address, directoryOnly: true });
     }
   }
+  return byCode;
 }
 
 function findMatches(query: SearchQuery, shared: SearchFeed | null, apt: AptFeed | null) {
@@ -85,7 +89,16 @@ function findMatches(query: SearchQuery, shared: SearchFeed | null, apt: AptFeed
     if (id) put({ ...trade, complexId: id });
   }
 
-  addRegionalDirectory(complexes, shared?.catalog.complexes ?? []);
+  const idsByCode = addRegionalDirectory(complexes, shared?.catalog.complexes ?? []);
+  for (const [code, sales] of Object.entries(shared?.officialSales?.prices ?? {})) {
+    const complexId = idsByCode.get(code);
+    if (!complexId) continue;
+    for (const [date, area, price] of sales) {
+      if (shared?.months.includes(date.slice(0, 7).replace('-', ''))) {
+        put({ complexId, date, area, price, areaCategory: String(Math.floor(area)) });
+      }
+    }
+  }
   const budgetFilter = query.minimum > 0 || Number.isFinite(query.maximum);
   const terms = query.keyword.split(/\s+/).map(normalize).filter(Boolean);
   return [...complexes.values()].flatMap(complex => {
@@ -204,7 +217,7 @@ export default function ApartmentBudgetSearch() {
         {loading ? <p role="status">저장된 단지와 실거래를 불러오고 있습니다.</p> : (
           <section aria-labelledby="apartment-search-results" className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
             <h2 id="apartment-search-results" className="text-lg font-bold">검색 결과 <span className="text-sm font-normal text-slate-600">{matches.length}개 단지</span></h2>
-            <p className="mt-1 text-xs text-slate-600">최근 3개 계약월의 저장 실거래가 연결된 단지에 예산 조건을 적용합니다. {shared && `대단지 ${shared.catalog.complexes.length}곳 · K-apt ${shared.catalog.asOf} 기준`}</p>
+            <p className="mt-1 text-xs text-slate-600">최근 3개 계약월의 저장 실거래가 연결된 단지에 예산 조건을 적용합니다. {shared && `대단지 ${shared.catalog.complexes.length}곳 · K-apt ${shared.catalog.asOf} 기준`}{shared?.officialSales && ` · 국토부 공개 자료 ${shared.officialSales.through} 기준`}</p>
             {!shared && <p role="status" className="mt-2 text-sm text-slate-700">K-Housing 단지 목록을 불러오지 못했습니다. 잠시 후 다시 검색해 주세요.</p>}
             {(!apt || apt.incomplete || apt.stale || Boolean(shared?.unavailable.length)) &&
               <p role="status" className="mt-2 text-sm text-slate-700">일부 단지는 최근 저장 거래를 확인할 수 없습니다.</p>}

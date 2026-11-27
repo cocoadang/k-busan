@@ -153,6 +153,10 @@ def verify(origin, expected_entry=None):
     catalog = collected.get("catalog", {})
     require(catalog.get("revision", "").startswith("kapt-") and len(catalog.get("complexes", [])) >= 546,
             "The shared Firestore-backed directory is missing from Apt")
+    sales = collected.get("officialSales", {})
+    if sales.get("through") == "2026-11-28":
+        require(len(sales.get("prices", {})) == 428 and sum(map(len, sales["prices"].values())) == 1123,
+                "Apt has an incomplete official recovery snapshot")
     complexes = collected.get("complexes", [])
     ids = {row["id"] for row in complexes}
     require(len(ids) == len(complexes) and len(ids) >= 31 and {"gwacheon_xi", "banpo_xi", "busan_centum_park_2"} <= ids,

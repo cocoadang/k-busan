@@ -1,14 +1,29 @@
 import {tradeHistoryOrigin} from './apartmentTradeHistory';
 import type {AptProjectionMode} from './apartmentCanonicalReader';
-const fail=():never=>{throw Error('KHOUSING_RECOMMENDATION_UNAVAILABLE');};
+type RecommendationFailure = 'INVALID_RESPONSE' | 'REQUEST_FAILED' | 'UPSTREAM_HTTP_ERROR' | 'SNAPSHOT_EXPIRED';
+
+export class KhousingRecommendationError extends Error {
+  constructor(readonly reason: RecommendationFailure, readonly upstreamStatus?: number) {
+    super('KHOUSING_RECOMMENDATION_UNAVAILABLE');
+  }
+}
+
+const fail = (reason: RecommendationFailure = 'INVALID_RESPONSE'): never => {
+  throw new KhousingRecommendationError(reason);
+};
 const pos=(x:unknown)=>Number.isSafeInteger(x)&&Number(x)>0;
 export function createKhousingRecommendationMode(preview?:Readonly<{origin:string;revision:string}>,request:typeof fetch=fetch,now=Date.now):AptProjectionMode {
  if(preview&&(!/^https:\/\/[a-z][a-z0-9-]{0,15}---k-housing-5he2zcaska-du\.a\.run\.app$/.test(preview.origin)||
    !/^r\d{14}(?:_[a-f0-9]{8})?$/.test(preview.revision))) fail();
  return {kind:'canonical',async project(months){
    const url=new URL('/api/apt/recommendation-sales/v1',preview?.origin??tradeHistoryOrigin);
-   const res=await request(url,{headers:{accept:'application/json'},signal:AbortSignal.timeout(12_000),redirect:'error'});
-   if(!res.ok||!res.body||!res.headers.get('content-type')?.startsWith('application/json')) return fail();
+   const res = await request(url, {
+     headers: { accept: 'application/json' },
+     signal: AbortSignal.timeout(12_000),
+     redirect: 'error',
+   }).catch(() => fail('REQUEST_FAILED'));
+   if (!res.ok) throw new KhousingRecommendationError('UPSTREAM_HTTP_ERROR', res.status);
+   if (!res.body || !res.headers.get('content-type')?.startsWith('application/json')) return fail();
    const stream=res.body.getReader(), decoder=new TextDecoder('utf-8',{fatal:true}); let size=0,body='';
    try {
      for(;;){const p=await stream.read();if(p.done) break; size+=p.value.byteLength;if(size>512_000){await stream.cancel();return fail();}
@@ -20,8 +35,9 @@ export function createKhousingRecommendationMode(preview?:Readonly<{origin:strin
       typeof p.revision!=='string'||!/^r\d{14}(?:_[a-f0-9]{8})?$/.test(p.revision)||
       !Array.isArray(p.months)||p.months.length!==months.length||!months.every((m,i)=>m===p.months[i])||
       !Number.isFinite(checked)||checked>at+300_000||!Number.isFinite(observed)||observed>checked+300_000||
-      !Number.isFinite(p.validUntil)||p.validUntil<=at||p.validUntil!==observed+108_000_000||
+      !Number.isFinite(p.validUntil)||p.validUntil!==observed+108_000_000||
       !Array.isArray(p.results)||p.results.length>1000) return fail();
+   if (p.validUntil <= at) return fail('SNAPSHOT_EXPIRED');
    const unique=new Set<string>();
    for(const r of p.results){
      if(!r||![r.complexId,r.name,r.region,r.neighborhood,r.areaCategory].every(x=>typeof x==='string'&&x.length>0&&x.length<130)||

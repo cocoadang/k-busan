@@ -60,7 +60,7 @@ const profiles: ReadonlyMap<string, Profile> = new Map([
   }],
 ]);
 
-const axes = [
+export const locationGradeAxes = [
   [
     "브",
     "브랜드",
@@ -92,14 +92,6 @@ const axes = [
     "배정 학교까지 대표 통학로 기준. 단지 인접·차도 횡단 없음 5점, 비인접·횡단 없음 4점, 1~2차선 차도 1회 횡단 3점, 3~4차선 차도 1회 또는 1~2차선 차도 2회 이상 2점, 5차선 이상 또는 3~4차선 차도를 포함해 2회 이상 횡단 1점."
   ]
 ] as const;
-const colors = ['#087e8b', '#1d4ed8', '#a21caf'];
-const point = (axis: number, radius: number) => {
-  const angle = (axis * 60 - 90) * Math.PI / 180;
-  return [150 + Math.cos(angle) * radius, 125 + Math.sin(angle) * radius] as const;
-};
-const outerRadius = 85;
-const innerRadius = 34;
-const rings = [17, innerRadius, 51, 68, outerRadius];
 const walk = (place?: [string, number?]) => place?.[1] ? `${place[0]} 도보 약 ${place[1]}분` : place?.[0];
 const meters = (distance: number) => `${distance.toLocaleString('ko-KR')}m`;
 
@@ -122,21 +114,7 @@ const contractors: ReadonlyMap<string, [string, number]> = new Map([
 ]);
 const terrainGrades = { 평탄: 5, 완만: 4, '일부 경사': 3, 언덕: 2, '가파른 언덕': 1 };
 const gradeBelow = (value: number, thresholds: number[]) => 5 - thresholds.filter(limit => value > limit).length;
-const gradeText = (grade: number | null) => grade === null ? '미확인' : `${grade}/5점`;
-const legend = '바깥쪽일수록 높은 점수입니다. 빈 점과 점선은 점수 산정에 필요한 자료를 확인 중인 항목입니다.';
-
-function naverPlace(name: string) {
-  return `https://map.naver.com/p/search/${encodeURIComponent(name)}`;
-}
-
-function WalkingMapLinks({ apartment, destination }: { apartment: string; destination: string }) {
-  return <span className="mt-1 flex flex-wrap gap-x-2 text-xs">
-    <a className="text-blue-800 underline" href={naverPlace(apartment)} target="_blank" rel="noreferrer">네이버지도 단지</a>
-    <a className="text-blue-800 underline" href={naverPlace(destination)} target="_blank" rel="noreferrer">목적지</a>
-  </span>;
-}
-
-function radarEntry(name: string) {
+export function getApartmentLocationGrades(name: string) {
   const year = new Date(Date.now() + 9 * 3600_000).getUTCFullYear();
   const p = profiles.get(name);
   const contractor = contractors.get(name);
@@ -153,8 +131,8 @@ function radarEntry(name: string) {
       : widestCrossing >= 3 || crossings > 1 ? 2
       : crossings === 1 ? 3 : school.adjacent ? 5 : 4
     : null;
-  const values = [
-    { label: contractor ? `${contractor[0]} · ${contractor[1]}위` : p?.brand, grade: contractor ? gradeBelow(contractor[1], [3, 10, 20, 50]) : null },
+  return [
+    { label: contractor ? `${contractor[0]} · ${contractor[1]}위` : p?.brand, grade: contractor ? gradeBelow(contractor[1], [3, 10, 20, 50]) : null, source: contractor ? rankingSource : undefined },
     {
       label: p?.stationRoute ? `${meters(p.stationRoute.meters)} · ${p.stationRoute.description}` : walk(p?.station),
       pending: '보행 경로 거리 확인 필요',
@@ -175,109 +153,4 @@ function radarEntry(name: string) {
       source: schoolDistance?.source,
     },
   ];
-  const sources = [...new Set([...(p?.sources ?? []), ...(contractor ? [rankingSource] : []),
-    ...values.flatMap(value => value.source ? [value.source] : []),
-  ])];
-  return { name, values, sources, walkingDestinations: [p?.station?.[0], p?.schoolMapName ?? schoolName] as const };
-}
-
-function RouteSource({ url }: { url?: string }) {
-  return url && <a className="ml-2 text-blue-800 underline" href={url} target="_blank" rel="noreferrer">보행 거리 출처</a>;
-}
-
-function axisStatus(value: { grade: number | null; pending?: string }) {
-  return value.grade === null && value.pending ? value.pending : gradeText(value.grade);
-}
-
-const linePatterns = [undefined, '7 4', '2 3'];
-
-function RadarChart({ entries, compact = false }: { entries: ReturnType<typeof radarEntry>[]; compact?: boolean }) {
-  return (
-    <svg viewBox="0 0 280 244" className={compact ? "h-40 w-44 max-w-full shrink-0" : "mx-auto w-full max-w-xs"} aria-hidden="true">
-      {rings.map(radius => (
-        <polygon key={radius} points={axes.map((_, axis) => point(axis, radius).join(',')).join(' ')}
-          fill="none" stroke={radius === outerRadius ? '#8799ab' : '#c2cdd7'} />
-      ))}
-      {axes.map(([key, label], axis) => {
-        const [x, y] = point(axis, outerRadius);
-        const [labelX, labelY] = point(axis, compact ? 106 : 109);
-        return <g key={key}>
-          <line x1={150} y1={125} x2={x} y2={y} stroke="#c2cdd7" />
-          <text x={labelX} y={labelY} textAnchor="middle" dominantBaseline="middle" fontSize={compact ? 20 : 13} fontWeight="600" fill="#334155">{compact ? key : label}</text>
-        </g>;
-      })}
-      {entries.map(({ name, values }, index) => {
-        const positions = values.map((value, axis) => point(axis, value.grade === null ? 8 : rings[value.grade - 1]));
-        const color = colors[index];
-        const outline = { stroke: color, strokeWidth: compact ? 3 : 2.5, strokeDasharray: linePatterns[index] };
-        return <g key={name}>
-          <polygon points={positions.map(position => position.join(',')).join(' ')} fill={color} fillOpacity={compact ? 0.24 : 0.13} />
-          {positions.map(([x, y], axis) => {
-            const next = (axis + 1) % axes.length;
-            const unknown = values[axis].grade === null || values[next].grade === null;
-            return <line key={axis} x1={x} y1={y} x2={positions[next][0]} y2={positions[next][1]}
-              {...outline} strokeDasharray={unknown ? '1 5' : outline.strokeDasharray} strokeLinecap="round" />;
-          })}
-          {positions.map(([x, y], axis) => (
-            <circle key={axis} cx={x} cy={y} r={compact ? 3.5 : 3}
-              fill={values[axis].grade === null ? 'white' : color} stroke={values[axis].grade === null ? color : 'white'} strokeWidth={1.5} />
-          ))}
-        </g>;
-      })}
-    </svg>
-  );
-}
-
-export function ApartmentRadarPreview({ name }: { name: string }) {
-  const entry = radarEntry(name);
-  const status = entry.values.map(axisStatus);
-  const pending = entry.values.filter(value => value.grade === null).length;
-  return (
-    <figure className="mt-3 flex flex-wrap items-center gap-x-2 rounded-xl bg-slate-50 px-2 py-1">
-      <RadarChart entries={[entry]} compact />
-      <figcaption className="min-w-0 text-xs text-slate-600">
-        <span className="font-semibold text-slate-900">브역대신평초</span>
-        <span className="mt-1 block">{[entry.values[1].label, entry.values[5].label].filter(Boolean).join(" · ")}</span>
-        <span className="mt-1 block">{entry.values.length - pending}개 점수 산정{pending > 0 && ` · ${pending}개 산정 보류`}</span>
-        <span className="sr-only">{axes.map(([, label], index) => `${label} ${status[index]}`).join(', ')}</span>
-        <details className="mt-2">
-          <summary className="cursor-pointer font-medium text-blue-800">육각형 기준 보기</summary>
-          <p className="mt-1">{legend}</p>
-          <dl className="mt-2 space-y-1">
-            {axes.map(([key, label, rule], index) => <div key={key}>
-              <dt className="inline font-semibold">{label} · {status[index]}</dt>
-              <dd>{entry.values[index].label && <span className="block">{entry.values[index].label}<RouteSource url={entry.values[index].source} /></span>}{rule}{(index === 1 || index === 5) && entry.walkingDestinations[index === 1 ? 0 : 1] && <WalkingMapLinks apartment={name} destination={entry.walkingDestinations[index === 1 ? 0 : 1]!} />}</dd>
-            </div>)}
-          </dl>
-        </details>
-      </figcaption>
-    </figure>
-  );
-}
-
-export default function ApartmentRadar({ names }: { names: string[] }) {
-  const entries = names.map((name, index) => ({ ...radarEntry(name), color: colors[index] }));
-
-  return (
-    <section className="mt-4 border-t border-slate-200 pt-4" aria-label="브역대신평초 비교">
-      <h4 className="font-semibold">브역대신평초 입지 비교</h4>
-      <p className="mt-1 text-sm text-slate-600">{legend}</p>
-      <div className="mt-2 grid items-start gap-4 lg:grid-cols-[minmax(220px,320px)_1fr]">
-        <RadarChart entries={entries} />
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[18rem] text-left text-sm">
-            <thead><tr><th scope="col" className="p-2">비교 기준</th>{entries.map(({ name, color }, index) => <th scope="col" key={name} className="p-2"><svg className="mr-1 inline-block align-middle" width="22" height="10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke={color} strokeWidth="2" strokeDasharray={linePatterns[index]} /></svg>{name}</th>)}</tr></thead>
-            <tbody>
-              {axes.map(([key, label, rule], i) => <tr key={key} className="border-t border-slate-200">
-                <th scope="row" className="p-2 align-top">{label}<span className="block text-xs font-normal text-slate-600">{rule}</span></th>
-                {entries.map(({ name, values, walkingDestinations }) => <td className="p-2 align-top" key={name}>{values[i].label}<RouteSource url={values[i].source} /><span className="block text-xs text-slate-600">{axisStatus(values[i])}</span>{(i === 1 || i === 5) && walkingDestinations[i === 1 ? 0 : 1] && <WalkingMapLinks apartment={name} destination={walkingDestinations[i === 1 ? 0 : 1]!} />}</td>)}
-              </tr>)}
-              <tr className="border-t border-slate-200"><th scope="row" className="p-2">출처</th>{entries.map(({ name, sources }) => <td className="p-2" key={name}>{sources.length ? sources.map((url, i) => <a className="mr-2 text-blue-800 underline" key={url} href={url} target="_blank" rel="noreferrer">자료 {i + 1}</a>) : '미확인'}</td>)}</tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <p className="text-xs text-slate-600">보행 거리와 배정 학교는 출발 동과 출입구에 따라 달라질 수 있습니다. 초등학교 점수에는 통학로의 차도 횡단 조건을 적용합니다.</p>
-    </section>
-  );
 }

@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 from urllib.request import urlopen
 
-APT_BASE = "27130f2d44d0354ea8af75c9f09fc26cf17f39b6"
+APT_BASE = "4fa3c21ee8fab9c76887637ccf02444137535fd1"
 KHOUSING_HELPER = "103c044ede1102bea8326d58d60ca153a4182997"
 EXPECTED_LIVE = "busan-redevelopment-news-monitor-ui-d6e5c721"
 PRODUCTION = "https://apt.dsoom.com"
@@ -38,11 +38,12 @@ def frontend(origin):
     if "아파트 찾기" not in bundle or any(section in bundle for section in (
         "검토한 영상에서 정리한 투자 판단 기준", "영상에서 확인한 입지 비교",
         "송희구 작가가 입지를 분석한 단지에서 매매 예산에 맞는 후보를 찾아보세요.",
-        "실거래 검색 근거 영상",
+        "실거래 검색 근거 영상", "지역 아파트 매매가격지수", "검색된 생활권 지도",
+        "비교에 추가", "육각형 기준 보기",
     )):
         raise RuntimeError("Apt landing page did not match the simplified layout")
     if not all(value in bundle for value in (
-        "서울홍릉초", "보행 거리 출처", "저장된 실거래 자료를 불러오지 못했습니다.",
+        "서울홍릉초", "입지 등급표", "저장된 실거래 자료를 불러오지 못했습니다.",
     )):
         raise RuntimeError("Apt bundle is missing the saved route data or search status")
     return entry[1]

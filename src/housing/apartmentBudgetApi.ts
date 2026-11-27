@@ -1,3 +1,4 @@
+import { KhousingRecommendationError } from './khousingRecommendationClient';
 import { FirestoreService } from '../storage/firestoreService.ts';
 import type { RequestHandler } from 'express';
 import { XMLParser } from 'fast-xml-parser';
@@ -241,8 +242,14 @@ function createApartmentBudgetHandler(mode: ApartmentTradeMode): RequestHandler 
         if (cache?.request !== request) return;
         if (data.incomplete || data.stale) cache.until = Date.now() + 60_000;
         if (data.validUntil !== undefined) cache.until = Math.min(cache.until,data.validUntil);
-      }, () => {
+      }, error => {
         if (cache?.request === request) cache.until = Date.now() + 30_000;
+        if (mode.kind === 'canonical') {
+          const details = error instanceof KhousingRecommendationError
+            ? { reason: error.reason, upstreamStatus: error.upstreamStatus }
+            : { reason: 'CANONICAL_READ_FAILED' };
+          console.warn(JSON.stringify({ event: 'APT_BUDGET_READ_FAILED', months, ...details }));
+        }
       });
     }
     try {

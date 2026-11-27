@@ -5,6 +5,7 @@ import json
 import re
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor
 from http.client import IncompleteRead, RemoteDisconnected
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, quote, urlencode
@@ -205,17 +206,19 @@ def copy_archives(archives):
                "--location", "asia-northeast3", "--uniform-bucket-level-access", "--public-access-prevention")
         project_number = owner()
     require(project_number == "432348267432", "The destination archive bucket must belong to the Apt project")
-    reused = 0
-    for source in sorted(archives):
+    def sync_archive(source):
         target = source.replace(SOURCE_BUCKET, APT_BUCKET, 1)
         expected = object_digest(source, headers)
         existing = object_digest(target, headers, optional=True)
         if existing is not None:
             require(existing == expected, f"Archive checksum mismatch: {target}")
-            reused += 1
-            continue
+            return 1
         gcloud("storage", "cp", "--no-clobber", source, target, capture=False)
         require(object_digest(target, headers) == expected, f"Archive checksum mismatch: {target}")
+        return 0
+
+    with ThreadPoolExecutor(max_workers=4) as workers:
+        reused = sum(workers.map(sync_archive, sorted(archives)))
     print(f"ARCHIVES_VERIFIED count={len(archives)} reused={reused}", flush=True)
 
 
@@ -232,56 +235,80 @@ def migrate(source, target, stage=False, previous=None):
     unknown = sorted(name for name in names if not COLLECTION_PATTERN.fullmatch(name))
     require(names and not unknown, f"Review unrecognized source collections before copying: {unknown}")
 
-    archives = set()
-    expected = {}
-    data = {}
-    for name in names:
+    print(f"SOURCE_SCAN_START collections={len(names)} revision={revision}", flush=True)
+
+    def read_source(name):
         rows = {}
+        references = set()
+        revision_counts = {}
         for page in source.documents(name):
             for doc in page:
                 id = document_id(doc)
                 if name == "priceRevisions":
-                    expected.update(inspect_manifest(doc, id))
+                    revision_counts.update(inspect_manifest(doc, id))
                     if id == "active":
                         require(doc["fields"] == active["fields"], "Source active revision changed during scan")
                         continue
                 require(id not in rows, f"Duplicate document in {name}")
-                rows[id] = copy_fields(doc.get("fields", {}), archives, source.name, target.name,
+                rows[id] = copy_fields(doc.get("fields", {}), references, source.name, target.name,
                                        historical_metadata=name in DESTINATIONS)
-        data[name] = rows
+        return name, rows, references, revision_counts
+
+    archives = set()
+    expected = {}
+    data = {}
+    with ThreadPoolExecutor(max_workers=6) as workers:
+        for index, (name, rows, references, revision_counts) in enumerate(workers.map(read_source, names), 1):
+            data[name] = rows
+            archives.update(references)
+            expected.update(revision_counts)
+            if index % 8 == 0 or index == len(names):
+                print(f"SOURCE_SCAN {index}/{len(names)}", flush=True)
+
     active_fields = copy_fields(active["fields"], archives, source.name, target.name)
     require(data.get("priceRevisions", {}).get(revision) == active_fields,
             "Source active and immutable manifests differ")
     for name, count in expected.items():
         require(len(data.get(name, {})) == count, f"Source manifest count mismatch: {name}")
 
-    counts = {}
-    matched = {}
-    for name, rows in data.items():
+    def target_rows(name):
         destination = DESTINATIONS.get(name, name)
-        present = {document_id(doc): doc.get("fields", {})
-                   for page in target.documents(destination) for doc in page
-                   if not (name == "priceRevisions" and document_id(doc) == "active")}
-        # Historical revisions already produced by Apt may exist after a rehearsal.
-        # Only an immutable source collection with overlapping IDs must match exactly.
-        allow_extra = name == "priceRevisions"
-        require((allow_extra or present.keys() <= rows.keys()) and
+        return {document_id(doc): doc.get("fields", {})
+                for page in target.documents(destination) for doc in page
+                if not (name == "priceRevisions" and document_id(doc) == "active")}
+
+    def audit_target(name):
+        rows = data[name]
+        present = target_rows(name)
+        # Keep unrelated Apt rehearsal manifests and require parity for every shared document.
+        require((name == "priceRevisions" or present.keys() <= rows.keys()) and
                 all(rows[id] == value for id, value in present.items() if id in rows),
                 f"Destination data differs in {name}")
-        matched[name] = present.keys() & rows.keys()
-        counts[name] = {"source": len(rows), "alreadyMatched": len(matched[name])}
-        if name != destination:
-            counts[name]["destination"] = destination
+        return name, present.keys() & rows.keys()
+
+    counts = {}
+    matched = {}
+    print(f"APT_AUDIT_START collections={len(names)}", flush=True)
+    with ThreadPoolExecutor(max_workers=6) as workers:
+        for index, (name, ids) in enumerate(workers.map(audit_target, names), 1):
+            matched[name] = ids
+            counts[name] = {"source": len(data[name]), "alreadyMatched": len(ids)}
+            if name in DESTINATIONS:
+                counts[name]["destination"] = DESTINATIONS[name]
+            if index % 8 == 0 or index == len(names):
+                print(f"APT_AUDIT {index}/{len(names)}", flush=True)
     require(source.get("priceRevisions", "active") == active, "Source active revision changed during audit")
     if not stage:
         return {"mode": "audit", "sourceRevision": revision, "collections": counts, "archives": len(archives), "writes": 0}
 
     copy_archives(archives)
-    for name, rows in data.items():
+
+    def copy_collection(name):
+        rows = data[name]
         destination = DESTINATIONS.get(name, name)
         missing = [target.write(destination, id, fields) for id, fields in rows.items() if id not in matched[name]]
         if not missing:
-            continue
+            return
         print(f"COPY_COLLECTION {destination} remaining={len(missing)}", flush=True)
         batch = []
         size = 0
@@ -294,13 +321,16 @@ def migrate(source, target, stage=False, previous=None):
             size += write_size
         if batch:
             target.commit(batch)
-        verified = {document_id(doc): doc.get("fields", {})
-                    for page in target.documents(destination) for doc in page
-                    if not (name == "priceRevisions" and document_id(doc) == "active")}
+        verified = target_rows(name)
         require((name == "priceRevisions" or len(verified) == len(rows)) and
                 all(verified.get(id) == fields for id, fields in rows.items()),
                 f"Destination verification failed: {name}")
         print(f"COLLECTION_VERIFIED {destination} count={len(rows)}", flush=True)
+
+    collections_to_copy = [name for name in names if name != "priceRevisions"]
+    with ThreadPoolExecutor(max_workers=3) as workers:
+        list(workers.map(copy_collection, collections_to_copy))
+    copy_collection("priceRevisions")
 
     require(source.get("priceRevisions", "active") == active, "Source active revision changed during copy")
     if not target_active or target_active["fields"] != active_fields:

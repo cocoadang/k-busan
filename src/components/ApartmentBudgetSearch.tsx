@@ -257,7 +257,7 @@ export default function ApartmentBudgetSearch() {
       </div>
       {query && <div className="mt-6" aria-live="polite">
         {loading && <p role="status">저장된 실거래 자료에서 후보를 불러오고 있습니다.</p>}
-        {failed && <p role="status">현재 국토교통부 거래 정보를 조회할 수 없습니다. 잠시 후 다시 검색해 주세요.</p>}
+        {failed && <p role="status">저장된 실거래 자료를 불러오지 못했습니다. 잠시 후 다시 검색해 주세요.</p>}
         {feed?.stale && <p role="status">최신 조회가 지연된 일부 계약월은 서버에 저장된 마지막 정상 자료를 표시합니다.</p>}
         {feed?.incomplete && <p role="status">일부 지역의 거래를 조회하지 못했습니다. 조회된 지역의 후보를 표시합니다.</p>}
         {feed && <>

@@ -11,9 +11,9 @@ import subprocess
 from pathlib import Path
 from urllib.request import urlopen
 
-APT_BASE = "b53b30786864625f6e017a4025601f186c20059f"
+APT_BASE = "c1be202ce43be08d82664ef21c9460ea334d40b4"
 KHOUSING_HELPER = "103c044ede1102bea8326d58d60ca153a4182997"
-EXPECTED_LIVE = "busan-redevelopment-news-monitor-ap-6b08dc23"
+EXPECTED_LIVE = "busan-redevelopment-news-monitor-ui-d6e5c721"
 PRODUCTION = "https://apt.dsoom.com"
 
 
@@ -39,6 +39,10 @@ def frontend(origin):
         "검토한 영상에서 정리한 투자 판단 기준", "영상에서 확인한 입지 비교",
     )):
         raise RuntimeError("Apt landing page did not match the simplified layout")
+    if not all(value in bundle for value in (
+        "서울홍릉초", "보행 거리 출처", "저장된 실거래 자료를 불러오지 못했습니다.",
+    )):
+        raise RuntimeError("Apt bundle is missing the saved route data or search status")
     return entry[1]
 
 

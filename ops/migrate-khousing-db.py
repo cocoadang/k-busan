@@ -5,7 +5,7 @@ import json
 import re
 import subprocess
 from urllib.error import HTTPError
-from urllib.parse import quote, urlencode
+from urllib.parse import parse_qs, quote, urlencode
 from urllib.request import Request, urlopen
 
 SOURCE_PROJECT = "gen-lang-client-0064554427"
@@ -48,8 +48,24 @@ class Database:
         except HTTPError as error:
             if optional and error.code == 404:
                 return None
-            message = json.loads(error.read()).get("error", {}).get("status", "UNKNOWN")
-            raise RuntimeError(f"Firestore {error.code} {message} on {self.name}{path.split('?')[0]}") from None
+            try:
+                details = json.loads(error.read()).get("error", {})
+            except (ValueError, AttributeError):
+                details = {}
+            if not isinstance(details, dict):
+                details = {}
+            route, _, query = path.partition("?")
+            status = details.get("status") or "UNKNOWN"
+            reason = ""
+            if body is None and query and error.code == 400:
+                message = " ".join(str(details.get("message", "")).split())
+                page_token = parse_qs(query).get("pageToken", [""])[0]
+                for secret in (self.auth, page_token, quote(page_token, safe="")):
+                    if secret:
+                        message = message.replace(secret, "[redacted]")
+                if message:
+                    reason = f": {message[:350]}"
+            raise RuntimeError(f"Firestore {error.code} {status} on {self.name}{route}{reason}") from None
 
     def inventory(self):
         output = []
@@ -65,10 +81,13 @@ class Database:
         return self.call(f"/{quote(collection, safe='')}/{quote(id, safe='')}", optional=True)
 
     def documents(self, collection):
-        token = ""
+        token = None
+        path = f"/{quote(collection, safe='')}"
         while True:
-            query = urlencode({"pageSize": 200, "pageToken": token, "orderBy": "__name__ asc"})
-            result = self.call(f"/{quote(collection, safe='')}?{query}")
+            query = {"pageSize": 150}
+            if token:
+                query["pageToken"] = token
+            result = self.call(f"{path}?{urlencode(query)}")
             yield result.get("documents", [])
             token = result.get("nextPageToken")
             if not token:

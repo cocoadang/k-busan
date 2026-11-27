@@ -10,7 +10,7 @@ type TradeResult = { listings: Listing[]; unavailable: boolean };
 export type RegionalApartmentRow = [string, string, string, string, string, string, number, string, string];
 export type RegionalApartmentCatalog = { revision: string; asOf: string; complexes: RegionalApartmentRow[] };
 export type OfficialSalesSnapshot = { through: string; prices: Record<string, [string, number, number, number][]> };
-type Feed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; months: string[]; catalog: RegionalApartmentCatalog; officialSales?: OfficialSalesSnapshot };
+type Feed = { complexes: Complex[]; results: Listing[]; unavailable: string[]; months: string[]; catalog: RegionalApartmentCatalog; nativeDirectoryUnavailable?: boolean; officialSales?: OfficialSalesSnapshot };
 
 function verifyOfficialSales(value: unknown, catalog: RegionalApartmentCatalog): OfficialSalesSnapshot | undefined {
   if (value === undefined) return;
@@ -107,15 +107,8 @@ export function createCollectedApartmentSearch(request: typeof fetch = fetch, no
     }
   }
 
-  async function read(months: string[]): Promise<Feed> {
-    const [start, , end] = months;
-    const [catalogResponse, { ok, data }] = await Promise.all([
-      get('/api/apt/catalog/v1', {}),
-      get('/api/map-summaries', { areaCategory: '59', startYmd: end, endYmd: end }),
-    ]);
-    if (!catalogResponse.ok) throw Error('KHOUSING_SHARED_CATALOG_UNAVAILABLE');
-    const catalog = verifyCatalog(catalogResponse.data);
-    const officialSales = verifyOfficialSales(catalogResponse.data.officialSales, catalog);
+  async function readNativeDirectory(end: string): Promise<Complex[]> {
+    const { ok, data } = await get('/api/map-summaries', { areaCategory: '59', startYmd: end, endYmd: end });
     if (!ok || data?.success !== true || data.startYmd !== end || data.endYmd !== end ||
         !data.summaries || typeof data.summaries !== 'object' || Array.isArray(data.summaries)) {
       throw Error('KHOUSING_DIRECTORY_UNAVAILABLE');
@@ -124,7 +117,7 @@ export function createCollectedApartmentSearch(request: typeof fetch = fetch, no
     if (!entries.length || entries.length !== data.totalComplexes || entries.length > 150) {
       throw Error('KHOUSING_DIRECTORY_UNAVAILABLE');
     }
-    const complexes = entries.map(([id, value]): Complex => {
+    return entries.map(([id, value]): Complex => {
       const row = value as Record<string, unknown>;
       if (!row || row.complexId !== id || !complexIdPattern.test(id) ||
           typeof row.complexName !== 'string' || !row.complexName.trim() ||
@@ -132,6 +125,18 @@ export function createCollectedApartmentSearch(request: typeof fetch = fetch, no
       return { id, name: row.complexName, alias: typeof row.shortName === 'string' ? row.shortName : '',
         district: [row.province, row.district].join(' ') };
     });
+  }
+
+  async function read(months: string[]): Promise<Feed> {
+    const [start, , end] = months;
+    const [catalogResponse, nativeDirectory] = await Promise.all([
+      get('/api/apt/catalog/v1', {}),
+      readNativeDirectory(end).then(complexes => ({ complexes, available: true }), () => ({ complexes: [] as Complex[], available: false })),
+    ]);
+    if (!catalogResponse.ok) throw Error('KHOUSING_SHARED_CATALOG_UNAVAILABLE');
+    const catalog = verifyCatalog(catalogResponse.data);
+    const officialSales = verifyOfficialSales(catalogResponse.data.officialSales, catalog);
+    const { complexes } = nativeDirectory;
     // Bound concurrent reads and reuse the same request for concurrent searches.
     const results: Listing[] = [];
     const unavailable: string[] = [];
@@ -143,7 +148,7 @@ export function createCollectedApartmentSearch(request: typeof fetch = fetch, no
         if (failed) unavailable.push(batch[index].id);
       });
     }
-    return { complexes, results, unavailable, months, catalog, officialSales };
+    return { complexes, results, unavailable, months, catalog, officialSales, nativeDirectoryUnavailable: !nativeDirectory.available };
   }
 
   const handle: RequestHandler = async (_req, res) => {
@@ -153,8 +158,8 @@ export function createCollectedApartmentSearch(request: typeof fetch = fetch, no
     if (!cache || cache.month !== month || cache.until <= at) {
       const promise = read(months);
       cache = { month, promise, until: Number.POSITIVE_INFINITY };
-      void promise.then(() => {
-        if (cache?.promise === promise) cache.until = now() + refreshMs;
+      void promise.then(feed => {
+        if (cache?.promise === promise) cache.until = now() + (feed.nativeDirectoryUnavailable ? 30_000 : refreshMs);
       }, () => {
         if (cache?.promise === promise) cache = undefined;
       });

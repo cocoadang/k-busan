@@ -148,6 +148,7 @@ def verify(origin, expected_entry=None):
     require(isinstance(budget.get("results"), list) and budget.get("incomplete") is False
             and isinstance(budget.get("revision"), str) and budget["revision"],
             "Apt search did not return a complete saved-data response with a revision")
+    require("1,000\uc138\ub300 \uc774\uc0c1 \uc9c0\uc5ed" in bundle, "K-apt large-apartment regional search is missing")
     collected = json.loads(read(origin, "/api/housing/collected-apartments"))
     complexes = collected.get("complexes", [])
     ids = {row["id"] for row in complexes}

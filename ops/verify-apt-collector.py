@@ -149,9 +149,9 @@ def explain_failure(name):
     raise RuntimeError(f"No recognized diagnostic for {name}. Inspect the execution's container stderr in Cloud Logging.")
 
 
-def run_collector():
+def run_collector(*overrides):
     command = ["gcloud", "run", "jobs", "execute", JOB, "--wait", "--project", APT,
-               "--region", REGION, "--format=json", "--quiet"]
+               "--region", REGION, "--format=json", "--quiet", *overrides]
     outcome = subprocess.run(command, capture_output=True, text=True)
     if outcome.returncode:
         match = re.search(r"apt-collector-rehearsal-([a-z0-9]+)-task[0-9]+",
@@ -166,6 +166,57 @@ def run_collector():
             explain_failure(name)
         raise RuntimeError(f"Apt collector execution failed{f' ({name})' if name else ''}")
     return json.loads(outcome.stdout)["metadata"]["name"]
+
+
+# This runs with the same Cloud Run image, identity, secret and egress as the collector.
+# It never logs the URL, response body, key, or raw exception.
+NETWORK_PROBE = r"""
+(async () => {
+  const endpoint = new URL('https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev');
+  try {
+    const key = decodeURIComponent(process.env.MOLIT_API_KEY || '');
+    if (!key) {
+      console.log(JSON.stringify({molitProbe:true, outcome:'MOLIT_KEY_REQUIRED'}));
+      return;
+    }
+    const month = new Date(Date.now() + 32400000).toISOString().slice(0,7).replace('-', '');
+    endpoint.search = new URLSearchParams({serviceKey:key, LAWD_CD:'41290', DEAL_YMD:month, pageNo:'1', numOfRows:'1'});
+    const response = await fetch(endpoint, {signal:AbortSignal.timeout(30000)});
+    const body = await response.text();
+    const serviceCode = body.match(/<(?:resultCode|returnReasonCode)>\s*([A-Za-z0-9_-]{1,24})\s*<\//)?.[1];
+    console.log(JSON.stringify({molitProbe:true, outcome:'HTTP_RESPONSE', status:response.status, serviceCode}));
+  } catch (error) {
+    const allowed = new Set(['EAI_AGAIN','ENOTFOUND','EHOSTUNREACH','ENETUNREACH','ETIMEDOUT','ECONNRESET','ECONNREFUSED',
+      'UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT','UND_ERR_SOCKET',
+      'UNABLE_TO_VERIFY_LEAF_SIGNATURE','UNABLE_TO_GET_ISSUER_CERT_LOCALLY','CERT_HAS_EXPIRED',
+      'SELF_SIGNED_CERT_IN_CHAIN','DEPTH_ZERO_SELF_SIGNED_CERT','ERR_TLS_CERT_ALTNAME_INVALID','EPROTO']);
+    const causes = [error?.cause?.code, ...(error?.cause?.errors || []).map(item => item?.code)];
+    const codes = [...new Set(causes.filter(code => allowed.has(code)))];
+    const outcome = error.name === 'TimeoutError' ? 'TIMEOUT' :
+      error.name === 'URIError' ? 'MOLIT_KEY_ENCODING_ERROR' : 'TRANSPORT_ERROR';
+    console.log(JSON.stringify({molitProbe:true, outcome, codes}));
+  }
+})();
+"""
+
+
+def probe_network():
+    name = run_collector("--args=^~^-e~" + NETWORK_PROBE.strip())
+    for attempt in range(8):
+        for entry in execution_logs(name):
+            record = entry.get("jsonPayload")
+            if not isinstance(record, dict):
+                try:
+                    record = json.loads(entry.get("textPayload", ""))
+                except ValueError:
+                    continue
+            if isinstance(record, dict) and record.get("molitProbe") is True:
+                keys = ("outcome", "status", "serviceCode", "codes")
+                print(json.dumps({"execution": name, **{key: record[key] for key in keys if key in record}}))
+                return
+        if attempt < 7:
+            time.sleep(3)
+    raise RuntimeError(f"No network probe report found for {name}")
 
 
 def execute_rehearsal():
@@ -239,11 +290,15 @@ def execute_rehearsal():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--inspect-execution", help="Read redacted diagnostics from an existing execution")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--inspect-execution", help="Read redacted diagnostics from an existing execution")
+    modes.add_argument("--network-probe", action="store_true", help="Make one diagnostic request from the existing rehearsal job")
     arguments = parser.parse_args()
     try:
         if arguments.inspect_execution:
             explain_failure(arguments.inspect_execution)
+        elif arguments.network_probe:
+            probe_network()
         else:
             execute_rehearsal()
     except (RuntimeError, subprocess.CalledProcessError, KeyError, OSError) as error:

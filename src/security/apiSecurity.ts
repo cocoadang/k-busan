@@ -4,6 +4,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 export const SECURITY_VERSION = 'api-security-20261113-v2';
 const PUBLIC_READS = new Set([
   '/api/housing/apartment-trade-history',
+  '/api/housing/collected-apartments',
   '/api/housing/apartment-budget', '/api/housing/floor-plans/raemian-sur', '/api/housing/busan-prices', '/api/analysis-queue', '/api/health', '/api/status', '/api/readiness', '/api/registry', '/api/taxonomy',
   '/api/storage/overview', '/api/developments', '/api/plans', '/api/unit-types',
   '/api/site-plans', '/api/buildings',

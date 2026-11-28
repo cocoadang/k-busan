@@ -10,7 +10,8 @@ import recommendations from './songApartmentCatalog.json';
 import { getApartmentLocationGrades } from '../components/ApartmentRadar';
 
 type Sale = [date: string, area: number, price: number, floor: number];
-type Grades = ReturnType<typeof getApartmentLocationGrades>;
+type Grade = { grade: number | null; label?: string | null; source?: string; pending?: string; summary?: string };
+type Grades = Grade[];
 type Complex = { id: string; region: string; lawd: string; name: string; dong: string; district: string;
   homes: number; parcel: string; address: string; approvalDate: string | null; grades: Grades; seedSalesJson: string };
 type Month = { lawd: string; month: string; salesJson: string; fetchedAt: string; unresolved: string[] };
@@ -57,7 +58,7 @@ const contractorAliases = new Map([
 const kstYear = (now = Date.now()) => new Date(now + 9 * 3_600_000).getUTCFullYear();
 const details: Record<string, (string | null)[]> = kaptDetails;
 
-function builderGrade(builder: string | null) {
+function builderGrade(builder: string | null): Grade | null {
   if (!builder?.trim()) return null;
   const names = builder.replace(/㈜|\(주\)|주식회사/g, '').split(/[,，·&+/;]|\.(?=\S)|\s+외\s*/);
   const matches = names.flatMap(name => {
@@ -93,7 +94,7 @@ export async function seedAptSearch(db = firestore()) {
     const [id, region, lawd, district, dong, name, homes, parcel, address] = row;
     const profile = profileName(String(name), String(dong), String(lawd));
     const [approvalDate = null, builder = null] = details[String(id)] ?? [];
-    const grades = getApartmentLocationGrades(profile ?? String(name));
+    const grades: Grades = getApartmentLocationGrades(profile ?? String(name));
     const assessed = builderGrade(builder);
     if (assessed && (assessed.grade !== null || grades[0].grade === null)) grades[0] = assessed;
     grades[2] = { ...grades[2], label: Number(homes).toLocaleString('ko-KR') + '세대',

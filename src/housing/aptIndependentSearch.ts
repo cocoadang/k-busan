@@ -3,6 +3,8 @@ import { Firestore } from '@google-cloud/firestore';
 import type { RequestHandler } from 'express';
 import { XMLParser } from 'fast-xml-parser';
 import directory from './kaptLargeApartmentCatalog.json';
+import kaptDetails from './aptKaptDetails.json';
+import rankings from './aptContractorRanks2026.json';
 import seedSales from './aptOfficialSales.json';
 import recommendations from './songApartmentCatalog.json';
 import { getApartmentLocationGrades } from '../components/ApartmentRadar';
@@ -10,7 +12,7 @@ import { getApartmentLocationGrades } from '../components/ApartmentRadar';
 type Sale = [date: string, area: number, price: number, floor: number];
 type Grades = ReturnType<typeof getApartmentLocationGrades>;
 type Complex = { id: string; region: string; lawd: string; name: string; dong: string; district: string;
-  homes: number; parcel: string; address: string; grades: Grades; seedSalesJson: string };
+  homes: number; parcel: string; address: string; approvalDate: string | null; grades: Grades; seedSalesJson: string };
 type Month = { lawd: string; month: string; salesJson: string; fetchedAt: string; unresolved: string[] };
 type Manifest = { asOf: string; through: string; count: number; revision: string };
 const targets = new Set(['서울', '과천', '분당', '구성남', '하남']);
@@ -44,6 +46,40 @@ const firestore = () => new Firestore({
   databaseId: process.env.APT_FIRESTORE_DATABASE || 'apt-data',
 });
 
+const contractors = new Map(rankings.companies.map(([rank, label]) => [normalized(label), { rank: Number(rank), label: String(label) }]));
+const contractorAliases = new Map([
+  ['gs건설', '지에스건설'], ['lg건설', '지에스건설'], ['삼성물산건설부문', '삼성물산'],
+  ['현대산업개발', '아이파크현대산업개발'], ['hdc현대산업개발', '아이파크현대산업개발'],
+  ['에이치디씨현대산업개발', '아이파크현대산업개발'], ['sk건설', '에스케이에코플랜트'],
+  ['sk에코플랜트', '에스케이에코플랜트'], ['대림산업', '디엘이앤씨'], ['dl이앤씨', '디엘이앤씨'],
+  ['포스코건설', '포스코이앤씨'], ['한진중공업', '에이치제이중공업'], ['kcc건설', '케이씨씨건설'],
+]);
+const kstYear = (now = Date.now()) => new Date(now + 9 * 3_600_000).getUTCFullYear();
+const details: Record<string, (string | null)[]> = kaptDetails;
+
+function builderGrade(builder: string | null) {
+  if (!builder?.trim()) return null;
+  const names = builder.replace(/㈜|\(주\)|주식회사/g, '').split(/[,，·&+/;]|\.(?=\S)|\s+외\s*/);
+  const matches = names.flatMap(name => {
+    const key = normalized(name);
+    const ranked = contractors.get(contractorAliases.get(key) ?? key);
+    return ranked ? [ranked] : [];
+  }).sort((a, b) => a.rank - b.rank);
+  const best = matches[0];
+  if (!best) return { label: builder, grade: null, pending: '시공능력평가 순위 또는 시공사 확인 필요', source: directory.source };
+  return { label: best.label + ' · ' + best.rank + '위', grade: 5 - [3, 10, 20, 50].filter(limit => best.rank > limit).length,
+    source: rankings.source };
+}
+
+function gradesAsOf(grades: Grades, approvalDate: string | null) {
+  if (!approvalDate) return grades;
+  const age = kstYear() - Number(approvalDate.slice(0, 4));
+  const copy = [...grades];
+  copy[3] = { label: approvalDate + ' 사용승인 · ' + age + '년 경과',
+    grade: 5 - [5, 10, 15, 25].filter(limit => age > limit).length, source: directory.source };
+  return copy;
+}
+
 function profileName(name: string, dong: string, lawd: string) {
   const aliases = [normalized(name)];
   if (lawd === '41290' && aliases[0] === '과천래미안슈르') aliases.push('래미안슈르');
@@ -56,12 +92,15 @@ export async function seedAptSearch(db = firestore()) {
   const complexes = catalogRows.map((row): Complex => {
     const [id, region, lawd, district, dong, name, homes, parcel, address] = row;
     const profile = profileName(String(name), String(dong), String(lawd));
+    const [approvalDate = null, builder = null] = details[String(id)] ?? [];
     const grades = getApartmentLocationGrades(profile ?? String(name));
+    const assessed = builderGrade(builder);
+    if (assessed && (assessed.grade !== null || grades[0].grade === null)) grades[0] = assessed;
     grades[2] = { ...grades[2], label: Number(homes).toLocaleString('ko-KR') + '세대',
       grade: 1 + [500, 1000, 1500, 2000].filter(limit => Number(homes) >= limit).length, source: directory.source };
     return { id: String(id), region: String(region), lawd: String(lawd), name: String(name), dong: String(dong),
       district: String(district), homes: Number(homes), parcel: String(parcel), address: String(address),
-      grades: JSON.parse(JSON.stringify(grades)), seedSalesJson: JSON.stringify(seedPrices[String(id)] ?? []) };
+      approvalDate, grades: JSON.parse(JSON.stringify(grades)), seedSalesJson: JSON.stringify(seedPrices[String(id)] ?? []) };
   });
   if (new Set(complexes.map(row => row.id)).size !== complexes.length ||
       complexes.some(row => !/^A\d{8}$/.test(row.id) || row.homes < 1000)) throw Error('APT_INVALID_DIRECTORY');
@@ -79,7 +118,7 @@ export async function seedAptSearch(db = firestore()) {
   if ((await destination.count().get()).data().count !== complexes.length) throw Error('APT_DIRECTORY_COUNT_MISMATCH');
   await ref.set(manifest);
   return { count: complexes.length, sales: complexes.reduce((sum, row) => sum + (seedPrices[row.id]?.length ?? 0), 0),
-    graded: complexes.map(row => row.grades).reduce((counts, grades) => counts.map((n, i) => n + (grades[i].grade !== null ? 1 : 0)), [0, 0, 0, 0, 0, 0]) };
+    graded: complexes.map(row => gradesAsOf(row.grades, row.approvalDate)).reduce((counts, grades) => counts.map((n, i) => n + (grades[i].grade !== null ? 1 : 0)), [0, 0, 0, 0, 0, 0]) };
 }
 
 async function readDirectory(db: Firestore) {
@@ -209,7 +248,7 @@ export function createAptSearchHandler(): RequestHandler {
             return !report || report.unresolved.includes(complex.id) || !complex.parcel ? [...saved, ...fresh] : fresh;
           });
           if (sales.length) prices[complex.id] = sales;
-          return complex;
+          return { ...complex, grades: gradesAsOf(complex.grades, complex.approvalDate) };
         });
         const confirmed = live.size;
         return { source: 'APT_FIRESTORE', ...manifest, months, confirmedDistrictMonths: confirmed,

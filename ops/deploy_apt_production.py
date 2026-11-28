@@ -154,7 +154,8 @@ def verify(origin, expected_entry=None):
         require(sum(row.get("region") == region for row in directory) >= count, f"Missing Apt complexes in {region}")
     require(len({row.get("id") for row in directory}) == len(directory)
             and all(row.get("homes", 0) >= 1000 and len(row.get("grades", [])) == 6
-                    and row["grades"][2].get("grade") in (3, 4, 5) for row in directory),
+                    and row["grades"][2].get("grade") in (3, 4, 5)
+                    and row["grades"][3].get("grade") in (1, 2, 3, 4, 5) for row in directory),
             "Apt complex IDs, household counts, or location grades are invalid")
     if search.get("months") == ["202609", "202610", "202611"] and not search.get("confirmedDistrictMonths"):
         require(len(search.get("prices", {})) == 399 and sum(map(len, search["prices"].values())) == 1046,

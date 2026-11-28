@@ -18,7 +18,15 @@ const catalogRows = directory.complexes.filter(row => targets.has(String(row[1])
 const collection = 'apt_complexes_v1';
 const batches = 'apt_sales_district_month_v1';
 const meta = 'apt_search_v1';
-const seedPrices = seedSales.prices as Record<string, Sale[]>;
+const seedPrices: Record<string, Sale[]> = Object.fromEntries(Object.entries(seedSales.prices).map(([id, sales]) =>
+  [id, sales.map((row): Sale => {
+    const [date, area, price, floor] = row;
+    if (row.length !== 4 || typeof date !== 'string' || !/^20\d\d-\d\d-\d\d$/.test(date) ||
+        typeof area !== 'number' || !Number.isFinite(area) || area <= 0 ||
+        typeof price !== 'number' || !Number.isSafeInteger(price) || price <= 0 ||
+        typeof floor !== 'number' || !Number.isSafeInteger(floor)) throw Error('APT_INVALID_SEED_SALE');
+    return [date, area, price, floor];
+  })]));
 const endpoint = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev';
 const parser = new XMLParser({ parseTagValue: false });
 const normalized = (value: unknown) => String(value ?? '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '').replace(/아파트$/, '');

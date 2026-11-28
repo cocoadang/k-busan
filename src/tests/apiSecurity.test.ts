@@ -69,3 +69,18 @@ test('Apt saved history exact GET and HEAD reach the handler; writes and other p
   assert.equal((await fetch(base+'/api/jobs/poll')).status,401);
  } finally {await new Promise<void>(r=>server.close(()=>r()));}
 });
+
+test('Apt search is public for exact reads only', async () => {
+ const app = express();
+ const path = '/api/apt/search';
+ app.use(createApiSecurity({ production: true, secret: () => 'test-secret' }));
+ app.get(path, (_req, res) => res.status(200).json({ source: 'APT_FIRESTORE' }));
+ const server = app.listen(0, '127.0.0.1');
+ await new Promise<void>(resolve => server.once('listening', resolve));
+ const base = 'http://127.0.0.1:' + (server.address() as { port: number }).port;
+ try {
+  for (const method of ['GET', 'HEAD']) assert.equal((await fetch(base + path, { method })).status, 200);
+  for (const method of ['POST', 'PUT', 'DELETE']) assert.equal((await fetch(base + path, { method })).status, 401);
+  assert.equal((await fetch(base + path + '/other')).status, 401);
+ } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
+});

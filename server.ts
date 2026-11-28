@@ -1,3 +1,4 @@
+import { createAptSearchHandler, refreshAptSalesIfDue } from './src/housing/aptIndependentSearch.ts';
 import { refreshApartmentFloorPlans, readApartmentFloorPlans } from './src/housing/apartmentFloorPlanStore.ts';
 import { createCollectedApartmentSearch } from './src/housing/collectedApartmentSearch.ts';
 import { createRuntimeApartmentBudgetService } from './src/housing/apartmentBudgetRuntime.ts';
@@ -106,6 +107,7 @@ app.get('/api/official/diagnostics', async (req, res) => {
 
 app.get('/api/housing/busan-prices', createBusanPriceHandler());
 const apartmentBudget = createRuntimeApartmentBudgetService(process.env);
+app.get('/api/apt/search', createAptSearchHandler());
 app.get('/api/housing/apartment-budget', apartmentBudget.handle);
 app.get('/api/housing/collected-apartments', createCollectedApartmentSearch());
 app.get('/api/housing/apartment-trade-history', createApartmentTradeHistoryHandler());
@@ -113,7 +115,11 @@ app.get('/api/housing/apartment-trade-history', createApartmentTradeHistoryHandl
 app.get('/api/housing/floor-plans/raemian-sur', readApartmentFloorPlans);
 
 async function refreshHousingData() {
-  const trades = apartmentBudget.refreshTrades();
+  const trades = refreshAptSalesIfDue().catch(error => {
+    const reason = error instanceof Error && /^MOLIT_[A-Z0-9_]+$/.test(error.message) ? error.message : 'APT_REFRESH_FAILED';
+    console.warn('[apt] official trade refresh failed', reason);
+    throw Error(reason);
+  });
   const floorPlans = process.env.IMPORT_FLOOR_PLANS_ON_POLL === 'true'
     ? refreshApartmentFloorPlans()
     : Promise.resolve({ skipped: true, reason: 'FLOOR_PLAN_IMPORT_DISABLED' });
@@ -984,26 +990,6 @@ async function startServer() {
       res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(distPath, 'index.html'));
     });
-  }
-
-  if (process.env.NODE_ENV === 'production') {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    try {
-      await Promise.race([
-        Promise.allSettled([apartmentBudget.refreshGwacheonFallback(), apartmentBudget.refreshTrades()]).then(results => {
-          const trades = results[1];
-          console.info('[housing] startup trade refresh', trades.status === 'fulfilled' ? trades.value : 'failed');
-          if (results[0].status === 'rejected') console.warn('[housing] startup Gwacheon backfill failed');
-        }),
-        new Promise<never>((_, reject) => {
-          timeout = setTimeout(() => reject(new Error('HOUSING_STARTUP_TIMEOUT')), 25_000);
-        }),
-      ]);
-    } catch (error) {
-      console.warn('[housing] startup trade refresh delayed', error instanceof Error ? error.message : 'unknown');
-    } finally {
-      clearTimeout(timeout);
-    }
   }
 
   app.listen(PORT, '0.0.0.0', () => {

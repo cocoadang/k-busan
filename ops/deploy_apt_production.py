@@ -145,54 +145,22 @@ def verify(origin, expected_entry=None):
     require(all(label in bundle for label in ("\uc544\ud30c\ud2b8 \ucc3e\uae30", "\ub2e8\uc9c0\uba85 \ub610\ub294 \uc9c0\uc5ed")), "Apt search UI is missing")
     require("\uc785\uc9c0 \ub4f1\uae09\ud45c" not in bundle, "Removed location grade table still appears in the Apt bundle")
     require("1,000\uc138\ub300 \uc774\uc0c1 \uc9c0\uc5ed" in bundle, "K-apt large-apartment regional search is missing")
-    collected = json.loads(read(origin, "/api/housing/collected-apartments"))
-    catalog = collected.get("catalog", {})
-    require(catalog.get("revision", "").startswith("kapt-") and len(catalog.get("complexes", [])) >= 546,
-            "The shared Firestore-backed directory is missing from Apt")
-    sales = collected.get("officialSales", {})
-    if sales.get("through") == "2026-11-28":
-        require(len(sales.get("prices", {})) == 428 and sum(map(len, sales["prices"].values())) == 1123,
-                "Apt has an incomplete official recovery snapshot")
-    months = collected.get("months", [])
-    has_recovered_prices = any(
-        row[0][:7].replace("-", "") in months
-        for rows in sales.get("prices", {}).values() for row in rows
-    )
-    try:
-        budget = json.loads(read(origin, "/api/housing/apartment-budget"))
-        require(isinstance(budget.get("results"), list) and budget.get("incomplete") is False
-                and isinstance(budget.get("revision"), str) and budget["revision"],
-                "Apt search did not return a complete saved-data response with a revision")
-    except RuntimeError as error:
-        cause = error.__cause__
-        if not isinstance(cause, HTTPError) or cause.code != 503 or not has_recovered_prices:
-            raise
-        budget = None
-        print(f"{origin}: existing recommendation feed is unavailable; verified recovered sales remain searchable", flush=True)
-    complexes = collected.get("complexes", [])
-    ids = {row["id"] for row in complexes}
-    if collected.get("nativeDirectoryUnavailable"):
-        require(not complexes and not collected.get("results") and has_recovered_prices,
-                "K-Housing map is unavailable and no recovered sales can be verified")
-    else:
-        require(len(ids) == len(complexes) and len(ids) >= 31 and {"gwacheon_xi", "banpo_xi", "busan_centum_park_2"} <= ids,
-                "Apt is missing registered K-Housing complexes")
-        require(any(row.get("complexId") in ids and row.get("price", 0) > 0 for row in collected.get("results", [])),
-                "Apt has no collected K-Housing transactions")
-    print(f"{origin}: {len(ids)} registered K-Housing complexes, {len(collected.get('results', []))} price rows", flush=True)
+    search = json.loads(read(origin, "/api/apt/search"))
+    expected = {"서울": 422, "과천": 5, "분당": 37, "구성남": 22, "하남": 22}
+    directory = search.get("directory", [])
+    require(search.get("source") == "APT_FIRESTORE" and len(directory) >= sum(expected.values()),
+            "Apt Firestore directory is missing")
+    for region, count in expected.items():
+        require(sum(row.get("region") == region for row in directory) >= count, f"Missing Apt complexes in {region}")
+    require(len({row.get("id") for row in directory}) == len(directory)
+            and all(row.get("homes", 0) >= 1000 and len(row.get("grades", [])) == 6
+                    and row["grades"][2].get("grade") in (3, 4, 5) for row in directory),
+            "Apt complex IDs, household counts, or location grades are invalid")
+    if search.get("months") == ["202609", "202610", "202611"] and not search.get("confirmedDistrictMonths"):
+        require(len(search.get("prices", {})) == 399 and sum(map(len, search["prices"].values())) == 1046,
+                "The verified Apt transaction seed is incomplete")
     require(json.loads(read(origin, "/api/housing/floor-plans/raemian-sur")), "Saved floor plans are empty")
-    history = json.loads(read(origin, "/api/housing/apartment-trade-history?"
-                              "complex=gwacheon_raemian_sur&family=raemian_sur_59&start=202609&end=202611&page=1"))
-    require(history.get("source") == "K_HOUSING_SAVED_MOLIT"
-            and history.get("coverage") == "saved_snapshot_only"
-            and (history.get("complex"), history.get("family"), history.get("start"), history.get("end"), history.get("page"))
-            == ("gwacheon_raemian_sur", "raemian_sur_59", "202609", "202611", 1)
-            and history.get("activeRows", 0) > 0
-            and any(row.get("cancelled") is False and row.get("exactArea", 0) > 0
-                    and row.get("amountManwon", 0) > 0 for row in history.get("rows", [])),
-            "Saved Raemian Sur trade history check failed")
-    if budget is not None:
-        print(f"{origin}: search revision {budget['revision']}, {len(budget['results'])} results, bundle {entry}", flush=True)
+    print(f"{origin}: {len(directory)} Apt complexes, {len(search.get('prices', {}))} with trades, bundle {entry}", flush=True)
     return entry
 
 
